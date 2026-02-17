@@ -59,6 +59,29 @@
   .group-delete { color: #888; font-size: 14px; cursor: pointer; padding: 0 4px; }
   .group-delete:hover { color: #f66; }
 
+  #zoom-section { border-top: 1px solid #444; }
+  #zoom-section h2 { padding: 10px 12px; font-size: 14px; border-bottom: 1px solid #444; background: #2a2a2a; }
+  #zoom-controls {
+    padding: 8px 12px; border-bottom: 1px solid #444;
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  #zoom-controls button, #zoom-controls input {
+    font-family: monospace; font-size: 12px;
+    padding: 4px 8px; border: 1px solid #555; border-radius: 3px;
+    background: #333; color: #ddd; cursor: pointer;
+  }
+  #zoom-controls input { width: 40px; text-align: center; }
+  #zoom-list { max-height: 150px; overflow-y: auto; padding: 4px 0; }
+  .zoom-item {
+    padding: 6px 12px; display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid #2a2a2a; font-size: 12px;
+  }
+  .zoom-item:hover { background: #333; }
+  .zoom-key { background: #444; padding: 2px 6px; border-radius: 2px; min-width: 20px; text-align: center; }
+  .zoom-desc { flex: 1; color: #aaa; font-size: 11px; }
+  .zoom-test { color: #7a7; cursor: pointer; font-size: 11px; padding: 2px 6px; background: #2a3a2a; border: 1px solid #4a6a4a; border-radius: 2px; }
+  .zoom-test:hover { background: #3a4a3a; }
+
   #sequence-section { border-top: 1px solid #444; }
   #sequence-section h2 { padding: 10px 12px; font-size: 14px; border-bottom: 1px solid #444; background: #2a2a2a; }
 
@@ -143,6 +166,15 @@
   </div>
   <div id="group-list"></div>
 
+  <div id="zoom-section">
+    <h2>Zoom Presets</h2>
+    <div id="zoom-controls">
+      <input type="text" id="zoom-key-input" placeholder="Key" maxlength="1">
+      <button id="btn-save-zoom">Save Current View</button>
+    </div>
+    <div id="zoom-list"></div>
+  </div>
+
   <div id="sequence-section">
     <h2>Sequences</h2>
     <div id="sequence-controls">
@@ -176,7 +208,8 @@
     <p><kbd>Scroll</kbd> Zoom</p>
     <p><kbd>Drag</kbd> Pan</p>
     <p><kbd>G</kbd> Quick create group from selection</p>
-    <p><kbd>Space</kbd> Advance to next step (in test mode)</p>
+    <p><kbd>Space</kbd> Advance to next step (in sequence test mode)</p>
+    <p>Zoom: navigate to desired view, type key, click "Save Current View"</p>
     <p><kbd>?</kbd> Toggle this help</p>
     <br>
     <button onclick="document.getElementById('help-overlay').classList.remove('visible')">Close</button>
@@ -194,7 +227,18 @@ let idMapW = IMG_W, idMapH = IMG_H;
 // ============================================================
 // STATE
 // ============================================================
-let view = { x: 0, y: 0, w: IMG_W, h: IMG_H };
+const ASPECT = 16 / 9;
+// Initialize view to 16:9 crop centered on the image
+let view = (() => {
+  // Fit the image within a 16:9 frame
+  let w = IMG_W;
+  let h = w / ASPECT;
+  if (h > IMG_H) {
+    h = IMG_H;
+    w = h * ASPECT;
+  }
+  return { x: (IMG_W - w) / 2, y: (IMG_H - h) / 2, w, h };
+})();
 let selectedRegions = new Set();
 let preChildrenSelection = null; // stored selection before "C" was pressed
 let hoveredRegion = -1;
@@ -209,6 +253,11 @@ let selectedGroupIds = new Set(); // for multi-select in sidebar
 let sequences = {};
 let seqIdCounter = 0;
 let activeSeqId = null;
+
+// Zoom presets: { id: { key, x, y, w, h, tweenDuration } }
+let zoomPresets = {};
+let zoomIdCounter = 0;
+let tweenAnim = null; // current tween animation frame id
 
 // ============================================================
 // CANVAS SETUP
@@ -274,16 +323,33 @@ const GROUP_COLORS = [
   '#cc33ff', '#ccff33', '#ff9966', '#6699ff', '#99ff66'
 ];
 
+function getCanvasTransform() {
+  // Fit the 16:9 view into the canvas with letterboxing
+  const canvasAspect = canvas.width / canvas.height;
+  const viewAspect = view.w / view.h;
+  let scale, offsetX = 0, offsetY = 0;
+  if (canvasAspect > viewAspect) {
+    // Canvas is wider — pillarbox (bars on sides)
+    scale = canvas.height / view.h;
+    offsetX = (canvas.width - view.w * scale) / 2;
+  } else {
+    // Canvas is taller — letterbox (bars on top/bottom)
+    scale = canvas.width / view.w;
+    offsetY = (canvas.height - view.h * scale) / 2;
+  }
+  return { scale, offsetX, offsetY };
+}
+
 function render() {
   if (!bgImage) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#1a1a1a';
+  ctx.fillStyle = '#111';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  const { scale, offsetX, offsetY } = getCanvasTransform();
+
   ctx.save();
-  const scaleX = canvas.width / view.w;
-  const scaleY = canvas.height / view.h;
-  const scale = Math.min(scaleX, scaleY);
+  ctx.translate(offsetX, offsetY);
   ctx.scale(scale, scale);
   ctx.translate(-view.x, -view.y);
 
@@ -324,16 +390,11 @@ function render() {
 }
 
 function highlightRegions(regionSet, color) {
-  // Compute actual visible image area based on canvas size and current scale
-  const scaleX = canvas.width / view.w;
-  const scaleY = canvas.height / view.h;
-  const scale = Math.min(scaleX, scaleY);
-  const visW = canvas.width / scale;
-  const visH = canvas.height / scale;
+  // Visible area is just the 16:9 view rectangle
   const visMinX = Math.max(0, Math.floor(view.x));
   const visMinY = Math.max(0, Math.floor(view.y));
-  const visMaxX = Math.min(IMG_W, Math.ceil(view.x + visW));
-  const visMaxY = Math.min(IMG_H, Math.ceil(view.y + visH));
+  const visMaxX = Math.min(IMG_W, Math.ceil(view.x + view.w));
+  const visMaxY = Math.min(IMG_H, Math.ceil(view.y + view.h));
 
   ctx.globalAlpha = color[3] / 255;
   ctx.fillStyle = `rgb(${color[0]},${color[1]},${color[2]})`;
@@ -382,14 +443,14 @@ function hexToRgb(hex) {
 // HIT TESTING
 // ============================================================
 function screenToImage(sx, sy) {
-  // Account for canvas position on page (sidebar offsets it)
   const rect = canvas.getBoundingClientRect();
   const cx = sx - rect.left;
   const cy = sy - rect.top;
-  const scaleX = canvas.width / view.w;
-  const scaleY = canvas.height / view.h;
-  const scale = Math.min(scaleX, scaleY);
-  return { x: cx / scale + view.x, y: cy / scale + view.y };
+  const { scale, offsetX, offsetY } = getCanvasTransform();
+  return {
+    x: (cx - offsetX) / scale + view.x,
+    y: (cy - offsetY) / scale + view.y
+  };
 }
 
 function hitTest(ix, iy) {
@@ -415,7 +476,8 @@ canvas.addEventListener('wheel', (e) => {
   const rect = canvas.getBoundingClientRect();
   const mx = (e.clientX - rect.left) / canvas.width;
   const my = (e.clientY - rect.top) / canvas.height;
-  const nw = view.w * factor, nh = view.h * factor;
+  const nw = view.w * factor;
+  const nh = nw / ASPECT; // maintain 16:9
   view.x += (view.w - nw) * mx;
   view.y += (view.h - nh) * my;
   view.w = nw; view.h = nh;
@@ -874,13 +936,13 @@ function stopSparkleTest() {
 function renderTestFrame(group, effect) {
   if (!bgImage) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#1a1a1a';
+  ctx.fillStyle = '#111';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  const { scale, offsetX, offsetY } = getCanvasTransform();
+
   ctx.save();
-  const scaleX = canvas.width / view.w;
-  const scaleY = canvas.height / view.h;
-  const scale = Math.min(scaleX, scaleY);
+  ctx.translate(offsetX, offsetY);
   ctx.scale(scale, scale);
   ctx.translate(-view.x, -view.y);
 
@@ -936,6 +998,88 @@ document.getElementById('btn-add-step').addEventListener('click', () => {
 });
 
 // ============================================================
+// ZOOM PRESETS
+// ============================================================
+function saveZoomPreset(key) {
+  const id = 'z' + (zoomIdCounter++);
+  zoomPresets[id] = {
+    key: key.toLowerCase(),
+    x: view.x,
+    y: view.y,
+    w: view.w,
+    h: view.h,
+    tweenDuration: 500
+  };
+  renderZoomList();
+  return id;
+}
+
+function renderZoomList() {
+  const list = document.getElementById('zoom-list');
+  list.innerHTML = '';
+  for (const [zid, zp] of Object.entries(zoomPresets)) {
+    const div = document.createElement('div');
+    div.className = 'zoom-item';
+    div.innerHTML = `
+      <div class="zoom-key">${zp.key.toUpperCase()}</div>
+      <div class="zoom-desc">${(IMG_W / zp.w).toFixed(1)}x zoom, center (${Math.round(zp.x + zp.w/2)}, ${Math.round(zp.y + zp.h/2)})</div>
+      <button class="zoom-test" data-zid="${zid}">Test</button>
+      <div class="group-delete" data-zid="${zid}">&times;</div>
+    `;
+    div.querySelector('.zoom-test').addEventListener('click', (e) => {
+      e.stopPropagation();
+      tweenToView(zp, zp.tweenDuration);
+    });
+    div.querySelector('.group-delete').addEventListener('click', (e) => {
+      e.stopPropagation();
+      delete zoomPresets[e.target.dataset.zid];
+      renderZoomList();
+    });
+    list.appendChild(div);
+  }
+}
+
+function tweenToView(target, duration) {
+  duration = duration || target.tweenDuration || 500;
+  if (tweenAnim) cancelAnimationFrame(tweenAnim);
+
+  const startView = { ...view };
+  const startTime = performance.now();
+
+  function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+
+  function step(now) {
+    const elapsed = now - startTime;
+    const t = Math.min(1, elapsed / duration);
+    const e = easeInOutCubic(t);
+
+    view.x = startView.x + (target.x - startView.x) * e;
+    view.y = startView.y + (target.y - startView.y) * e;
+    view.w = startView.w + (target.w - startView.w) * e;
+    view.h = startView.h + (target.h - startView.h) * e;
+
+    render();
+
+    if (t < 1) {
+      tweenAnim = requestAnimationFrame(step);
+    } else {
+      tweenAnim = null;
+    }
+  }
+
+  tweenAnim = requestAnimationFrame(step);
+}
+
+document.getElementById('btn-save-zoom').addEventListener('click', () => {
+  const key = document.getElementById('zoom-key-input').value.trim();
+  if (!key) return;
+  saveZoomPreset(key);
+  document.getElementById('zoom-key-input').value = '';
+});
+
+// ============================================================
 // SAVE / LOAD
 // ============================================================
 function buildSceneJson() {
@@ -966,7 +1110,8 @@ function buildSceneJson() {
     sequences: seqsOut,
     groupIdCounter,
     seqIdCounter,
-    zoomPresets: [],
+    zoomIdCounter,
+    zoomPresets: { ...zoomPresets },
     fadeDuration: 1000
   };
 }
@@ -1002,6 +1147,9 @@ function loadSceneFromJson(data) {
   }
   seqIdCounter = data.seqIdCounter || Object.keys(sequences).length;
 
+  zoomPresets = data.zoomPresets || {};
+  zoomIdCounter = data.zoomIdCounter || Object.keys(zoomPresets).length;
+
   activeGroupId = null;
   activeSeqId = null;
   selectedRegions.clear();
@@ -1009,6 +1157,7 @@ function loadSceneFromJson(data) {
   renderGroupList();
   renderSequenceList();
   renderSeqDetail();
+  renderZoomList();
   updateSelectionInfo();
   render();
 }
