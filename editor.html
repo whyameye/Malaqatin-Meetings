@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Ceiling Editor</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #1a1a1a; overflow: hidden; font-family: monospace; color: #ddd; display: flex; }
+
+  #canvas-wrap { flex: 1; position: relative; }
+  canvas { display: block; width: 100%; height: 100vh; }
+
+  #sidebar {
+    width: 320px; min-width: 320px; height: 100vh;
+    background: #252525; border-left: 1px solid #444;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  #sidebar h2 { padding: 10px 12px; font-size: 14px; border-bottom: 1px solid #444; background: #2a2a2a; }
+
+  #info-bar {
+    padding: 6px 12px; font-size: 11px; color: #aaa;
+    background: #1e1e1e; border-bottom: 1px solid #333;
+  }
+
+  #selection-info {
+    padding: 8px 12px; font-size: 12px; color: #ccc;
+    background: #2a2a2a; border-bottom: 1px solid #444;
+    min-height: 40px;
+  }
+
+  #group-controls {
+    padding: 8px 12px; border-bottom: 1px solid #444;
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+
+  #group-controls button, #group-controls input {
+    font-family: monospace; font-size: 12px;
+    padding: 4px 8px; border: 1px solid #555; border-radius: 3px;
+    background: #333; color: #ddd; cursor: pointer;
+  }
+  #group-controls button:hover { background: #444; }
+  #group-controls input { width: 120px; }
+
+  #group-list {
+    flex: 1; overflow-y: auto; padding: 4px 0;
+  }
+
+  .group-item {
+    padding: 6px 12px; cursor: pointer; display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid #2a2a2a; font-size: 12px;
+  }
+  .group-item:hover { background: #333; }
+  .group-item.active { background: #3a3a4a; }
+  .group-item.selected { background: #3a4a3a; outline: 1px solid #5a8a5a; }
+  .group-swatch { width: 14px; height: 14px; border-radius: 2px; border: 1px solid #666; flex-shrink: 0; }
+  .group-name { flex: 1; }
+  .group-count { color: #888; font-size: 11px; }
+  .group-delete { color: #888; font-size: 14px; cursor: pointer; padding: 0 4px; }
+  .group-delete:hover { color: #f66; }
+
+  #sequence-section { border-top: 1px solid #444; }
+  #sequence-section h2 { padding: 10px 12px; font-size: 14px; border-bottom: 1px solid #444; background: #2a2a2a; }
+
+  #sequence-controls {
+    padding: 8px 12px; border-bottom: 1px solid #444;
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  #sequence-controls button, #sequence-controls input, #sequence-controls select {
+    font-family: monospace; font-size: 12px;
+    padding: 4px 8px; border: 1px solid #555; border-radius: 3px;
+    background: #333; color: #ddd; cursor: pointer;
+  }
+
+  #sequence-list {
+    max-height: 200px; overflow-y: auto; padding: 4px 0;
+  }
+
+  .seq-item {
+    padding: 6px 12px; cursor: pointer; display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid #2a2a2a; font-size: 12px;
+  }
+  .seq-item:hover { background: #333; }
+  .seq-item.active { background: #3a3a4a; }
+  .seq-key { background: #444; padding: 2px 6px; border-radius: 2px; min-width: 20px; text-align: center; }
+  .seq-steps { flex: 1; color: #aaa; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .seq-effect { color: #888; font-size: 11px; }
+
+  #seq-detail {
+    padding: 8px 12px; border-top: 1px solid #444; font-size: 12px;
+    max-height: 150px; overflow-y: auto;
+  }
+  .seq-step {
+    padding: 3px 0; display: flex; align-items: center; gap: 6px;
+  }
+  .seq-step-num { color: #666; min-width: 20px; }
+  .seq-step-remove { color: #888; cursor: pointer; }
+  .seq-step-remove:hover { color: #f66; }
+
+  #bottom-bar {
+    padding: 8px 12px; border-top: 1px solid #444; background: #2a2a2a;
+    display: flex; gap: 8px;
+  }
+  #bottom-bar button {
+    font-family: monospace; font-size: 12px;
+    padding: 6px 12px; border: 1px solid #555; border-radius: 3px;
+    background: #444; color: #ddd; cursor: pointer;
+  }
+  #bottom-bar button:hover { background: #555; }
+  #bottom-bar button.primary { background: #3a6a3a; border-color: #5a8a5a; }
+  #bottom-bar button.primary:hover { background: #4a7a4a; }
+
+  #help-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.8); z-index: 100; display: none;
+    justify-content: center; align-items: center;
+  }
+  #help-overlay.visible { display: flex; }
+  #help-content {
+    background: #2a2a2a; padding: 24px; border-radius: 8px;
+    max-width: 500px; font-size: 13px; line-height: 1.6;
+  }
+  #help-content h3 { margin-bottom: 12px; }
+  #help-content kbd { background: #444; padding: 1px 5px; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div id="canvas-wrap">
+  <canvas id="canvas"></canvas>
+</div>
+
+<div id="sidebar">
+  <div id="info-bar">Loading...</div>
+  <div id="selection-info">No selection</div>
+
+  <h2>Groups</h2>
+  <div id="group-controls">
+    <input type="text" id="group-name-input" placeholder="Group name...">
+    <button id="btn-create-group">Create</button>
+    <button id="btn-add-to-group">Add to</button>
+    <button id="btn-merge-groups">Merge Selected</button>
+  </div>
+  <div id="group-list"></div>
+
+  <div id="sequence-section">
+    <h2>Sequences</h2>
+    <div id="sequence-controls">
+      <input type="text" id="seq-key-input" placeholder="Key" maxlength="1" style="width:40px; text-align:center;">
+      <button id="btn-create-seq">Create Seq</button>
+      <button id="btn-add-step">+ Step</button>
+      <select id="seq-effect-select">
+        <option value="solid">Solid</option>
+        <option value="sparkle">Sparkle</option>
+        <option value="fade">Fade</option>
+      </select>
+    </div>
+    <div id="sequence-list"></div>
+    <div id="seq-detail"></div>
+  </div>
+
+  <div id="bottom-bar">
+    <button class="primary" id="btn-save">Save Scene</button>
+    <button id="btn-load">Load Scene</button>
+    <button id="btn-help">Help (?)</button>
+  </div>
+</div>
+
+<div id="help-overlay">
+  <div id="help-content">
+    <h3>Keyboard Shortcuts</h3>
+    <p><kbd>Click</kbd> Select region</p>
+    <p><kbd>Shift+Click</kbd> Toggle region in selection</p>
+    <p><kbd>C</kbd> Select children of selected regions</p>
+    <p><kbd>Escape</kbd> Clear selection</p>
+    <p><kbd>Scroll</kbd> Zoom</p>
+    <p><kbd>Drag</kbd> Pan</p>
+    <p><kbd>G</kbd> Quick create group from selection</p>
+    <p><kbd>Space</kbd> Advance to next step (in test mode)</p>
+    <p><kbd>?</kbd> Toggle this help</p>
+    <br>
+    <button onclick="document.getElementById('help-overlay').classList.remove('visible')">Close</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const IMG_W = 2731, IMG_H = 2048;
+let bgImage = null, overlayImage = null, idMapData = null, regionMeta = null, regionChildren = null;
+let idMapW = IMG_W, idMapH = IMG_H;
+
+// ============================================================
+// STATE
+// ============================================================
+let view = { x: 0, y: 0, w: IMG_W, h: IMG_H };
+let selectedRegions = new Set();
+let preChildrenSelection = null; // stored selection before "C" was pressed
+let hoveredRegion = -1;
+
+// Groups: { id: { name, regions: Set, color } }
+let groups = {};
+let groupIdCounter = 0;
+let activeGroupId = null;
+let selectedGroupIds = new Set(); // for multi-select in sidebar
+
+// Sequences: { id: { key, steps: [groupId, ...], effect, params } }
+let sequences = {};
+let seqIdCounter = 0;
+let activeSeqId = null;
+
+// ============================================================
+// CANVAS SETUP
+// ============================================================
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  const wrap = document.getElementById('canvas-wrap');
+  canvas.width = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+}
+window.addEventListener('resize', () => { resize(); render(); });
+
+// ============================================================
+// LOADING
+// ============================================================
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+const cb = '?v=' + Date.now();
+Promise.all([
+  loadImage('ceiling1a.png' + cb),
+  loadImage('region_overlay.png' + cb),
+  loadImage('region_id_map.png' + cb),
+  fetch('region_meta.json' + cb).then(r => r.json()),
+  fetch('region_children.json' + cb).then(r => r.json())
+]).then(([bg, overlay, idMap, meta, children]) => {
+  bgImage = bg;
+  overlayImage = overlay;
+  regionMeta = meta;
+  regionChildren = children;
+
+  const tmpCanvas = document.createElement('canvas');
+  idMapW = idMap.naturalWidth;
+  idMapH = idMap.naturalHeight;
+  tmpCanvas.width = idMapW;
+  tmpCanvas.height = idMapH;
+  const tmpCtx = tmpCanvas.getContext('2d', { willReadFrequently: true });
+  tmpCtx.drawImage(idMap, 0, 0);
+  idMapData = tmpCtx.getImageData(0, 0, idMapW, idMapH).data;
+
+  document.getElementById('info-bar').textContent =
+    `Regions: ${Object.keys(meta).length} | Children data: ${Object.keys(children).length} parents`;
+
+  resize();
+  render();
+  tryLoadScene();
+});
+
+// ============================================================
+// RENDERING
+// ============================================================
+const GROUP_COLORS = [
+  '#ff3366', '#33ff66', '#6633ff', '#ffcc33', '#33ccff',
+  '#ff6633', '#66ff33', '#3366ff', '#ff33cc', '#33ffcc',
+  '#cc33ff', '#ccff33', '#ff9966', '#6699ff', '#99ff66'
+];
+
+function render() {
+  if (!bgImage) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.save();
+  const scaleX = canvas.width / view.w;
+  const scaleY = canvas.height / view.h;
+  const scale = Math.min(scaleX, scaleY);
+  ctx.scale(scale, scale);
+  ctx.translate(-view.x, -view.y);
+
+  // Background
+  ctx.globalAlpha = 0.4;
+  ctx.drawImage(bgImage, 0, 0, IMG_W, IMG_H);
+
+  // Overlay
+  ctx.globalAlpha = 0.3;
+  ctx.drawImage(overlayImage, 0, 0, IMG_W, IMG_H);
+
+  // Highlight selected groups in sidebar
+  selectedGroupIds.forEach(gid => {
+    if (groups[gid]) {
+      const color = hexToRgb(groups[gid].color);
+      highlightRegions(groups[gid].regions, [...color, 120]);
+    }
+  });
+
+  // Highlight active group's regions
+  if (activeGroupId !== null && groups[activeGroupId]) {
+    const group = groups[activeGroupId];
+    const color = hexToRgb(group.color);
+    highlightRegions(group.regions, [...color, 120]);
+  }
+
+  // Highlight selected regions
+  if (selectedRegions.size > 0) {
+    highlightRegions(selectedRegions, [0, 255, 255, 160]);
+  }
+
+  // Highlight hovered region
+  if (hoveredRegion >= 0 && regionMeta[hoveredRegion]) {
+    highlightRegions(new Set([hoveredRegion]), [255, 255, 0, 180]);
+  }
+
+  ctx.restore();
+}
+
+function highlightRegions(regionSet, color) {
+  // Compute actual visible image area based on canvas size and current scale
+  const scaleX = canvas.width / view.w;
+  const scaleY = canvas.height / view.h;
+  const scale = Math.min(scaleX, scaleY);
+  const visW = canvas.width / scale;
+  const visH = canvas.height / scale;
+  const visMinX = Math.max(0, Math.floor(view.x));
+  const visMinY = Math.max(0, Math.floor(view.y));
+  const visMaxX = Math.min(IMG_W, Math.ceil(view.x + visW));
+  const visMaxY = Math.min(IMG_H, Math.ceil(view.y + visH));
+
+  ctx.globalAlpha = color[3] / 255;
+  ctx.fillStyle = `rgb(${color[0]},${color[1]},${color[2]})`;
+
+  regionSet.forEach(regionId => {
+    const meta = regionMeta[regionId];
+    if (!meta) return;
+    const bb = meta.bbox;
+    const x0 = Math.max(bb[0], visMinX);
+    const y0 = Math.max(bb[1], visMinY);
+    const x1 = Math.min(bb[2] + 1, visMaxX);
+    const y1 = Math.min(bb[3] + 1, visMaxY);
+    if (x0 >= x1 || y0 >= y1) return;
+
+    for (let py = y0; py < y1; py++) {
+      let runStart = -1;
+      for (let px = x0; px <= x1; px++) {
+        const mpx = Math.round(px * idMapW / IMG_W);
+        const mpy = Math.round(py * idMapH / IMG_H);
+        const offset = (mpy * idMapW + mpx) * 4;
+        const r = idMapData[offset];
+        const g = idMapData[offset + 1];
+        const m = idMapData[offset + 2];
+        const id = (m >= 250) ? (r | (g << 8)) : -1;
+        if (id === regionId && px < x1) {
+          if (runStart < 0) runStart = px;
+        } else {
+          if (runStart >= 0) {
+            ctx.fillRect(runStart, py, px - runStart, 1);
+            runStart = -1;
+          }
+        }
+      }
+    }
+  });
+}
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return [r, g, b];
+}
+
+// ============================================================
+// HIT TESTING
+// ============================================================
+function screenToImage(sx, sy) {
+  // Account for canvas position on page (sidebar offsets it)
+  const rect = canvas.getBoundingClientRect();
+  const cx = sx - rect.left;
+  const cy = sy - rect.top;
+  const scaleX = canvas.width / view.w;
+  const scaleY = canvas.height / view.h;
+  const scale = Math.min(scaleX, scaleY);
+  return { x: cx / scale + view.x, y: cy / scale + view.y };
+}
+
+function hitTest(ix, iy) {
+  const px = Math.round(ix * idMapW / IMG_W);
+  const py = Math.round(iy * idMapH / IMG_H);
+  if (px < 0 || px >= idMapW || py < 0 || py >= idMapH) return -1;
+  const offset = (py * idMapW + px) * 4;
+  const r = idMapData[offset];
+  const g = idMapData[offset + 1];
+  const marker = idMapData[offset + 2];
+  if (marker < 250) return -1;
+  return r | (g << 8);
+}
+
+// ============================================================
+// MOUSE EVENTS
+// ============================================================
+let panning = false, startMouse = null, startView = null;
+
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const factor = e.deltaY > 0 ? 1.1 : 0.9;
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) / canvas.width;
+  const my = (e.clientY - rect.top) / canvas.height;
+  const nw = view.w * factor, nh = view.h * factor;
+  view.x += (view.w - nw) * mx;
+  view.y += (view.h - nh) * my;
+  view.w = nw; view.h = nh;
+  render();
+});
+
+canvas.addEventListener('mousedown', (e) => {
+  panning = true;
+  startMouse = { x: e.clientX, y: e.clientY };
+  startView = { ...view };
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (panning) {
+    const scaleX = canvas.width / startView.w;
+    const scaleY = canvas.height / startView.h;
+    const scale = Math.min(scaleX, scaleY);
+    view.x = startView.x - (e.clientX - startMouse.x) / scale;
+    view.y = startView.y - (e.clientY - startMouse.y) / scale;
+    render();
+  } else if (e.target === canvas) {
+    const pt = screenToImage(e.clientX, e.clientY);
+    const region = hitTest(pt.x, pt.y);
+    if (region !== hoveredRegion) {
+      hoveredRegion = region;
+      render();
+    }
+    if (region >= 0 && regionMeta[region]) {
+      const r = regionMeta[region];
+      const inGroup = findRegionGroup(region);
+      const groupStr = inGroup ? ` | Group: ${groups[inGroup].name}` : '';
+      const childCount = regionChildren[region] ? regionChildren[region].length : 0;
+      const childStr = childCount > 0 ? ` | Children: ${childCount}` : '';
+      document.getElementById('info-bar').textContent =
+        `Region ${region} | Size: ${r.size}px${groupStr}${childStr}`;
+    } else {
+      document.getElementById('info-bar').textContent =
+        `Regions: ${Object.keys(regionMeta).length}`;
+    }
+  }
+});
+
+window.addEventListener('mouseup', (e) => {
+  if (panning && startMouse) {
+    const dx = Math.abs(e.clientX - startMouse.x);
+    const dy = Math.abs(e.clientY - startMouse.y);
+    if (dx < 3 && dy < 3 && e.target === canvas) {
+      const pt = screenToImage(e.clientX, e.clientY);
+      const region = hitTest(pt.x, pt.y);
+      if (region >= 0) {
+        if (e.shiftKey) {
+          if (selectedRegions.has(region)) selectedRegions.delete(region);
+          else selectedRegions.add(region);
+        } else {
+          selectedRegions.clear();
+          selectedRegions.add(region);
+        }
+        preChildrenSelection = null;
+      } else if (!e.shiftKey) {
+        selectedRegions.clear();
+        preChildrenSelection = null;
+      }
+      updateSelectionInfo();
+      render();
+    }
+  }
+  panning = false;
+});
+
+// ============================================================
+// KEYBOARD
+// ============================================================
+window.addEventListener('keydown', (e) => {
+  // Don't capture when typing in inputs
+  if (e.target.tagName === 'INPUT') return;
+
+  if (e.key === 'Escape') {
+    selectedRegions.clear();
+    selectedGroupIds.clear();
+    activeGroupId = null;
+    activeSeqId = null;
+    testStepIdx = -1;
+    stopSparkleTest();
+    updateSelectionInfo();
+    renderGroupList();
+    renderSequenceList();
+    render();
+  }
+
+  if (e.key === 'c' || e.key === 'C') {
+    selectChildren();
+  }
+
+  if (e.key === 'g' || e.key === 'G') {
+    if (selectedRegions.size > 0) {
+      quickCreateGroup();
+    }
+  }
+
+  if (e.key === '?' || e.key === '/') {
+    document.getElementById('help-overlay').classList.toggle('visible');
+  }
+
+  if (e.key === ' ' && testStepIdx >= 0) {
+    e.preventDefault();
+    advanceTestStep();
+  }
+});
+
+// ============================================================
+// SELECTION
+// ============================================================
+function selectChildren() {
+  if (selectedRegions.size === 0) return;
+
+  // If we already expanded children, toggle back to parents
+  if (preChildrenSelection !== null) {
+    selectedRegions = preChildrenSelection;
+    preChildrenSelection = null;
+    updateSelectionInfo();
+    render();
+    return;
+  }
+
+  const newSelection = new Set();
+  selectedRegions.forEach(rid => {
+    const kids = regionChildren[rid];
+    if (kids && kids.length > 0) {
+      kids.forEach(k => newSelection.add(k));
+    }
+  });
+
+  if (newSelection.size > 0) {
+    preChildrenSelection = new Set(selectedRegions);
+    selectedRegions = newSelection;
+    updateSelectionInfo();
+    render();
+  }
+}
+
+function updateSelectionInfo() {
+  const el = document.getElementById('selection-info');
+  if (selectedRegions.size === 0) {
+    el.textContent = 'No selection';
+  } else if (selectedRegions.size === 1) {
+    const rid = [...selectedRegions][0];
+    const childCount = regionChildren[rid] ? regionChildren[rid].length : 0;
+    el.textContent = `Selected: region ${rid}${childCount > 0 ? ` (${childCount} children - press C)` : ''}`;
+  } else {
+    el.textContent = `Selected: ${selectedRegions.size} regions`;
+  }
+}
+
+function findRegionGroup(regionId) {
+  for (const [gid, group] of Object.entries(groups)) {
+    if (group.regions.has(regionId)) return gid;
+  }
+  return null;
+}
+
+// ============================================================
+// GROUPS
+// ============================================================
+function createGroup(name, regions) {
+  const id = 'g' + (groupIdCounter++);
+  const colorIdx = Object.keys(groups).length % GROUP_COLORS.length;
+  groups[id] = {
+    name: name || `Group ${Object.keys(groups).length + 1}`,
+    regions: new Set(regions),
+    color: GROUP_COLORS[colorIdx]
+  };
+  renderGroupList();
+  return id;
+}
+
+function quickCreateGroup() {
+  const name = `Group ${Object.keys(groups).length + 1}`;
+  const id = createGroup(name, selectedRegions);
+  selectedRegions.clear();
+  activeGroupId = id;
+  updateSelectionInfo();
+  renderGroupList();
+  render();
+}
+
+function deleteGroup(gid) {
+  delete groups[gid];
+  if (activeGroupId === gid) activeGroupId = null;
+  // Remove from any sequences
+  for (const seq of Object.values(sequences)) {
+    seq.steps = seq.steps.filter(s => s !== gid);
+  }
+  renderGroupList();
+  renderSequenceList();
+  render();
+}
+
+function renderGroupList() {
+  const list = document.getElementById('group-list');
+  list.innerHTML = '';
+  for (const [gid, group] of Object.entries(groups)) {
+    const isActive = gid === activeGroupId;
+    const isSelected = selectedGroupIds.has(gid);
+    const div = document.createElement('div');
+    div.className = 'group-item' + (isActive ? ' active' : '') + (isSelected ? ' selected' : '');
+    div.innerHTML = `
+      <div class="group-swatch" style="background:${group.color}"></div>
+      <div class="group-name">${group.name}</div>
+      <div class="group-count">${group.regions.size}</div>
+      <div class="group-delete" data-gid="${gid}">&times;</div>
+    `;
+    div.addEventListener('click', (e) => {
+      if (e.target.classList.contains('group-delete')) {
+        deleteGroup(e.target.dataset.gid);
+        return;
+      }
+      if (e.shiftKey) {
+        // Multi-select groups
+        if (selectedGroupIds.has(gid)) {
+          selectedGroupIds.delete(gid);
+        } else {
+          selectedGroupIds.add(gid);
+        }
+      } else {
+        selectedGroupIds.clear();
+        activeGroupId = (activeGroupId === gid) ? null : gid;
+      }
+      renderGroupList();
+      render();
+    });
+    list.appendChild(div);
+  }
+}
+
+// Create group button
+document.getElementById('btn-create-group').addEventListener('click', () => {
+  if (selectedRegions.size === 0) return;
+  const name = document.getElementById('group-name-input').value.trim();
+  const id = createGroup(name, selectedRegions);
+  document.getElementById('group-name-input').value = '';
+  selectedRegions.clear();
+  activeGroupId = id;
+  updateSelectionInfo();
+  renderGroupList();
+  render();
+});
+
+// Merge selected groups into a new group
+document.getElementById('btn-merge-groups').addEventListener('click', () => {
+  if (selectedGroupIds.size < 2) return;
+  const mergedRegions = new Set();
+  const names = [];
+  selectedGroupIds.forEach(gid => {
+    if (groups[gid]) {
+      groups[gid].regions.forEach(r => mergedRegions.add(r));
+      names.push(groups[gid].name);
+    }
+  });
+  const name = document.getElementById('group-name-input').value.trim() || names.join(' + ');
+  const id = createGroup(name, mergedRegions);
+  document.getElementById('group-name-input').value = '';
+  selectedGroupIds.clear();
+  activeGroupId = id;
+  renderGroupList();
+  render();
+});
+
+// Add to group button
+document.getElementById('btn-add-to-group').addEventListener('click', () => {
+  if (selectedRegions.size === 0 || activeGroupId === null) return;
+  const group = groups[activeGroupId];
+  selectedRegions.forEach(r => group.regions.add(r));
+  selectedRegions.clear();
+  updateSelectionInfo();
+  renderGroupList();
+  render();
+});
+
+// ============================================================
+// SEQUENCES
+// ============================================================
+// Each sequence: { key, steps: [{ groupId, effect, fadeIn, fadeOut, sparkleSpeed }, ...] }
+let testStepIdx = -1; // -1 = not testing
+
+function createSequence(key) {
+  const id = 's' + (seqIdCounter++);
+  sequences[id] = {
+    key: key.toLowerCase(),
+    steps: []
+  };
+  renderSequenceList();
+  return id;
+}
+
+function renderSequenceList() {
+  const list = document.getElementById('sequence-list');
+  list.innerHTML = '';
+  for (const [sid, seq] of Object.entries(sequences)) {
+    const stepSummary = seq.steps.map(s => {
+      const g = groups[s.groupId];
+      return g ? g.name : '???';
+    }).join(' \u2192 ');
+    const div = document.createElement('div');
+    div.className = 'seq-item' + (sid === activeSeqId ? ' active' : '');
+    div.innerHTML = `
+      <div class="seq-key">${seq.key.toUpperCase()}</div>
+      <div class="seq-steps">${stepSummary || '(empty)'}</div>
+      <div class="group-delete" data-sid="${sid}">&times;</div>
+    `;
+    div.addEventListener('click', (e) => {
+      if (e.target.classList.contains('group-delete')) {
+        delete sequences[e.target.dataset.sid];
+        if (activeSeqId === e.target.dataset.sid) activeSeqId = null;
+        renderSequenceList();
+        renderSeqDetail();
+        return;
+      }
+      activeSeqId = (activeSeqId === sid) ? null : sid;
+      testStepIdx = -1;
+      renderSequenceList();
+      renderSeqDetail();
+    });
+    list.appendChild(div);
+  }
+}
+
+function renderSeqDetail() {
+  const el = document.getElementById('seq-detail');
+  if (!activeSeqId || !sequences[activeSeqId]) {
+    el.innerHTML = '';
+    return;
+  }
+  const seq = sequences[activeSeqId];
+  let html = `<div style="margin-bottom:8px;color:#aaa;display:flex;align-items:center;gap:8px">
+    <span>Key <b>${seq.key.toUpperCase()}</b> \u2014 ${seq.steps.length} steps</span>
+    <button class="seq-test-btn" style="margin-left:auto;font-family:monospace;font-size:11px;padding:2px 8px;background:#3a5a3a;border:1px solid #5a8a5a;color:#ddd;border-radius:3px;cursor:pointer">
+      ${testStepIdx >= 0 ? 'Stop Test' : 'Test'}
+    </button>
+  </div>`;
+
+  seq.steps.forEach((step, i) => {
+    const g = groups[step.groupId];
+    const name = g ? g.name : '???';
+    const color = g ? g.color : '#666';
+    const isTesting = (testStepIdx === i);
+    html += `<div class="seq-step" style="${isTesting ? 'background:#3a3a2a;' : ''}">
+      <span class="seq-step-num">${i + 1}.</span>
+      <span class="group-swatch" style="background:${color};display:inline-block"></span>
+      <span style="flex:1">${name}</span>
+      <select class="seq-step-effect" data-idx="${i}" style="font-family:monospace;font-size:11px;padding:1px 4px;background:#333;color:#ddd;border:1px solid #555;border-radius:2px">
+        <option value="solid" ${step.effect === 'solid' ? 'selected' : ''}>solid</option>
+        <option value="sparkle" ${step.effect === 'sparkle' ? 'selected' : ''}>sparkle</option>
+        <option value="fade" ${step.effect === 'fade' ? 'selected' : ''}>fade</option>
+      </select>
+      <span class="seq-step-move" data-idx="${i}" data-dir="up" style="cursor:pointer;color:#888;padding:0 2px" title="Move up">\u25B2</span>
+      <span class="seq-step-move" data-idx="${i}" data-dir="down" style="cursor:pointer;color:#888;padding:0 2px" title="Move down">\u25BC</span>
+      <span class="seq-step-remove" data-idx="${i}">&times;</span>
+    </div>`;
+  });
+  el.innerHTML = html;
+
+  // Bind effect change
+  el.querySelectorAll('.seq-step-effect').forEach(sel => {
+    sel.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.dataset.idx);
+      seq.steps[idx].effect = e.target.value;
+      renderSequenceList();
+    });
+  });
+
+  // Bind move buttons
+  el.querySelectorAll('.seq-step-move').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.idx);
+      const dir = btn.dataset.dir;
+      if (dir === 'up' && idx > 0) {
+        [seq.steps[idx - 1], seq.steps[idx]] = [seq.steps[idx], seq.steps[idx - 1]];
+      } else if (dir === 'down' && idx < seq.steps.length - 1) {
+        [seq.steps[idx], seq.steps[idx + 1]] = [seq.steps[idx + 1], seq.steps[idx]];
+      }
+      renderSequenceList();
+      renderSeqDetail();
+    });
+  });
+
+  // Bind remove buttons
+  el.querySelectorAll('.seq-step-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      seq.steps.splice(parseInt(btn.dataset.idx), 1);
+      if (testStepIdx >= seq.steps.length) testStepIdx = -1;
+      renderSequenceList();
+      renderSeqDetail();
+      render();
+    });
+  });
+
+  // Bind test button
+  el.querySelector('.seq-test-btn').addEventListener('click', () => {
+    if (testStepIdx >= 0) {
+      // Stop testing
+      testStepIdx = -1;
+      stopSparkleTest();
+    } else {
+      // Start testing from step 0
+      testStepIdx = 0;
+      showTestStep();
+    }
+    renderSeqDetail();
+  });
+}
+
+// Test mode: visualize the current test step on the canvas
+let sparkleInterval = null;
+let sparkleState = {}; // regionId -> on/off
+
+function showTestStep() {
+  stopSparkleTest();
+  if (!activeSeqId || testStepIdx < 0) { render(); return; }
+  const seq = sequences[activeSeqId];
+  if (testStepIdx >= seq.steps.length) {
+    testStepIdx = 0; // cycle
+  }
+  const step = seq.steps[testStepIdx];
+  const group = groups[step.groupId];
+  if (!group) { render(); return; }
+
+  if (step.effect === 'sparkle') {
+    // Start sparkle animation
+    sparkleState = {};
+    group.regions.forEach(r => { sparkleState[r] = Math.random() > 0.5; });
+    sparkleInterval = setInterval(() => {
+      // Toggle random subset
+      const regionArr = [...group.regions];
+      const count = Math.max(1, Math.floor(regionArr.length * 0.3));
+      for (let i = 0; i < count; i++) {
+        const r = regionArr[Math.floor(Math.random() * regionArr.length)];
+        sparkleState[r] = !sparkleState[r];
+      }
+      renderTestFrame(group, step.effect);
+    }, 100);
+    renderTestFrame(group, step.effect);
+  } else {
+    renderTestFrame(group, step.effect);
+  }
+  renderSeqDetail();
+}
+
+function stopSparkleTest() {
+  if (sparkleInterval) {
+    clearInterval(sparkleInterval);
+    sparkleInterval = null;
+  }
+  sparkleState = {};
+}
+
+function renderTestFrame(group, effect) {
+  if (!bgImage) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.save();
+  const scaleX = canvas.width / view.w;
+  const scaleY = canvas.height / view.h;
+  const scale = Math.min(scaleX, scaleY);
+  ctx.scale(scale, scale);
+  ctx.translate(-view.x, -view.y);
+
+  ctx.globalAlpha = 0.2;
+  ctx.drawImage(bgImage, 0, 0, IMG_W, IMG_H);
+
+  const color = hexToRgb(group.color);
+
+  if (effect === 'sparkle') {
+    const onRegions = new Set();
+    for (const [rid, on] of Object.entries(sparkleState)) {
+      if (on) onRegions.add(parseInt(rid));
+    }
+    highlightRegions(onRegions, [...color, 220]);
+  } else {
+    highlightRegions(group.regions, [...color, 200]);
+  }
+
+  ctx.restore();
+}
+
+// Handle space bar to advance test step
+function advanceTestStep() {
+  if (testStepIdx < 0 || !activeSeqId) return;
+  const seq = sequences[activeSeqId];
+  testStepIdx = (testStepIdx + 1) % seq.steps.length;
+  showTestStep();
+}
+
+document.getElementById('btn-create-seq').addEventListener('click', () => {
+  const key = document.getElementById('seq-key-input').value.trim();
+  if (!key) return;
+  const id = createSequence(key);
+  document.getElementById('seq-key-input').value = '';
+  activeSeqId = id;
+  testStepIdx = -1;
+  renderSequenceList();
+  renderSeqDetail();
+});
+
+document.getElementById('btn-add-step').addEventListener('click', () => {
+  if (!activeSeqId || !activeGroupId) return;
+  const effect = document.getElementById('seq-effect-select').value;
+  sequences[activeSeqId].steps.push({
+    groupId: activeGroupId,
+    effect: effect,
+    fadeIn: 200,
+    fadeOut: 500,
+    sparkleSpeed: 100
+  });
+  renderSequenceList();
+  renderSeqDetail();
+});
+
+// ============================================================
+// SAVE / LOAD
+// ============================================================
+function buildSceneJson() {
+  const groupsOut = {};
+  for (const [gid, g] of Object.entries(groups)) {
+    groupsOut[gid] = {
+      name: g.name,
+      regions: [...g.regions],
+      color: g.color
+    };
+  }
+
+  const seqsOut = {};
+  for (const [sid, s] of Object.entries(sequences)) {
+    seqsOut[sid] = {
+      key: s.key,
+      steps: s.steps.map(step => ({ ...step }))
+    };
+  }
+
+  return {
+    image: 'ceiling1a.png',
+    hiresImage: 'ceiling1_upscayl_4x_upscayl-standard-4x.png',
+    regionIdMap: 'region_id_map.png',
+    regionMeta: 'region_meta.json',
+    regionOverlay: 'region_overlay.png',
+    groups: groupsOut,
+    sequences: seqsOut,
+    groupIdCounter,
+    seqIdCounter,
+    zoomPresets: [],
+    fadeDuration: 1000
+  };
+}
+
+function saveScene() {
+  const json = JSON.stringify(buildSceneJson(), null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'scene1.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function loadSceneFromJson(data) {
+  groups = {};
+  if (data.groups) {
+    for (const [gid, g] of Object.entries(data.groups)) {
+      groups[gid] = {
+        name: g.name,
+        regions: new Set(g.regions),
+        color: g.color
+      };
+    }
+  }
+  groupIdCounter = data.groupIdCounter || Object.keys(groups).length;
+
+  sequences = {};
+  if (data.sequences) {
+    for (const [sid, s] of Object.entries(data.sequences)) {
+      sequences[sid] = { ...s };
+    }
+  }
+  seqIdCounter = data.seqIdCounter || Object.keys(sequences).length;
+
+  activeGroupId = null;
+  activeSeqId = null;
+  selectedRegions.clear();
+
+  renderGroupList();
+  renderSequenceList();
+  renderSeqDetail();
+  updateSelectionInfo();
+  render();
+}
+
+function tryLoadScene() {
+  // Try to load scene1.json if it exists
+  fetch('scene1.json?v=' + Date.now())
+    .then(r => { if (r.ok) return r.json(); throw new Error('not found'); })
+    .then(data => { loadSceneFromJson(data); })
+    .catch(() => {});
+}
+
+document.getElementById('btn-save').addEventListener('click', saveScene);
+
+document.getElementById('btn-load').addEventListener('click', () => {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const data = JSON.parse(ev.target.result);
+      loadSceneFromJson(data);
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+});
+
+document.getElementById('btn-help').addEventListener('click', () => {
+  document.getElementById('help-overlay').classList.toggle('visible');
+});
+</script>
+</body>
+</html>

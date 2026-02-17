@@ -1,0 +1,9 @@
+M1: double whole notes. ball in center
+M2: quarter notes area around ball
+M3: 8th notes blue area
+M4: 16th notes bubbles outside of blue area
+M5: slides larger groups of "flowers"
+M6: 2-16th, 2-8th, goes up orange lines
+M7: tremelo outer outlined areas
+M8: cello Solo (marked M7 on page 9) all outlined things dark
+M9: solo vln same as m8

@@ -1,0 +1,53 @@
+# Large upscaled images (use Git LFS or download separately)
+*_upscayl_*.png
+
+# Debug/temp files
+debug_*.png
+regions_preview*.png
+outlines_render.png
+outlines_noaa.png
+viewer_result.png
+small_circle_issue.png
+Screenshot_*.png
+show_area.png
+ceiling1_absolute.svg
+
+# Old viewer iterations (editor.html is the current tool)
+cell_viewer.html
+cell_viewer2.html
+cell_viewer3.html
+cell_viewer4.html
+
+# Old HTML tools
+segmentation_tuner*.html
+pattern_selector*.html
+
+# Generated data (can be regenerated from SVG)
+region_id_map.png
+region_overlay.png
+region_meta.json
+region_children.json
+
+# Audio/score files (not code)
+*.mp3
+*.pdf
+
+# Gemini generated images
+Gemini_Generated_Image_*
+
+# Reference images (large, not needed for the tool)
+path1.png
+path1a.png
+ceiling_closeup1.png
+ceiling_outline.png
+ceiling1.png
+ceiling1.jpg
+ceiling black.png
+ceiling middle.png
+Movement I Ceiling Tiles motive 1-9 .jpg
+
+# Misc
+Solaar_*
+.venv/
+__pycache__/
+.claude/
