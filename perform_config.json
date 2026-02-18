@@ -1,12 +1,19 @@
 {
   "dimLevel": 0.15,
-  "litLevel": 0.85,
+  "litLevel": 1.00,
   "defaultFadeIn": 200,
   "defaultFadeOut": 500,
-  "sparkleMinOn": 80,
-  "sparkleMaxOn": 400,
-  "sparkleMinOff": 80,
-  "sparkleMaxOff": 600,
+  "sparkleMinOn": 20,
+  "sparkleMaxOn": 80,
+  "sparkleMinOff": 20,
+  "sparkleMaxOff": 80,
+  "litSaturate": 1.8,
+  "litContrast": 1.3,
   "tweenDuration": 500,
-  "sceneFadeDuration": 1000
+  "sceneFadeDuration": 1000,
+  "sceneImages": {
+    "1": { "image": "ceiling1a.png", "hiresImage": "ceiling1_upscayl_4x_upscayl-standard-4x.png" },
+    "2": { "image": "", "hiresImage": "" },
+    "3": { "image": "", "hiresImage": "" }
+  }
 }

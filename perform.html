@@ -59,6 +59,7 @@ let config = {
 // ============================================================
 let bgImage = null;
 let hiresImage = null;
+let hiresLoadFailed = false;
 let idMapData = null;
 let idMapW = IMG_W, idMapH = IMG_H;
 let regionMeta = null;
@@ -92,6 +93,10 @@ let sceneFade = 1; // 1 = fully visible, 0 = black
 let sceneFadeTarget = 1;
 let sceneFadeStart = null;
 let sceneFadeFromVal = 1;
+let rawFade = 0; // 0 = performance mode (dimmed), 1 = raw image (full brightness)
+let rawFadeTarget = 0;
+let rawFadeStart = null;
+let rawFadeFromVal = 0;
 
 // Zoom tween
 let tweenAnim = null;
@@ -151,8 +156,13 @@ async function loadScene(sceneNum) {
   }
 
   // Load required assets
+  // Use config image overrides if available, fall back to scene JSON
+  const sceneImgCfg = config.sceneImages && config.sceneImages[String(sceneNum)];
+  const imagePath = (sceneImgCfg && sceneImgCfg.image) || scene.image || 'ceiling1a.png';
+  const hiresPath = (sceneImgCfg && sceneImgCfg.hiresImage) || scene.hiresImage || '';
+
   const [bg, idMap, meta] = await Promise.all([
-    loadImage((scene.image || 'ceiling1a.png') + cb),
+    loadImage(imagePath + cb),
     loadImage((scene.regionIdMap || 'region_id_map.png') + cb),
     fetch((scene.regionMeta || 'region_meta.json') + cb).then(r => r.json())
   ]);
@@ -312,12 +322,13 @@ async function loadScene(sceneNum) {
   currentSceneNum = sceneNum;
 
   // Try loading hi-res image in background
-  if (scene.hiresImage) {
-    loadImage(scene.hiresImage + cb).then(img => {
+  if (hiresPath) {
+    loadImage(hiresPath + cb).then(img => {
       hiresImage = img;
       console.log('Hi-res image loaded');
     }).catch(() => {
-      console.log('Hi-res image not available, using standard');
+      console.warn('Hi-res image failed to load, using standard');
+      hiresLoadFailed = true;
     });
   }
 
@@ -328,16 +339,6 @@ async function loadScene(sceneNum) {
 async function switchScene(sceneNum) {
   if (sceneLoading || sceneNum === currentSceneNum) return;
 
-  fadeSceneOut();
-
-  await new Promise(resolve => {
-    const check = () => {
-      if (sceneFade <= 0.01) { resolve(); return; }
-      requestAnimationFrame(check);
-    };
-    requestAnimationFrame(check);
-  });
-
   loadingEl.textContent = `Loading scene ${sceneNum}...`;
   loadingEl.style.display = 'block';
 
@@ -345,7 +346,6 @@ async function switchScene(sceneNum) {
   if (!ok) return;
 
   loadingEl.style.display = 'none';
-  fadeSceneIn();
 }
 
 async function init() {
@@ -378,8 +378,8 @@ function getCanvasTransform() {
   return { scale, offsetX, offsetY };
 }
 
-// Brighten regions by redrawing image through a clip path
-function brightenRegions(regionSet, alpha) {
+// Brighten regions: clear to black then redraw image at target alpha
+function brightenRegions(regionSet, litAlpha) {
   ctx.save();
   ctx.beginPath();
   regionSet.forEach(regionId => {
@@ -390,9 +390,20 @@ function brightenRegions(regionSet, alpha) {
     }
   });
   ctx.clip();
+  // Erase the dimmed image in these regions (reset to black)
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, IMG_W, IMG_H);
+  // Redraw image at exact target brightness with enhanced color
   const activeImg = hiresImage || bgImage;
-  ctx.globalAlpha = alpha;
+  ctx.globalAlpha = litAlpha;
+  const sat = config.litSaturate || 1;
+  const con = config.litContrast || 1;
+  if (sat !== 1 || con !== 1) {
+    ctx.filter = `saturate(${sat}) contrast(${con})`;
+  }
   ctx.drawImage(activeImg, 0, 0, IMG_W, IMG_H);
+  ctx.filter = 'none';
   ctx.restore();
 }
 
@@ -580,6 +591,33 @@ function updateSceneFade(now) {
   }
 }
 
+function fadeRawIn() {
+  rawFadeTarget = 1;
+  rawFadeFromVal = rawFade;
+  rawFadeStart = performance.now();
+}
+
+function fadeRawOut() {
+  rawFadeTarget = 0;
+  rawFadeFromVal = rawFade;
+  rawFadeStart = performance.now();
+}
+
+function updateRawFade(now) {
+  if (rawFadeStart === null) return;
+
+  const elapsed = now - rawFadeStart;
+  const t = Math.min(1, elapsed / config.sceneFadeDuration);
+  const e = easeInOutCubic(t);
+
+  rawFade = rawFadeFromVal + (rawFadeTarget - rawFadeFromVal) * e;
+
+  if (t >= 1) {
+    rawFade = rawFadeTarget;
+    rawFadeStart = null;
+  }
+}
+
 // ============================================================
 // MAIN RENDER LOOP
 // ============================================================
@@ -594,8 +632,9 @@ function renderLoop(now) {
     fpsTime = now;
   }
 
-  // Update scene fade
+  // Update fades
   updateSceneFade(now);
+  updateRawFade(now);
 
   // Update all sequence opacities
   for (const state of Object.values(seqStates)) {
@@ -612,16 +651,17 @@ function renderLoop(now) {
   ctx.scale(scale, scale);
   ctx.translate(-view.x, -view.y);
 
-  // Draw background at dim level
+  // Draw background
   const activeImg = hiresImage || bgImage;
-  ctx.globalAlpha = config.dimLevel * sceneFade;
+  // Blend between dim level and full brightness based on rawFade
+  const bgAlpha = (config.dimLevel + (1 - config.dimLevel) * rawFade) * sceneFade;
+  ctx.globalAlpha = bgAlpha;
   ctx.drawImage(activeImg, 0, 0, IMG_W, IMG_H);
 
-  // Brighten each active sequence's regions
-  const boostRange = config.litLevel - config.dimLevel;
-
+  // Brighten each active sequence's regions (skip in raw image mode)
   let debugThisFrame = (frameCount % 60 === 0); // log once per second
   for (const [key, state] of Object.entries(seqStates)) {
+    if (rawFade >= 1) continue;
     if (state.opacity <= 0 || state.stepIndex < 0) continue;
 
     const seq = sequences[state.seqId];
@@ -629,8 +669,8 @@ function renderLoop(now) {
     const group = groups[step.groupId];
     if (!group) continue;
 
-    const alpha = state.opacity * sceneFade * boostRange;
-    if (alpha <= 0.01) continue;
+    const litAlpha = config.litLevel * state.opacity * sceneFade;
+    if (litAlpha <= 0.01) continue;
 
     if (debugThisFrame) {
       const t = (performance.now() / 1000).toFixed(2);
@@ -638,7 +678,7 @@ function renderLoop(now) {
       const sparkleTotal = step.effect === 'sparkle' ? Object.keys(state.sparkleState).length : '-';
       const regionCount = step.effect === 'sparkle' ? `sparkle ${sparkleOn}/${sparkleTotal} on` : `${group.regions.length} regions`;
       const runsFound = group.regions.some(r => regionRuns[r] && regionRuns[r].length > 0);
-      console.log(`[${t}] RENDER key=${key} step=${state.stepIndex} effect=${step.effect} opacity=${state.opacity.toFixed(2)} alpha=${alpha.toFixed(3)} ${regionCount} hasRuns=${runsFound}`);
+      console.log(`[${t}] RENDER key=${key} step=${state.stepIndex} effect=${step.effect} opacity=${state.opacity.toFixed(2)} litAlpha=${litAlpha.toFixed(3)} ${regionCount} hasRuns=${runsFound}`);
     }
 
     if (step.effect === 'sparkle' && Object.keys(state.sparkleState).length > 0) {
@@ -646,9 +686,9 @@ function renderLoop(now) {
       for (const [rid, on] of Object.entries(state.sparkleState)) {
         if (on) onRegions.add(parseInt(rid));
       }
-      brightenRegions(onRegions, alpha);
+      brightenRegions(onRegions, litAlpha);
     } else {
-      brightenRegions(new Set(group.regions), alpha);
+      brightenRegions(new Set(group.regions), litAlpha);
     }
   }
 
@@ -682,8 +722,8 @@ function renderLoop(now) {
       `Dim: ${config.dimLevel} Lit: ${config.litLevel}`,
       `FadeIn: ${config.defaultFadeIn}ms FadeOut: ${config.defaultFadeOut}ms`,
       `Sparkle on: ${config.sparkleMinOn}-${config.sparkleMaxOn}ms off: ${config.sparkleMinOff}-${config.sparkleMaxOff}ms`,
-      `Scene fade: ${Math.round(sceneFade * 100)}%`,
-      `Hi-res: ${hiresImage ? 'yes' : 'no'}`,
+      `Scene fade: ${Math.round(sceneFade * 100)}% | Raw: ${Math.round(rawFade * 100)}%`,
+      `Hi-res: ${hiresImage ? 'loaded' : hiresLoadFailed ? 'FAILED' : 'loading...'}`,
       ...activeKeys
     ].join('<br>');
   } else {
@@ -711,19 +751,32 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
-  // Scene switching: 1, 2, 3
+  // Scene switching: 1, 2, 3 (can switch while blacked out)
   if (key === '1' || key === '2' || key === '3') {
     switchScene(parseInt(key));
     return;
   }
 
-  // Manual scene fade
+  // Escape = fade to black
   if (key === 'escape') {
+    fadeRawOut();
     fadeSceneOut();
     return;
   }
+
+  // Enter = fade in from black
   if (key === 'enter') {
     fadeSceneIn();
+    return;
+  }
+
+  // Space = toggle raw image (tween between dim and full brightness)
+  if (key === ' ') {
+    if (rawFadeTarget === 0) {
+      fadeRawIn();
+    } else {
+      fadeRawOut();
+    }
     return;
   }
 
