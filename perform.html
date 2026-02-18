@@ -63,8 +63,12 @@ let idMapData = null;
 let idMapW = IMG_W, idMapH = IMG_H;
 let regionMeta = null;
 
-// Precomputed run-length data: regionId -> [{y, x, w}, ...]
+// Precomputed run-length data: regionId -> flat array [y, x, w, ...]
 let regionRuns = {};
+
+// Pre-rendered region images: regionId -> { canvas, x, y, w, h }
+// Each is a small canvas cropped to the region's bbox containing just that region's image pixels
+let regionImages = {};
 
 // Scene data
 let scene = null;
@@ -217,6 +221,53 @@ async function loadScene(sceneNum) {
   }
   console.log(`Cached runs for ${usedRegions.size} regions`);
 
+  // Pre-render region images: for each region, create a small canvas with the
+  // background image masked to just that region's pixels. Done once at load time.
+  loadingEl.textContent = `Pre-rendering region images...`;
+  await new Promise(r => setTimeout(r, 0));
+
+  regionImages = {};
+  const tmpMask = document.createElement('canvas');
+  const tmpMaskCtx = tmpMask.getContext('2d');
+
+  for (const regionId of usedRegions) {
+    const m = regionMeta[regionId];
+    const runs = regionRuns[regionId];
+    if (!m || !runs || runs.length === 0) continue;
+
+    const bx = m.bbox[0], by = m.bbox[1];
+    const bw = m.bbox[2] - m.bbox[0] + 1;
+    const bh = m.bbox[3] - m.bbox[1] + 1;
+
+    // Size the temp canvas to this region's bbox
+    tmpMask.width = bw;
+    tmpMask.height = bh;
+
+    // Draw the mask (white pixels for this region, offset to bbox origin)
+    tmpMaskCtx.clearRect(0, 0, bw, bh);
+    tmpMaskCtx.globalCompositeOperation = 'source-over';
+    tmpMaskCtx.globalAlpha = 1;
+    tmpMaskCtx.fillStyle = '#fff';
+    for (let i = 0; i < runs.length; i += 3) {
+      const ry = runs[i], rx = runs[i + 1], rw = runs[i + 2];
+      tmpMaskCtx.fillRect(rx - bx, ry - by, rw, 1);
+    }
+
+    // Composite the background image through the mask
+    tmpMaskCtx.globalCompositeOperation = 'source-in';
+    tmpMaskCtx.drawImage(bgImage, bx, by, bw, bh, 0, 0, bw, bh);
+    tmpMaskCtx.globalCompositeOperation = 'source-over';
+
+    // Copy to a permanent small canvas
+    const regionCanvas = document.createElement('canvas');
+    regionCanvas.width = bw;
+    regionCanvas.height = bh;
+    regionCanvas.getContext('2d').drawImage(tmpMask, 0, 0);
+
+    regionImages[regionId] = { canvas: regionCanvas, x: bx, y: by, w: bw, h: bh };
+  }
+  console.log(`Pre-rendered ${Object.keys(regionImages).length} region images`);
+
   // Build sequence key states
   seqStates = {};
   for (const [sid, seq] of Object.entries(sequences)) {
@@ -327,30 +378,22 @@ function getCanvasTransform() {
   return { scale, offsetX, offsetY };
 }
 
-// Brighten regions using precomputed runs
+// Brighten regions by redrawing image through a clip path
 function brightenRegions(regionSet, alpha) {
-  const visMinX = Math.max(0, Math.floor(view.x));
-  const visMinY = Math.max(0, Math.floor(view.y));
-  const visMaxX = Math.min(IMG_W, Math.ceil(view.x + view.w));
-  const visMaxY = Math.min(IMG_H, Math.ceil(view.y + view.h));
-  const visW = visMaxX - visMinX;
-  const visH = visMaxY - visMinY;
-  if (visW <= 0 || visH <= 0) return;
-
-  ctx.globalAlpha = alpha;
-  ctx.fillStyle = '#fff';
-
+  ctx.save();
+  ctx.beginPath();
   regionSet.forEach(regionId => {
     const runs = regionRuns[regionId];
     if (!runs) return;
     for (let i = 0; i < runs.length; i += 3) {
-      const ry = runs[i], rx = runs[i + 1], rw = runs[i + 2];
-      if (ry < visMinY || ry >= visMaxY) continue;
-      if (rx + rw <= visMinX || rx >= visMaxX) continue;
-      ctx.fillRect(rx, ry, rw, 1);
+      ctx.rect(runs[i + 1], runs[i], runs[i + 2], 1);
     }
   });
-
+  ctx.clip();
+  const activeImg = hiresImage || bgImage;
+  ctx.globalAlpha = alpha;
+  ctx.drawImage(activeImg, 0, 0, IMG_W, IMG_H);
+  ctx.restore();
 }
 
 function easeInOutCubic(t) {
