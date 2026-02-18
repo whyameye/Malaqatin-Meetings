@@ -94,6 +94,41 @@ Each scene can use a different background image. Configure in `sceneImages`:
 ```
 If left empty, falls back to the image specified in the scene JSON.
 
+## Generating Region Data
+
+Each scene needs a set of region data files (id map, metadata, overlay, children). These are generated from an SVG outline file in two steps.
+
+### Step 1: Render SVG to PNG
+
+Use Inkscape to rasterize the SVG outline at the target image dimensions:
+```bash
+inkscape "ceiling1_outline no image.svg" \
+  --export-type=png \
+  --export-filename=outlines_render.png \
+  --export-width=2731 --export-height=2048 \
+  --export-background=white
+```
+
+The SVG should contain black filled shapes and/or black strokes on a white background. The result is a grayscale PNG where white areas become "white" regions and black areas become "black" regions.
+
+### Step 2: Generate region files
+
+```bash
+python3 generate_regions.py outlines_render.png
+```
+
+This produces `region_id_map.png`, `region_meta.json`, `region_overlay.png`, and `region_children.json` in the current directory.
+
+For additional scenes, use the `--prefix` flag:
+```bash
+python3 generate_regions.py outlines_render_scene2.png --prefix scene2_
+```
+
+### Requirements
+
+- Python 3 with numpy, Pillow, scipy
+- Inkscape (for SVG rendering)
+
 ## Files
 
 | File | Description |
@@ -101,6 +136,7 @@ If left empty, falls back to the image specified in the scene JSON.
 | editor.html | Scene editor |
 | perform.html | Live performer |
 | server.py | HTTP server with PUT support for saving |
+| generate_regions.py | Region data file generator (from rendered SVG outline) |
 | perform_config.json | Performance tuning parameters |
 | scene1.json / scene2.json / scene3.json | Scene data (groups, sequences, zoom presets) |
 | ceiling1a.png | Background image (2731x2048) |
