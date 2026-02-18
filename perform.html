@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Ceiling Performance</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #000; overflow: hidden; cursor: none; }
+  canvas { display: block; }
+  #loading {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: white; font: 24px monospace; z-index: 20;
+  }
+  #hud {
+    position: fixed; top: 10px; left: 10px;
+    color: #0f0; font: 12px monospace;
+    background: rgba(0,0,0,0.7); padding: 8px 12px;
+    border-radius: 4px; pointer-events: none; z-index: 10;
+    display: none;
+  }
+</style>
+</head>
+<body>
+<div id="loading">Loading...</div>
+<canvas id="canvas"></canvas>
+<div id="hud"></div>
+
+<script>
+// ============================================================
+// CONSTANTS
+// ============================================================
+const IMG_W = 2731, IMG_H = 2048;
+const ASPECT = 16 / 9;
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const hud = document.getElementById('hud');
+const loadingEl = document.getElementById('loading');
+
+// ============================================================
+// CONFIG (loaded from perform_config.json, editable live)
+// ============================================================
+let config = {
+  dimLevel: 0.15,
+  litLevel: 0.85,
+  defaultFadeIn: 200,
+  defaultFadeOut: 500,
+  sparkleMinOn: 80,
+  sparkleMaxOn: 400,
+  sparkleMinOff: 80,
+  sparkleMaxOff: 600,
+  tweenDuration: 500,
+  sceneFadeDuration: 1000
+};
+
+// ============================================================
+// STATE
+// ============================================================
+let bgImage = null;
+let hiresImage = null;
+let idMapData = null;
+let idMapW = IMG_W, idMapH = IMG_H;
+let regionMeta = null;
+
+// Precomputed run-length data: regionId -> [{y, x, w}, ...]
+let regionRuns = {};
+
+// Scene data
+let scene = null;
+let groups = {};
+let sequences = {};
+let zoomPresets = {};
+let currentSceneNum = 1;
+let sceneLoading = false;
+
+// View (16:9 crop of the image)
+let view = { x: 0, y: 0, w: IMG_W, h: IMG_W / ASPECT };
+
+// Sequence key states: keyChar -> seqState
+let seqStates = {};
+
+// Zoom key states: keyChar -> { presets: [...], currentIdx: 0 }
+let zoomKeyStates = {};
+
+// Global scene fade
+let sceneFade = 1; // 1 = fully visible, 0 = black
+let sceneFadeTarget = 1;
+let sceneFadeStart = null;
+let sceneFadeFromVal = 1;
+
+// Zoom tween
+let tweenAnim = null;
+
+// HUD
+let showHud = false;
+let fps = 0;
+let frameCount = 0;
+let fpsTime = performance.now();
+
+// ============================================================
+// LOADING
+// ============================================================
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+
+async function loadConfig() {
+  try {
+    const resp = await fetch('perform_config.json?v=' + Date.now());
+    if (resp.ok) {
+      const data = await resp.json();
+      Object.assign(config, data);
+      console.log('Config loaded:', config);
+    }
+  } catch (e) {
+    console.log('Using default config');
+  }
+}
+
+async function loadScene(sceneNum) {
+  sceneLoading = true;
+  const filename = `scene${sceneNum}.json`;
+  const cb = '?v=' + Date.now();
+
+  // Load scene JSON
+  try {
+    const resp = await fetch(filename + cb);
+    if (!resp.ok) throw new Error(filename + ' not found');
+    scene = await resp.json();
+  } catch (e) {
+    loadingEl.textContent = `Error: ${filename} not found. Export from editor first.`;
+    loadingEl.style.display = 'block';
+    sceneLoading = false;
+    return false;
+  }
+
+  // Load required assets
+  const [bg, idMap, meta] = await Promise.all([
+    loadImage((scene.image || 'ceiling1a.png') + cb),
+    loadImage((scene.regionIdMap || 'region_id_map.png') + cb),
+    fetch((scene.regionMeta || 'region_meta.json') + cb).then(r => r.json())
+  ]);
+
+  bgImage = bg;
+  hiresImage = null;
+  regionMeta = meta;
+
+  // Extract ID map pixel data
+  idMapW = idMap.naturalWidth;
+  idMapH = idMap.naturalHeight;
+  const tmpCanvas = document.createElement('canvas');
+  tmpCanvas.width = idMapW;
+  tmpCanvas.height = idMapH;
+  const tmpCtx = tmpCanvas.getContext('2d', { willReadFrequently: true });
+  tmpCtx.drawImage(idMap, 0, 0);
+  idMapData = tmpCtx.getImageData(0, 0, idMapW, idMapH).data;
+
+  // Stop all active sparkle timers
+  for (const state of Object.values(seqStates)) {
+    stopSparkle(state);
+  }
+
+  // Parse scene data
+  groups = scene.groups || {};
+  sequences = scene.sequences || {};
+  zoomPresets = scene.zoomPresets || {};
+
+  // Precompute run-length data for all regions used in groups
+  loadingEl.textContent = `Building region cache...`;
+  loadingEl.style.display = 'block';
+  await new Promise(r => setTimeout(r, 0)); // let UI update
+
+  regionRuns = {};
+  const usedRegions = new Set();
+  for (const g of Object.values(groups)) {
+    for (const rid of g.regions) usedRegions.add(rid);
+  }
+
+  for (const regionId of usedRegions) {
+    const m = regionMeta[regionId];
+    if (!m) continue;
+    const runs = [];
+    const bb = m.bbox;
+    for (let py = bb[1]; py <= bb[3]; py++) {
+      let runStart = -1;
+      for (let px = bb[0]; px <= bb[2] + 1; px++) {
+        const mpx = Math.round(px * idMapW / IMG_W);
+        const mpy = Math.round(py * idMapH / IMG_H);
+        const offset = (mpy * idMapW + mpx) * 4;
+        const r = idMapData[offset];
+        const g = idMapData[offset + 1];
+        const mk = idMapData[offset + 2];
+        const id = (mk >= 250) ? (r | (g << 8)) : -1;
+        if (id === regionId && px <= bb[2]) {
+          if (runStart < 0) runStart = px;
+        } else {
+          if (runStart >= 0) {
+            runs.push(py, runStart, px - runStart); // flat array: y, x, w triplets
+            runStart = -1;
+          }
+        }
+      }
+    }
+    regionRuns[regionId] = runs;
+  }
+  console.log(`Cached runs for ${usedRegions.size} regions`);
+
+  // Build sequence key states
+  seqStates = {};
+  for (const [sid, seq] of Object.entries(sequences)) {
+    if (!seq.key || !seq.steps || seq.steps.length === 0) continue;
+    const key = seq.key.toLowerCase();
+    seqStates[key] = {
+      seqId: sid,
+      stepIndex: -1,
+      active: false,
+      opacity: 0,
+      fadeStartTime: null,
+      fadeDirection: null,
+      fadeFromOpacity: 0,
+      sparkleState: {},
+      sparkleTimers: {}
+    };
+  }
+
+  // Build zoom key states (group presets by key)
+  zoomKeyStates = {};
+  for (const [zid, zp] of Object.entries(zoomPresets)) {
+    const key = (zp.key || 'z').toLowerCase();
+    if (!zoomKeyStates[key]) {
+      zoomKeyStates[key] = { presets: [], currentIdx: -1 };
+    }
+    zoomKeyStates[key].presets.push(zp);
+  }
+
+  // Set initial view to first zoom preset, or default
+  const firstZoomKey = Object.keys(zoomKeyStates)[0];
+  if (firstZoomKey && zoomKeyStates[firstZoomKey].presets.length > 0) {
+    const p = zoomKeyStates[firstZoomKey].presets[0];
+    view = { x: p.x, y: p.y, w: p.w, h: p.h };
+    zoomKeyStates[firstZoomKey].currentIdx = 0;
+  } else {
+    let w = IMG_W;
+    let h = w / ASPECT;
+    if (h > IMG_H) { h = IMG_H; w = h * ASPECT; }
+    view = { x: (IMG_W - w) / 2, y: (IMG_H - h) / 2, w, h };
+  }
+
+  currentSceneNum = sceneNum;
+
+  // Try loading hi-res image in background
+  if (scene.hiresImage) {
+    loadImage(scene.hiresImage + cb).then(img => {
+      hiresImage = img;
+      console.log('Hi-res image loaded');
+    }).catch(() => {
+      console.log('Hi-res image not available, using standard');
+    });
+  }
+
+  sceneLoading = false;
+  return true;
+}
+
+async function switchScene(sceneNum) {
+  if (sceneLoading || sceneNum === currentSceneNum) return;
+
+  fadeSceneOut();
+
+  await new Promise(resolve => {
+    const check = () => {
+      if (sceneFade <= 0.01) { resolve(); return; }
+      requestAnimationFrame(check);
+    };
+    requestAnimationFrame(check);
+  });
+
+  loadingEl.textContent = `Loading scene ${sceneNum}...`;
+  loadingEl.style.display = 'block';
+
+  const ok = await loadScene(sceneNum);
+  if (!ok) return;
+
+  loadingEl.style.display = 'none';
+  fadeSceneIn();
+}
+
+async function init() {
+  resize();
+  loadingEl.textContent = 'Loading...';
+
+  await loadConfig();
+
+  const ok = await loadScene(1);
+  if (!ok) return;
+
+  loadingEl.style.display = 'none';
+  requestAnimationFrame(renderLoop);
+}
+
+// ============================================================
+// RENDERING UTILITIES
+// ============================================================
+function getCanvasTransform() {
+  const canvasAspect = canvas.width / canvas.height;
+  const viewAspect = view.w / view.h;
+  let scale, offsetX = 0, offsetY = 0;
+  if (canvasAspect > viewAspect) {
+    scale = canvas.height / view.h;
+    offsetX = (canvas.width - view.w * scale) / 2;
+  } else {
+    scale = canvas.width / view.w;
+    offsetY = (canvas.height - view.h * scale) / 2;
+  }
+  return { scale, offsetX, offsetY };
+}
+
+// Brighten regions using precomputed runs
+function brightenRegions(regionSet, alpha) {
+  const visMinX = Math.max(0, Math.floor(view.x));
+  const visMinY = Math.max(0, Math.floor(view.y));
+  const visMaxX = Math.min(IMG_W, Math.ceil(view.x + view.w));
+  const visMaxY = Math.min(IMG_H, Math.ceil(view.y + view.h));
+  const visW = visMaxX - visMinX;
+  const visH = visMaxY - visMinY;
+  if (visW <= 0 || visH <= 0) return;
+
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = '#fff';
+
+  regionSet.forEach(regionId => {
+    const runs = regionRuns[regionId];
+    if (!runs) return;
+    for (let i = 0; i < runs.length; i += 3) {
+      const ry = runs[i], rx = runs[i + 1], rw = runs[i + 2];
+      if (ry < visMinY || ry >= visMaxY) continue;
+      if (rx + rw <= visMinX || rx >= visMaxX) continue;
+      ctx.fillRect(rx, ry, rw, 1);
+    }
+  });
+
+}
+
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+// ============================================================
+// SEQUENCE STATE MACHINE
+// ============================================================
+function activateSequence(key) {
+  const state = seqStates[key];
+  if (!state || state.active) return;
+
+  const seq = sequences[state.seqId];
+  if (!seq || seq.steps.length === 0) return;
+
+  state.stepIndex = (state.stepIndex + 1) % seq.steps.length;
+  state.active = true;
+
+  state.fadeFromOpacity = state.opacity;
+  state.fadeStartTime = performance.now();
+  state.fadeDirection = 'in';
+
+  const step = seq.steps[state.stepIndex];
+  console.log(`ACTIVATE key=${key} step=${state.stepIndex} effect=${step.effect} group=${step.groupId} regions=${groups[step.groupId]?.regions?.length}`);
+  if (step.effect === 'sparkle') {
+    startSparkle(state, step);
+  }
+}
+
+function deactivateSequence(key) {
+  const state = seqStates[key];
+  if (!state || !state.active) return;
+
+  console.log(`DEACTIVATE key=${key} step=${state.stepIndex}`);
+  state.active = false;
+  state.fadeFromOpacity = state.opacity;
+  state.fadeStartTime = performance.now();
+  state.fadeDirection = 'out';
+}
+
+function updateSequenceOpacity(state, now) {
+  if (state.fadeDirection === null) return;
+
+  const seq = sequences[state.seqId];
+  const step = seq.steps[state.stepIndex];
+  const duration = state.fadeDirection === 'in'
+    ? (step.fadeIn || config.defaultFadeIn)
+    : (step.fadeOut || config.defaultFadeOut);
+
+  const elapsed = now - state.fadeStartTime;
+  const t = Math.min(1, elapsed / duration);
+  const e = easeInOutCubic(t);
+
+  if (state.fadeDirection === 'in') {
+    state.opacity = state.fadeFromOpacity + (1 - state.fadeFromOpacity) * e;
+  } else {
+    state.opacity = state.fadeFromOpacity * (1 - e);
+  }
+
+  if (t >= 1) {
+    state.fadeDirection = null;
+    if (state.opacity < 0.01) {
+      state.opacity = 0;
+      stopSparkle(state);
+    }
+  }
+}
+
+// ============================================================
+// SPARKLE ENGINE — each region has its own random on/off timing
+// ============================================================
+function randBetween(min, max) {
+  return min + Math.random() * (max - min);
+}
+
+function startSparkle(state, step) {
+  stopSparkle(state);
+
+  const group = groups[step.groupId];
+  if (!group) return;
+
+  state.sparkleState = {};
+  state.sparkleTimers = {};
+
+  console.log(`SPARKLE START: ${group.regions.length} regions`);
+
+  group.regions.forEach(r => {
+    // Each region starts at a random point
+    const startOn = Math.random() > 0.5;
+    state.sparkleState[r] = startOn;
+    scheduleToggle(state, r, startOn);
+  });
+}
+
+function scheduleToggle(state, regionId, currentlyOn) {
+  const delay = currentlyOn
+    ? randBetween(config.sparkleMinOn, config.sparkleMaxOn)
+    : randBetween(config.sparkleMinOff, config.sparkleMaxOff);
+
+  state.sparkleTimers[regionId] = setTimeout(() => {
+    if (!state.sparkleTimers[regionId]) return;
+    state.sparkleState[regionId] = !currentlyOn;
+    scheduleToggle(state, regionId, !currentlyOn);
+  }, delay);
+}
+
+function stopSparkle(state) {
+  if (state.sparkleTimers) {
+    for (const timer of Object.values(state.sparkleTimers)) {
+      clearTimeout(timer);
+    }
+    state.sparkleTimers = {};
+  }
+  state.sparkleState = {};
+}
+
+// ============================================================
+// ZOOM TWEEN
+// ============================================================
+function tweenToView(target, duration) {
+  duration = duration || target.tweenDuration || config.tweenDuration;
+  if (tweenAnim) cancelAnimationFrame(tweenAnim);
+
+  const startView = { ...view };
+  const startTime = performance.now();
+
+  function step(now) {
+    const elapsed = now - startTime;
+    const t = Math.min(1, elapsed / duration);
+    const e = easeInOutCubic(t);
+
+    view.x = startView.x + (target.x - startView.x) * e;
+    view.y = startView.y + (target.y - startView.y) * e;
+    view.w = startView.w + (target.w - startView.w) * e;
+    view.h = startView.h + (target.h - startView.h) * e;
+
+    if (t < 1) {
+      tweenAnim = requestAnimationFrame(step);
+    } else {
+      tweenAnim = null;
+    }
+  }
+
+  tweenAnim = requestAnimationFrame(step);
+}
+
+function cycleZoom(key) {
+  const zks = zoomKeyStates[key];
+  if (!zks || zks.presets.length === 0) return;
+
+  zks.currentIdx = (zks.currentIdx + 1) % zks.presets.length;
+  const target = zks.presets[zks.currentIdx];
+  tweenToView(target, target.tweenDuration || config.tweenDuration);
+}
+
+// ============================================================
+// SCENE FADE
+// ============================================================
+function fadeSceneOut() {
+  sceneFadeTarget = 0;
+  sceneFadeFromVal = sceneFade;
+  sceneFadeStart = performance.now();
+}
+
+function fadeSceneIn() {
+  sceneFadeTarget = 1;
+  sceneFadeFromVal = sceneFade;
+  sceneFadeStart = performance.now();
+}
+
+function updateSceneFade(now) {
+  if (sceneFadeStart === null) return;
+
+  const elapsed = now - sceneFadeStart;
+  const t = Math.min(1, elapsed / config.sceneFadeDuration);
+  const e = easeInOutCubic(t);
+
+  sceneFade = sceneFadeFromVal + (sceneFadeTarget - sceneFadeFromVal) * e;
+
+  if (t >= 1) {
+    sceneFade = sceneFadeTarget;
+    sceneFadeStart = null;
+  }
+}
+
+// ============================================================
+// MAIN RENDER LOOP
+// ============================================================
+function renderLoop(now) {
+  requestAnimationFrame(renderLoop);
+
+  // FPS counter
+  frameCount++;
+  if (now - fpsTime >= 1000) {
+    fps = frameCount;
+    frameCount = 0;
+    fpsTime = now;
+  }
+
+  // Update scene fade
+  updateSceneFade(now);
+
+  // Update all sequence opacities
+  for (const state of Object.values(seqStates)) {
+    updateSequenceOpacity(state, now);
+  }
+
+  // Render
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const { scale, offsetX, offsetY } = getCanvasTransform();
+
+  ctx.save();
+  ctx.translate(offsetX, offsetY);
+  ctx.scale(scale, scale);
+  ctx.translate(-view.x, -view.y);
+
+  // Draw background at dim level
+  const activeImg = hiresImage || bgImage;
+  ctx.globalAlpha = config.dimLevel * sceneFade;
+  ctx.drawImage(activeImg, 0, 0, IMG_W, IMG_H);
+
+  // Brighten each active sequence's regions
+  const boostRange = config.litLevel - config.dimLevel;
+
+  let debugThisFrame = (frameCount % 60 === 0); // log once per second
+  for (const [key, state] of Object.entries(seqStates)) {
+    if (state.opacity <= 0 || state.stepIndex < 0) continue;
+
+    const seq = sequences[state.seqId];
+    const step = seq.steps[state.stepIndex];
+    const group = groups[step.groupId];
+    if (!group) continue;
+
+    const alpha = state.opacity * sceneFade * boostRange;
+    if (alpha <= 0.01) continue;
+
+    if (debugThisFrame) {
+      const t = (performance.now() / 1000).toFixed(2);
+      const sparkleOn = step.effect === 'sparkle' ? Object.values(state.sparkleState).filter(v => v).length : '-';
+      const sparkleTotal = step.effect === 'sparkle' ? Object.keys(state.sparkleState).length : '-';
+      const regionCount = step.effect === 'sparkle' ? `sparkle ${sparkleOn}/${sparkleTotal} on` : `${group.regions.length} regions`;
+      const runsFound = group.regions.some(r => regionRuns[r] && regionRuns[r].length > 0);
+      console.log(`[${t}] RENDER key=${key} step=${state.stepIndex} effect=${step.effect} opacity=${state.opacity.toFixed(2)} alpha=${alpha.toFixed(3)} ${regionCount} hasRuns=${runsFound}`);
+    }
+
+    if (step.effect === 'sparkle' && Object.keys(state.sparkleState).length > 0) {
+      const onRegions = new Set();
+      for (const [rid, on] of Object.entries(state.sparkleState)) {
+        if (on) onRegions.add(parseInt(rid));
+      }
+      brightenRegions(onRegions, alpha);
+    } else {
+      brightenRegions(new Set(group.regions), alpha);
+    }
+  }
+
+  ctx.restore();
+
+  // Letterbox bars
+  ctx.fillStyle = '#000';
+  if (offsetX > 0) {
+    ctx.fillRect(0, 0, offsetX, canvas.height);
+    ctx.fillRect(canvas.width - offsetX, 0, offsetX, canvas.height);
+  }
+  if (offsetY > 0) {
+    ctx.fillRect(0, 0, canvas.width, offsetY);
+    ctx.fillRect(0, canvas.height - offsetY, canvas.width, offsetY);
+  }
+
+  // HUD
+  if (showHud) {
+    const activeKeys = Object.entries(seqStates)
+      .filter(([k, s]) => s.opacity > 0)
+      .map(([k, s]) => {
+        const seq = sequences[s.seqId];
+        const step = seq.steps[s.stepIndex];
+        const group = groups[step.groupId];
+        return `${k.toUpperCase()}:${group ? group.name : '?'}(${s.stepIndex + 1}/${seq.steps.length}) ${step.effect} ${Math.round(s.opacity * 100)}%`;
+      });
+
+    hud.style.display = 'block';
+    hud.innerHTML = [
+      `FPS: ${fps} | Scene: ${currentSceneNum}`,
+      `Dim: ${config.dimLevel} Lit: ${config.litLevel}`,
+      `FadeIn: ${config.defaultFadeIn}ms FadeOut: ${config.defaultFadeOut}ms`,
+      `Sparkle on: ${config.sparkleMinOn}-${config.sparkleMaxOn}ms off: ${config.sparkleMinOff}-${config.sparkleMaxOff}ms`,
+      `Scene fade: ${Math.round(sceneFade * 100)}%`,
+      `Hi-res: ${hiresImage ? 'yes' : 'no'}`,
+      ...activeKeys
+    ].join('<br>');
+  } else {
+    hud.style.display = 'none';
+  }
+}
+
+// ============================================================
+// KEYBOARD
+// ============================================================
+document.addEventListener('keydown', (e) => {
+  if (e.repeat) return;
+
+  const key = e.key.toLowerCase();
+
+  // HUD toggle
+  if (key === 'h') {
+    showHud = !showHud;
+    return;
+  }
+
+  // Reload config (R key)
+  if (key === 'r') {
+    loadConfig().then(() => console.log('Config reloaded'));
+    return;
+  }
+
+  // Scene switching: 1, 2, 3
+  if (key === '1' || key === '2' || key === '3') {
+    switchScene(parseInt(key));
+    return;
+  }
+
+  // Manual scene fade
+  if (key === 'escape') {
+    fadeSceneOut();
+    return;
+  }
+  if (key === 'enter') {
+    fadeSceneIn();
+    return;
+  }
+
+  // Fullscreen toggle
+  if (key === 'f') {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(resize);
+    } else {
+      document.exitFullscreen().then(resize);
+    }
+    return;
+  }
+
+  // Zoom presets
+  if (zoomKeyStates[key]) {
+    cycleZoom(key);
+    return;
+  }
+
+  // Sequence activation
+  if (seqStates[key]) {
+    activateSequence(key);
+    return;
+  }
+});
+
+document.addEventListener('keyup', (e) => {
+  const key = e.key.toLowerCase();
+
+  if (seqStates[key]) {
+    deactivateSequence(key);
+    return;
+  }
+});
+
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+// ============================================================
+// START
+// ============================================================
+init();
+</script>
+</body>
+</html>

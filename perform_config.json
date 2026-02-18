@@ -1,0 +1,12 @@
+{
+  "dimLevel": 0.15,
+  "litLevel": 0.85,
+  "defaultFadeIn": 200,
+  "defaultFadeOut": 500,
+  "sparkleMinOn": 80,
+  "sparkleMaxOn": 400,
+  "sparkleMinOff": 80,
+  "sparkleMaxOff": 600,
+  "tweenDuration": 500,
+  "sceneFadeDuration": 1000
+}

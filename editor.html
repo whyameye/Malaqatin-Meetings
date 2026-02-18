@@ -192,8 +192,13 @@
   </div>
 
   <div id="bottom-bar">
-    <button class="primary" id="btn-save">Save Scene</button>
-    <button id="btn-load">Load Scene</button>
+    <select id="scene-num" style="font-family:monospace;font-size:12px;padding:2px 4px;background:#333;color:#ddd;border:1px solid #555;border-radius:3px">
+      <option value="1">Scene 1</option>
+      <option value="2">Scene 2</option>
+      <option value="3">Scene 3</option>
+    </select>
+    <button class="primary" id="btn-save">Save</button>
+    <button id="btn-load">Load</button>
     <button id="btn-help">Help (?)</button>
   </div>
 </div>
@@ -689,24 +694,57 @@ function renderGroupList() {
       <div class="group-count">${group.regions.size}</div>
       <div class="group-delete" data-gid="${gid}">&times;</div>
     `;
+    let clickTimer = null;
     div.addEventListener('click', (e) => {
       if (e.target.classList.contains('group-delete')) {
         deleteGroup(e.target.dataset.gid);
         return;
       }
-      if (e.shiftKey) {
-        // Multi-select groups
-        if (selectedGroupIds.has(gid)) {
-          selectedGroupIds.delete(gid);
-        } else {
-          selectedGroupIds.add(gid);
-        }
-      } else {
-        selectedGroupIds.clear();
-        activeGroupId = (activeGroupId === gid) ? null : gid;
+      if (e.detail === 2) {
+        // Double click — cancel pending single click, start rename
+        clearTimeout(clickTimer);
+        clickTimer = null;
+        const nameEl = div.querySelector('.group-name');
+        if (!nameEl) return;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = group.name;
+        input.style.cssText = 'width:100%;font:inherit;background:#333;color:#ddd;border:1px solid #666;padding:1px 4px;border-radius:2px';
+        nameEl.replaceWith(input);
+        input.focus();
+        input.select();
+        const finish = () => {
+          const newName = input.value.trim() || group.name;
+          group.name = newName;
+          renderGroupList();
+          renderSequenceList();
+          renderSeqDetail();
+        };
+        input.addEventListener('blur', finish);
+        input.addEventListener('keydown', (ke) => {
+          if (ke.key === 'Enter') input.blur();
+          if (ke.key === 'Escape') { input.value = group.name; input.blur(); }
+        });
+        return;
       }
-      renderGroupList();
-      render();
+      // Single click — delay to wait for possible double click
+      clearTimeout(clickTimer);
+      const shiftKey = e.shiftKey;
+      clickTimer = setTimeout(() => {
+        clickTimer = null;
+        if (shiftKey) {
+          if (selectedGroupIds.has(gid)) {
+            selectedGroupIds.delete(gid);
+          } else {
+            selectedGroupIds.add(gid);
+          }
+        } else {
+          selectedGroupIds.clear();
+          activeGroupId = (activeGroupId === gid) ? null : gid;
+        }
+        renderGroupList();
+        render();
+      }, 250);
     });
     list.appendChild(div);
   }
@@ -1116,14 +1154,28 @@ function buildSceneJson() {
   };
 }
 
+function getSceneFilename() {
+  return `scene${document.getElementById('scene-num').value}.json`;
+}
+
 function saveScene() {
+  const filename = getSceneFilename();
   const json = JSON.stringify(buildSceneJson(), null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'scene1.json';
-  a.click();
-  URL.revokeObjectURL(a.href);
+
+  fetch(filename, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: json
+  }).then(r => {
+    if (r.ok) {
+      document.getElementById('btn-save').textContent = 'Saved!';
+      setTimeout(() => { document.getElementById('btn-save').textContent = 'Save'; }, 1500);
+    } else {
+      alert('Save failed: ' + r.status);
+    }
+  }).catch(e => {
+    alert('Save failed: ' + e.message + '\nMake sure server.py is running.');
+  });
 }
 
 function loadSceneFromJson(data) {
@@ -1163,12 +1215,15 @@ function loadSceneFromJson(data) {
 }
 
 function tryLoadScene() {
-  // Try to load scene1.json if it exists
-  fetch('scene1.json?v=' + Date.now())
+  const filename = getSceneFilename();
+  fetch(filename + '?v=' + Date.now())
     .then(r => { if (r.ok) return r.json(); throw new Error('not found'); })
     .then(data => { loadSceneFromJson(data); })
     .catch(() => {});
 }
+
+// Reload scene when scene number changes
+document.getElementById('scene-num').addEventListener('change', tryLoadScene);
 
 document.getElementById('btn-save').addEventListener('click', saveScene);
 
