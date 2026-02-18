@@ -261,6 +261,7 @@ def main():
     parser.add_argument('input_image', help='Path to rendered outline PNG (grayscale)')
     parser.add_argument('--prefix', default='', help='Output filename prefix (e.g. "scene2_")')
     parser.add_argument('--outdir', default='.', help='Output directory (default: current)')
+    parser.add_argument('--min-pixels', type=int, default=50, help='Minimum region size in pixels (default: 50)')
     args = parser.parse_args()
 
     input_path = Path(args.input_image)
@@ -276,6 +277,10 @@ def main():
     img = Image.open(input_path).convert('L')
     arr = np.array(img)
     print(f'Image size: {arr.shape[1]}x{arr.shape[0]}')
+
+    global MIN_PIXELS
+    MIN_PIXELS = args.min_pixels
+    print(f'Min pixels: {MIN_PIXELS}')
 
     # Step 1: Find white regions
     white_labeled, white_valid = find_white_regions(arr)
