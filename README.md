@@ -100,9 +100,11 @@ Each scene needs a set of region data files generated from an outline image. The
 
 ### Input file
 
-The input is a grayscale PNG with black outlines on a white background. Black pixels mark boundaries between regions; white pixels are the interiors of regions. The image must be the same dimensions as the background photo for that scene.
+The input to `generate_regions.py` is always a **grayscale PNG** — black outlines on a white background. Black pixels mark boundaries between regions; white pixels are the interiors of regions. The PNG must be the same dimensions as the background photo for that scene.
 
-**Option A — from an SVG (using Inkscape):**
+There are two common ways to produce this PNG:
+
+**Option A — render from an SVG (using Inkscape):**
 ```bash
 inkscape "ceiling1_outline no image.svg" \
   --export-type=png \
@@ -112,7 +114,7 @@ inkscape "ceiling1_outline no image.svg" \
 ```
 Use `--export-background=white` so transparent areas become white (selectable), not black.
 
-**Option B — from a PNG with transparency (e.g. exported from Inkscape as a layer):**
+**Option B — convert a transparent PNG (e.g. an outline layer exported from Inkscape):**
 
 If the outline layer was exported as a transparent PNG with black lines on a clear background, convert it to white-background first:
 ```bash
