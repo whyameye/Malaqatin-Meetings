@@ -96,33 +96,82 @@ If left empty, falls back to the image specified in the scene JSON.
 
 ## Generating Region Data
 
-Each scene needs a set of region data files (id map, metadata, overlay, children). These are generated from an SVG outline file in two steps.
+Each scene needs a set of region data files generated from an outline image. The outline image is a PNG where **white areas** are selectable regions and **black areas** (thin lines or thick shapes) are boundaries — not selectable.
 
-### Step 1: Render SVG to PNG
+### Input file
 
-Use Inkscape to rasterize the SVG outline at the target image dimensions:
+The input is a grayscale PNG with black outlines on a white background. Black pixels mark boundaries between regions; white pixels are the interiors of regions. The image must be the same dimensions as the background photo for that scene.
+
+**Option A — from an SVG (using Inkscape):**
 ```bash
 inkscape "ceiling1_outline no image.svg" \
   --export-type=png \
   --export-filename=outlines_render.png \
-  --export-width=2731 --export-height=2048 \
+  --export-width=8192 --export-height=6144 \
   --export-background=white
 ```
+Use `--export-background=white` so transparent areas become white (selectable), not black.
 
-The SVG should contain black filled shapes and/or black strokes on a white background. The result is a grayscale PNG where white areas become "white" regions and black areas become "black" regions.
+**Option B — from a PNG with transparency (e.g. exported from Inkscape as a layer):**
 
-### Step 2: Generate region files
+If the outline layer was exported as a transparent PNG with black lines on a clear background, convert it to white-background first:
+```bash
+python3 -c "
+from PIL import Image
+import numpy as np
+img = np.array(Image.open('ceiling1_outline_lines_up.png').convert('RGBA'))
+# Where alpha is 0 (transparent) → white; where alpha > 0 → black
+result = np.ones((img.shape[0], img.shape[1]), dtype=np.uint8) * 255
+result[img[:,:,3] > 128] = 0
+Image.fromarray(result, 'L').save('outlines_render.png')
+"
+```
+
+### Running generate_regions.py
 
 ```bash
+python3 generate_regions.py <input_outline.png> [options]
+```
+
+**Parameters:**
+
+| Parameter | Description |
+|---|---|
+| `input_outline.png` | Path to the outline PNG (required) |
+| `--prefix PREFIX` | Prefix for all output filenames, e.g. `hires_` produces `hires_region_id_map.png` etc. Default: none |
+| `--outdir DIR` | Directory to write output files. Default: current directory |
+| `--min-pixels N` | Minimum region size in pixels. Smaller regions are discarded. Default: 50. For hi-res images (~3x scale), try 150–450. |
+
+**Examples:**
+```bash
+# Low-res, default output names
 python3 generate_regions.py outlines_render.png
+
+# Hi-res with prefix, higher min-pixels threshold
+python3 generate_regions.py hires_outlines_render.png --prefix hires_ --min-pixels 150
+
+# Scene 2 with custom prefix
+python3 generate_regions.py scene2_outlines_render.png --prefix scene2_
 ```
 
-This produces `region_id_map.png`, `region_meta.json`, `region_overlay.png`, and `region_children.json` in the current directory.
+### Output files
 
-For additional scenes, use the `--prefix` flag:
-```bash
-python3 generate_regions.py outlines_render_scene2.png --prefix scene2_
-```
+| File | Description |
+|---|---|
+| `region_id_map.png` | Lookup map: each pixel encodes the region ID it belongs to. R and G channels encode the ID (up to 65535 regions); B=255 means "region pixel", B=0 means "boundary — not selectable". Used at runtime for hit testing and highlight rendering. |
+| `region_meta.json` | JSON object keyed by region ID. Each entry has: `bbox` [xmin, ymin, xmax, ymax], `cx`/`cy` (centroid), `size` (pixel count), `type` ("white" or "black"). Coordinates are in the id map's native pixel space. |
+| `region_overlay.png` | Transparent PNG with each region filled in a random color at 50% opacity. Used in the editor to visualize region boundaries. Not used by the performer. |
+| `region_children.json` | JSON object mapping parent region IDs to lists of child region IDs. A child is a region whose area is enclosed within a parent. Used by the editor's **C** key ("select children"). |
+
+### Choosing --min-pixels
+
+Too low: noise, thin line artifacts, and outline strokes may be detected as tiny regions.
+Too high: small but meaningful regions (fine decorative details) get discarded.
+
+- Low-res (2731×2048): `--min-pixels 50` (default)
+- Hi-res (8192×6144, ~3× scale): `--min-pixels 150` to `--min-pixels 450`
+
+Run time increases significantly at hi-res due to image size. Expect 20–40 minutes on a typical machine.
 
 ### Requirements
 
@@ -139,9 +188,15 @@ python3 generate_regions.py outlines_render_scene2.png --prefix scene2_
 | generate_regions.py | Region data file generator (from rendered SVG outline) |
 | perform_config.json | Performance tuning parameters |
 | scene1.json / scene2.json / scene3.json | Scene data (groups, sequences, zoom presets) |
-| ceiling1a.png | Background image (2731x2048) |
-| ceiling1_upscayl_4x_*.png | Hi-res background (8192x6144), loaded async |
-| region_id_map.png | Pixel-to-region ID lookup map |
-| region_meta.json | Region bounding boxes and centroids |
-| region_overlay.png | Region boundary overlay for editor |
-| region_children.json | Region parent-child relationships |
+| ceiling1.png / ceiling1.jpg | Original low-res photo (2048×1536) |
+| ceiling1_upscayl_4x_*.png | Hi-res background photo (8192×6144) |
+| outlines_render.png | Rendered outline PNG used to generate low-res region data |
+| hires_outlines_render.png | Rendered outline PNG used to generate hi-res region data |
+| region_id_map.png | Pixel-to-region ID lookup map (low-res) |
+| region_meta.json | Region bounding boxes and centroids (low-res) |
+| region_overlay.png | Region color overlay for editor (low-res) |
+| region_children.json | Region parent-child relationships (low-res) |
+| hires_region_id_map.png | Pixel-to-region ID lookup map (hi-res) |
+| hires_region_meta.json | Region bounding boxes and centroids (hi-res) |
+| hires_region_overlay.png | Region color overlay for editor (hi-res) |
+| hires_region_children.json | Region parent-child relationships (hi-res) |
