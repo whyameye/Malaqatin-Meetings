@@ -3,7 +3,7 @@
 import http.server
 import os
 
-ALLOWED_FILES = {'scene1.json', 'scene2.json', 'scene3.json', 'perform_config.json'}
+ALLOWED_FILES = {'scene1.json', 'scene2.json', 'scene3.json', 'perform_config.json', 'config.json'}
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
 class Handler(http.server.SimpleHTTPRequestHandler):

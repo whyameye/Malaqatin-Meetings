@@ -11,6 +11,7 @@
     position: fixed; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     color: white; font: 24px monospace; z-index: 20;
+    text-align: center; line-height: 1.6;
   }
   #hud {
     position: fixed; top: 10px; left: 10px;
@@ -39,45 +40,42 @@ const hud = document.getElementById('hud');
 const loadingEl = document.getElementById('loading');
 
 // ============================================================
-// CONFIG (loaded from perform_config.json, editable live)
+// CONFIG (merged from config.json global + movement override)
 // ============================================================
+let masterConfig = null;
 let config = {
   dimLevel: 0.15,
-  litLevel: 0.85,
+  litLevel: 1.00,
   defaultFadeIn: 200,
   defaultFadeOut: 500,
-  sparkleMinOn: 80,
-  sparkleMaxOn: 400,
-  sparkleMinOff: 80,
-  sparkleMaxOff: 600,
-  tweenDuration: 500,
-  sceneFadeDuration: 1000
+  sparkleMinOn: 20,
+  sparkleMaxOn: 80,
+  sparkleMinOff: 20,
+  sparkleMaxOff: 80,
+  litSaturate: 1.8,
+  litContrast: 1.3,
+  sceneFadeDuration: 1000,
+  crossfadeDuration: 1500
 };
 
 // ============================================================
 // STATE
 // ============================================================
+// Movement / scene navigation
+let movementIdx = -1;       // currently loaded movement (0-indexed)
+let sceneIdx = 0;           // current scene within movement
+let loadedScenes = [];      // array of scene data objects
+let isLoading = false;
+let awaitingEnter = false;  // after loading, waiting for Enter to fade in
+
+// Current scene's render data (set from loadedScenes[sceneIdx])
 let bgImage = null;
-let hiresImage = null;
-let hiresLoadFailed = false;
 let idMapData = null;
 let idMapW = IMG_W, idMapH = IMG_H;
 let regionMeta = null;
-
-// Precomputed run-length data: regionId -> flat array [y, x, w, ...]
 let regionRuns = {};
-
-// Pre-rendered region images: regionId -> { canvas, x, y, w, h }
-// Each is a small canvas cropped to the region's bbox containing just that region's image pixels
-let regionImages = {};
-
-// Scene data
-let scene = null;
 let groups = {};
 let sequences = {};
-let zoomPresets = {};
-let currentSceneNum = 1;
-let sceneLoading = false;
 
 // View (16:9 crop of the image)
 let view = { x: 0, y: 0, w: IMG_W, h: IMG_W / ASPECT };
@@ -85,21 +83,23 @@ let view = { x: 0, y: 0, w: IMG_W, h: IMG_W / ASPECT };
 // Sequence key states: keyChar -> seqState
 let seqStates = {};
 
-// Zoom key states: keyChar -> { presets: [...], currentIdx: 0 }
-let zoomKeyStates = {};
+// Crossfade between scenes
+let xfadeActive = false;
+let xfadeFromBg = null;     // bgImage of the "from" scene
+let xfadeAlpha = 0;         // 0 = from scene, 1 = to scene
+let xfadeStart = null;
 
-// Global scene fade
-let sceneFade = 1; // 1 = fully visible, 0 = black
-let sceneFadeTarget = 1;
+// Global scene fade (0 = black, 1 = visible)
+let sceneFade = 0;
+let sceneFadeTarget = 0;
 let sceneFadeStart = null;
-let sceneFadeFromVal = 1;
-let rawFade = 0; // 0 = performance mode (dimmed), 1 = raw image (full brightness)
+let sceneFadeFromVal = 0;
+
+// Raw image toggle (0 = dim, 1 = full brightness)
+let rawFade = 0;
 let rawFadeTarget = 0;
 let rawFadeStart = null;
 let rawFadeFromVal = 0;
-
-// Zoom tween
-let tweenAnim = null;
 
 // HUD
 let showHud = false;
@@ -108,7 +108,7 @@ let frameCount = 0;
 let fpsTime = performance.now();
 
 // ============================================================
-// LOADING
+// UTILITIES
 // ============================================================
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -125,59 +125,71 @@ function resize() {
 }
 window.addEventListener('resize', resize);
 
-async function loadConfig() {
-  try {
-    const resp = await fetch('perform_config.json?v=' + Date.now());
-    if (resp.ok) {
-      const data = await resp.json();
-      Object.assign(config, data);
-      console.log('Config loaded:', config);
-    }
-  } catch (e) {
-    console.log('Using default config');
-  }
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
-async function loadScene(sceneNum) {
-  sceneLoading = true;
-  const filename = `scene${sceneNum}.json`;
+// ============================================================
+// AUDIO CUE
+// ============================================================
+function playReadyTone() {
+  try {
+    const actx = new AudioContext();
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    osc.connect(gain);
+    gain.connect(actx.destination);
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.15, actx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.4);
+    osc.start();
+    osc.stop(actx.currentTime + 0.4);
+  } catch (e) {}
+}
+
+// ============================================================
+// CONFIG LOADING
+// ============================================================
+async function loadMasterConfig() {
+  const resp = await fetch('config.json?v=' + Date.now());
+  if (!resp.ok) throw new Error('config.json not found');
+  masterConfig = await resp.json();
+}
+
+function mergeConfig(movIdx) {
+  const mvmt = masterConfig.movements[movIdx];
+  config = { ...masterConfig.config, ...(mvmt.config || {}) };
+}
+
+// ============================================================
+// SCENE ASSET LOADING
+// ============================================================
+async function loadSceneAssets(sceneData, label) {
+  loadingEl.textContent = `Loading ${label}...`;
+  await new Promise(r => setTimeout(r, 0));
+
   const cb = '?v=' + Date.now();
 
-  // Load scene JSON
-  try {
-    const resp = await fetch(filename + cb);
-    if (!resp.ok) throw new Error(filename + ' not found');
-    scene = await resp.json();
-  } catch (e) {
-    loadingEl.textContent = `Error: ${filename} not found. Export from editor first.`;
-    loadingEl.style.display = 'block';
-    sceneLoading = false;
-    return false;
-  }
-
-  // Load required assets
-  // Use config image overrides if available, fall back to scene JSON
-  const sceneImgCfg = config.sceneImages && config.sceneImages[String(sceneNum)];
-  const imagePath = (sceneImgCfg && sceneImgCfg.image) || scene.image || 'ceiling1_upscayl_4x_upscayl-standard-4x.png';
-
   const [bg, idMap, meta] = await Promise.all([
-    loadImage(imagePath + cb),
-    loadImage((scene.regionIdMap || 'hires_region_id_map.png') + cb),
-    fetch((scene.regionMeta || 'hires_region_meta.json') + cb).then(r => r.json())
+    loadImage(sceneData.image + cb),
+    loadImage(sceneData.regionIdMap + cb),
+    fetch(sceneData.regionMeta + cb).then(r => r.json())
   ]);
 
-  bgImage = bg;
-  hiresImage = null;
+  const mapW = idMap.naturalWidth;
+  const mapH = idMap.naturalHeight;
+  const tmpCanvas = document.createElement('canvas');
+  tmpCanvas.width = mapW;
+  tmpCanvas.height = mapH;
+  const tmpCtx = tmpCanvas.getContext('2d', { willReadFrequently: true });
+  tmpCtx.drawImage(idMap, 0, 0);
+  const mapData = tmpCtx.getImageData(0, 0, mapW, mapH).data;
 
-  // Extract ID map pixel data
-  idMapW = idMap.naturalWidth;
-  idMapH = idMap.naturalHeight;
-
-  // Scale region metadata from id map coordinates to logical coordinates
-  const sx = IMG_W / idMapW, sy = IMG_H / idMapH;
-  regionMeta = {};
+  // Scale metadata to logical coordinates
+  const sx = IMG_W / mapW, sy = IMG_H / mapH;
+  const scaledMeta = {};
   for (const [k, v] of Object.entries(meta)) {
-    regionMeta[k] = {
+    scaledMeta[k] = {
       ...v,
       cx: Math.round(v.cx * sx),
       cy: Math.round(v.cy * sy),
@@ -189,128 +201,179 @@ async function loadScene(sceneNum) {
       ]
     };
   }
-  const tmpCanvas = document.createElement('canvas');
-  tmpCanvas.width = idMapW;
-  tmpCanvas.height = idMapH;
-  const tmpCtx = tmpCanvas.getContext('2d', { willReadFrequently: true });
-  tmpCtx.drawImage(idMap, 0, 0);
-  idMapData = tmpCtx.getImageData(0, 0, idMapW, idMapH).data;
 
-  // Stop all active sparkle timers
-  for (const state of Object.values(seqStates)) {
-    stopSparkle(state);
-  }
-
-  // Parse scene data
-  groups = scene.groups || {};
-  sequences = scene.sequences || {};
-  zoomPresets = scene.zoomPresets || {};
-
-  // Precompute run-length data for all regions used in groups
-  loadingEl.textContent = `Building region cache...`;
-  loadingEl.style.display = 'block';
-  await new Promise(r => setTimeout(r, 0)); // let UI update
-
-  regionRuns = {};
+  // Build region runs for all regions used in groups
+  const sceneGroups = sceneData.groups || {};
   const usedRegions = new Set();
-  for (const g of Object.values(groups)) {
+  for (const g of Object.values(sceneGroups)) {
     for (const rid of g.regions) usedRegions.add(rid);
   }
 
-  // Step size: one id map pixel in logical coordinates
-  const stepX = IMG_W / idMapW;
-  const stepY = IMG_H / idMapH;
-
+  const stepX = IMG_W / mapW;
+  const stepY = IMG_H / mapH;
+  const runs = {};
   for (const regionId of usedRegions) {
-    const m = regionMeta[regionId];
+    const m = scaledMeta[regionId];
     if (!m) continue;
-    const runs = [];
+    const runList = [];
     const bb = m.bbox;
-    // Iterate at id map resolution for hi-res clip paths
-    const my0 = Math.round(bb[1] * idMapH / IMG_H);
-    const my1 = Math.round(bb[3] * idMapH / IMG_H);
-    const mx0 = Math.round(bb[0] * idMapW / IMG_W);
-    const mx1 = Math.round(bb[2] * idMapW / IMG_W);
-
+    const my0 = Math.round(bb[1] * mapH / IMG_H);
+    const my1 = Math.round(bb[3] * mapH / IMG_H);
+    const mx0 = Math.round(bb[0] * mapW / IMG_W);
+    const mx1 = Math.round(bb[2] * mapW / IMG_W);
     for (let my = my0; my <= my1; my++) {
       let runStart = -1;
-      const rowOffset = my * idMapW;
+      const rowOffset = my * mapW;
       for (let mx = mx0; mx <= mx1 + 1; mx++) {
         const offset = (rowOffset + mx) * 4;
-        const r = idMapData[offset];
-        const g = idMapData[offset + 1];
-        const mk = idMapData[offset + 2];
+        const r = mapData[offset];
+        const g = mapData[offset + 1];
+        const mk = mapData[offset + 2];
         const id = (mk >= 250) ? (r | (g << 8)) : -1;
         if (id === regionId && mx <= mx1) {
           if (runStart < 0) runStart = mx;
         } else {
           if (runStart >= 0) {
-            runs.push(my * stepY, runStart * stepX, (mx - runStart) * stepX);
+            runList.push(my * stepY, runStart * stepX, (mx - runStart) * stepX);
             runStart = -1;
           }
         }
       }
     }
-    regionRuns[regionId] = runs;
+    runs[regionId] = runList;
   }
-  console.log(`Cached runs for ${usedRegions.size} regions`);
 
-  // Pre-render region images: for each region, create a small canvas with the
-  // background image masked to just that region's pixels. Done once at load time.
-  loadingEl.textContent = `Pre-rendering region images...`;
+  // Pre-render region images
+  loadingEl.textContent = `Pre-rendering ${label}...`;
   await new Promise(r => setTimeout(r, 0));
 
-  regionImages = {};
   const tmpMask = document.createElement('canvas');
   const tmpMaskCtx = tmpMask.getContext('2d');
-
+  const regImages = {};
   for (const regionId of usedRegions) {
-    const m = regionMeta[regionId];
-    const runs = regionRuns[regionId];
-    if (!m || !runs || runs.length === 0) continue;
-
+    const m = scaledMeta[regionId];
+    const runList = runs[regionId];
+    if (!m || !runList || runList.length === 0) continue;
     const bx = m.bbox[0], by = m.bbox[1];
     const bw = m.bbox[2] - m.bbox[0] + 1;
     const bh = m.bbox[3] - m.bbox[1] + 1;
-    // Hi-res canvas dimensions for this region
-    const hbw = Math.ceil(bw * idMapW / IMG_W);
-    const hbh = Math.ceil(bh * idMapH / IMG_H);
-
-    // Size the temp canvas to hi-res bbox
+    const hbw = Math.ceil(bw * mapW / IMG_W);
+    const hbh = Math.ceil(bh * mapH / IMG_H);
     tmpMask.width = hbw;
     tmpMask.height = hbh;
-
-    // Draw the mask at hi-res (white pixels for this region)
-    const scaleToHX = idMapW / IMG_W;
-    const scaleToHY = idMapH / IMG_H;
+    const scaleToHX = mapW / IMG_W;
+    const scaleToHY = mapH / IMG_H;
     tmpMaskCtx.clearRect(0, 0, hbw, hbh);
     tmpMaskCtx.globalCompositeOperation = 'source-over';
     tmpMaskCtx.globalAlpha = 1;
     tmpMaskCtx.fillStyle = '#fff';
-    for (let i = 0; i < runs.length; i += 3) {
-      const ry = runs[i], rx = runs[i + 1], rw = runs[i + 2];
+    for (let i = 0; i < runList.length; i += 3) {
       tmpMaskCtx.fillRect(
-        (rx - bx) * scaleToHX,
-        (ry - by) * scaleToHY,
-        rw * scaleToHX,
+        (runList[i + 1] - bx) * scaleToHX,
+        (runList[i] - by) * scaleToHY,
+        runList[i + 2] * scaleToHX,
         1
       );
     }
-
-    // Composite the background image through the mask
     tmpMaskCtx.globalCompositeOperation = 'source-in';
-    tmpMaskCtx.drawImage(bgImage, bx, by, bw, bh, 0, 0, hbw, hbh);
+    tmpMaskCtx.drawImage(bg, bx, by, bw, bh, 0, 0, hbw, hbh);
     tmpMaskCtx.globalCompositeOperation = 'source-over';
-
-    // Copy to a permanent canvas
     const regionCanvas = document.createElement('canvas');
     regionCanvas.width = hbw;
     regionCanvas.height = hbh;
     regionCanvas.getContext('2d').drawImage(tmpMask, 0, 0);
-
-    regionImages[regionId] = { canvas: regionCanvas, x: bx, y: by, w: bw, h: bh };
+    regImages[regionId] = { canvas: regionCanvas, x: bx, y: by, w: bw, h: bh };
   }
-  console.log(`Pre-rendered ${Object.keys(regionImages).length} region images`);
+
+  return {
+    bgImage: bg,
+    idMapData: mapData,
+    idMapW: mapW,
+    idMapH: mapH,
+    regionMeta: scaledMeta,
+    regionRuns: runs,
+    regionImages: regImages,
+    groups: sceneGroups,
+    sequences: sceneData.sequences || {}
+  };
+}
+
+// ============================================================
+// MOVEMENT LOADING
+// ============================================================
+async function loadMovement(idx) {
+  if (isLoading) return;
+  isLoading = true;
+  awaitingEnter = false;
+
+  // Stop all sparkle timers and clear sequence state
+  for (const state of Object.values(seqStates)) stopSparkle(state);
+  seqStates = {};
+
+  // Fade to black if currently visible
+  if (sceneFade > 0.01) {
+    fadeSceneOut();
+    await new Promise(r => {
+      const check = setInterval(() => {
+        if (sceneFade < 0.01) { clearInterval(check); r(); }
+      }, 50);
+    });
+  }
+
+  mergeConfig(idx);
+
+  const movement = masterConfig.movements[idx];
+  const sceneList = movement.scenes || [];
+
+  loadedScenes = [];
+  for (let i = 0; i < sceneList.length; i++) {
+    const sd = await loadSceneAssets(
+      sceneList[i],
+      `${movement.name} — scene ${i + 1}/${sceneList.length}`
+    );
+    loadedScenes.push(sd);
+  }
+
+  movementIdx = idx;
+  xfadeActive = false;
+  xfadeFromBg = null;
+
+  if (loadedScenes.length > 0) {
+    activateScene(0);
+    isLoading = false;
+    loadingEl.textContent = 'Press Enter to begin';
+    loadingEl.style.display = 'block';
+    playReadyTone();
+    awaitingEnter = true;
+  } else {
+    isLoading = false;
+    loadingEl.textContent = `${movement.name} has no scenes.`;
+    loadingEl.style.display = 'block';
+  }
+}
+
+function activateScene(idx) {
+  if (idx < 0 || idx >= loadedScenes.length) return;
+  sceneIdx = idx;
+  const sd = loadedScenes[idx];
+
+  // Stop active sparkle timers
+  for (const state of Object.values(seqStates)) stopSparkle(state);
+
+  bgImage = sd.bgImage;
+  idMapData = sd.idMapData;
+  idMapW = sd.idMapW;
+  idMapH = sd.idMapH;
+  regionMeta = sd.regionMeta;
+  regionRuns = sd.regionRuns;
+  groups = sd.groups;
+  sequences = sd.sequences;
+
+  // Reset view to full image (16:9 crop)
+  let w = IMG_W;
+  let h = w / ASPECT;
+  if (h > IMG_H) { h = IMG_H; w = h * ASPECT; }
+  view = { x: (IMG_W - w) / 2, y: (IMG_H - h) / 2, w, h };
 
   // Build sequence key states
   seqStates = {};
@@ -329,60 +392,27 @@ async function loadScene(sceneNum) {
       sparkleTimers: {}
     };
   }
-
-  // Build zoom key states (group presets by key)
-  zoomKeyStates = {};
-  for (const [zid, zp] of Object.entries(zoomPresets)) {
-    const key = (zp.key || 'z').toLowerCase();
-    if (!zoomKeyStates[key]) {
-      zoomKeyStates[key] = { presets: [], currentIdx: -1 };
-    }
-    zoomKeyStates[key].presets.push(zp);
-  }
-
-  // Set initial view to full image (16:9 crop)
-  let w = IMG_W;
-  let h = w / ASPECT;
-  if (h > IMG_H) { h = IMG_H; w = h * ASPECT; }
-  view = { x: (IMG_W - w) / 2, y: (IMG_H - h) / 2, w, h };
-
-  currentSceneNum = sceneNum;
-
-  // No separate hi-res loading needed — bgImage IS the hi-res image
-  hiresImage = null;
-  hiresLoadFailed = false;
-
-  sceneLoading = false;
-  return true;
 }
 
-async function switchScene(sceneNum) {
-  if (sceneLoading || sceneNum === currentSceneNum) return;
+function startSceneCrossfade(newIdx) {
+  if (newIdx < 0 || newIdx >= loadedScenes.length) return;
+  if (newIdx === sceneIdx || xfadeActive) return;
 
-  loadingEl.textContent = `Loading scene ${sceneNum}...`;
-  loadingEl.style.display = 'block';
+  // Stop active sequences
+  for (const state of Object.values(seqStates)) stopSparkle(state);
+  seqStates = {};
 
-  const ok = await loadScene(sceneNum);
-  if (!ok) return;
+  xfadeFromBg = bgImage;
+  xfadeActive = true;
+  xfadeAlpha = 0;
+  xfadeStart = performance.now();
 
-  loadingEl.style.display = 'none';
-}
-
-async function init() {
-  resize();
-  loadingEl.textContent = 'Loading...';
-
-  await loadConfig();
-
-  const ok = await loadScene(1);
-  if (!ok) return;
-
-  loadingEl.style.display = 'none';
-  requestAnimationFrame(renderLoop);
+  // Switch to new scene data (sequences start fresh, hidden until xfadeAlpha > 0)
+  activateScene(newIdx);
 }
 
 // ============================================================
-// RENDERING UTILITIES
+// RENDERING
 // ============================================================
 function getCanvasTransform() {
   const canvasAspect = canvas.width / canvas.height;
@@ -398,7 +428,6 @@ function getCanvasTransform() {
   return { scale, offsetX, offsetY };
 }
 
-// Brighten regions: clear to black then redraw image at target alpha
 function brightenRegions(regionSet, litAlpha) {
   const stepY = IMG_H / idMapH;
   ctx.save();
@@ -411,25 +440,18 @@ function brightenRegions(regionSet, litAlpha) {
     }
   });
   ctx.clip();
-  // Erase the dimmed image in these regions (reset to black)
   ctx.globalAlpha = 1;
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, IMG_W, IMG_H);
-  // Redraw image at exact target brightness with enhanced color
-  const activeImg = hiresImage || bgImage;
   ctx.globalAlpha = litAlpha;
   const sat = config.litSaturate || 1;
   const con = config.litContrast || 1;
   if (sat !== 1 || con !== 1) {
     ctx.filter = `saturate(${sat}) contrast(${con})`;
   }
-  ctx.drawImage(activeImg, 0, 0, IMG_W, IMG_H);
+  ctx.drawImage(bgImage, 0, 0, IMG_W, IMG_H);
   ctx.filter = 'none';
   ctx.restore();
-}
-
-function easeInOutCubic(t) {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
 // ============================================================
@@ -438,29 +460,20 @@ function easeInOutCubic(t) {
 function activateSequence(key) {
   const state = seqStates[key];
   if (!state || state.active) return;
-
   const seq = sequences[state.seqId];
   if (!seq || seq.steps.length === 0) return;
-
   state.stepIndex = (state.stepIndex + 1) % seq.steps.length;
   state.active = true;
-
   state.fadeFromOpacity = state.opacity;
   state.fadeStartTime = performance.now();
   state.fadeDirection = 'in';
-
   const step = seq.steps[state.stepIndex];
-  console.log(`ACTIVATE key=${key} step=${state.stepIndex} effect=${step.effect} group=${step.groupId} regions=${groups[step.groupId]?.regions?.length}`);
-  if (step.effect === 'sparkle') {
-    startSparkle(state, step);
-  }
+  if (step.effect === 'sparkle') startSparkle(state, step);
 }
 
 function deactivateSequence(key) {
   const state = seqStates[key];
   if (!state || !state.active) return;
-
-  console.log(`DEACTIVATE key=${key} step=${state.stepIndex}`);
   state.active = false;
   state.fadeFromOpacity = state.opacity;
   state.fadeStartTime = performance.now();
@@ -469,23 +482,19 @@ function deactivateSequence(key) {
 
 function updateSequenceOpacity(state, now) {
   if (state.fadeDirection === null) return;
-
   const seq = sequences[state.seqId];
   const step = seq.steps[state.stepIndex];
   const duration = state.fadeDirection === 'in'
     ? (step.fadeIn || config.defaultFadeIn)
     : (step.fadeOut || config.defaultFadeOut);
-
   const elapsed = now - state.fadeStartTime;
   const t = Math.min(1, elapsed / duration);
   const e = easeInOutCubic(t);
-
   if (state.fadeDirection === 'in') {
     state.opacity = state.fadeFromOpacity + (1 - state.fadeFromOpacity) * e;
   } else {
     state.opacity = state.fadeFromOpacity * (1 - e);
   }
-
   if (t >= 1) {
     state.fadeDirection = null;
     if (state.opacity < 0.01) {
@@ -504,17 +513,11 @@ function randBetween(min, max) {
 
 function startSparkle(state, step) {
   stopSparkle(state);
-
   const group = groups[step.groupId];
   if (!group) return;
-
   state.sparkleState = {};
   state.sparkleTimers = {};
-
-  console.log(`SPARKLE START: ${group.regions.length} regions`);
-
   group.regions.forEach(r => {
-    // Each region starts at a random point
     const startOn = Math.random() > 0.5;
     state.sparkleState[r] = startOn;
     scheduleToggle(state, r, startOn);
@@ -525,7 +528,6 @@ function scheduleToggle(state, regionId, currentlyOn) {
   const delay = currentlyOn
     ? randBetween(config.sparkleMinOn, config.sparkleMaxOn)
     : randBetween(config.sparkleMinOff, config.sparkleMaxOff);
-
   state.sparkleTimers[regionId] = setTimeout(() => {
     if (!state.sparkleTimers[regionId]) return;
     state.sparkleState[regionId] = !currentlyOn;
@@ -535,51 +537,10 @@ function scheduleToggle(state, regionId, currentlyOn) {
 
 function stopSparkle(state) {
   if (state.sparkleTimers) {
-    for (const timer of Object.values(state.sparkleTimers)) {
-      clearTimeout(timer);
-    }
+    for (const timer of Object.values(state.sparkleTimers)) clearTimeout(timer);
     state.sparkleTimers = {};
   }
   state.sparkleState = {};
-}
-
-// ============================================================
-// ZOOM TWEEN
-// ============================================================
-function tweenToView(target, duration) {
-  duration = duration || target.tweenDuration || config.tweenDuration;
-  if (tweenAnim) cancelAnimationFrame(tweenAnim);
-
-  const startView = { ...view };
-  const startTime = performance.now();
-
-  function step(now) {
-    const elapsed = now - startTime;
-    const t = Math.min(1, elapsed / duration);
-    const e = easeInOutCubic(t);
-
-    view.x = startView.x + (target.x - startView.x) * e;
-    view.y = startView.y + (target.y - startView.y) * e;
-    view.w = startView.w + (target.w - startView.w) * e;
-    view.h = startView.h + (target.h - startView.h) * e;
-
-    if (t < 1) {
-      tweenAnim = requestAnimationFrame(step);
-    } else {
-      tweenAnim = null;
-    }
-  }
-
-  tweenAnim = requestAnimationFrame(step);
-}
-
-function cycleZoom(key) {
-  const zks = zoomKeyStates[key];
-  if (!zks || zks.presets.length === 0) return;
-
-  zks.currentIdx = (zks.currentIdx + 1) % zks.presets.length;
-  const target = zks.presets[zks.currentIdx];
-  tweenToView(target, target.tweenDuration || config.tweenDuration);
 }
 
 // ============================================================
@@ -595,17 +556,16 @@ function fadeSceneIn() {
   sceneFadeTarget = 1;
   sceneFadeFromVal = sceneFade;
   sceneFadeStart = performance.now();
+  awaitingEnter = false;
+  loadingEl.style.display = 'none';
 }
 
 function updateSceneFade(now) {
   if (sceneFadeStart === null) return;
-
   const elapsed = now - sceneFadeStart;
   const t = Math.min(1, elapsed / config.sceneFadeDuration);
   const e = easeInOutCubic(t);
-
   sceneFade = sceneFadeFromVal + (sceneFadeTarget - sceneFadeFromVal) * e;
-
   if (t >= 1) {
     sceneFade = sceneFadeTarget;
     sceneFadeStart = null;
@@ -626,13 +586,10 @@ function fadeRawOut() {
 
 function updateRawFade(now) {
   if (rawFadeStart === null) return;
-
   const elapsed = now - rawFadeStart;
   const t = Math.min(1, elapsed / config.sceneFadeDuration);
   const e = easeInOutCubic(t);
-
   rawFade = rawFadeFromVal + (rawFadeTarget - rawFadeFromVal) * e;
-
   if (t >= 1) {
     rawFade = rawFadeTarget;
     rawFadeStart = null;
@@ -645,7 +602,6 @@ function updateRawFade(now) {
 function renderLoop(now) {
   requestAnimationFrame(renderLoop);
 
-  // FPS counter
   frameCount++;
   if (now - fpsTime >= 1000) {
     fps = frameCount;
@@ -653,83 +609,96 @@ function renderLoop(now) {
     fpsTime = now;
   }
 
-  // Update fades
   updateSceneFade(now);
   updateRawFade(now);
 
-  // Update all sequence opacities
-  for (const state of Object.values(seqStates)) {
-    updateSequenceOpacity(state, now);
+  // Update crossfade progress
+  if (xfadeActive && xfadeStart !== null) {
+    const elapsed = now - xfadeStart;
+    const t = Math.min(1, elapsed / config.crossfadeDuration);
+    xfadeAlpha = easeInOutCubic(t);
+    if (t >= 1) {
+      xfadeActive = false;
+      xfadeFromBg = null;
+      xfadeAlpha = 1;
+    }
   }
 
-  // Render
+  // Update sequence opacities (only when not crossfading)
+  if (!xfadeActive) {
+    for (const state of Object.values(seqStates)) {
+      updateSequenceOpacity(state, now);
+    }
+  }
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  const { scale, offsetX, offsetY } = getCanvasTransform();
+  if (bgImage) {
+    const { scale, offsetX, offsetY } = getCanvasTransform();
+    ctx.save();
+    ctx.translate(offsetX, offsetY);
+    ctx.scale(scale, scale);
+    ctx.translate(-view.x, -view.y);
 
-  ctx.save();
-  ctx.translate(offsetX, offsetY);
-  ctx.scale(scale, scale);
-  ctx.translate(-view.x, -view.y);
+    const bgAlpha = (config.dimLevel + (1 - config.dimLevel) * rawFade) * sceneFade;
 
-  // Draw background
-  const activeImg = hiresImage || bgImage;
-  // Blend between dim level and full brightness based on rawFade
-  const bgAlpha = (config.dimLevel + (1 - config.dimLevel) * rawFade) * sceneFade;
-  ctx.globalAlpha = bgAlpha;
-  ctx.drawImage(activeImg, 0, 0, IMG_W, IMG_H);
-
-  // Brighten each active sequence's regions (skip in raw image mode)
-  let debugThisFrame = (frameCount % 60 === 0); // log once per second
-  for (const [key, state] of Object.entries(seqStates)) {
-    if (rawFade >= 1) continue;
-    if (state.opacity <= 0 || state.stepIndex < 0) continue;
-
-    const seq = sequences[state.seqId];
-    const step = seq.steps[state.stepIndex];
-    const group = groups[step.groupId];
-    if (!group) continue;
-
-    const litAlpha = config.litLevel * state.opacity * sceneFade;
-    if (litAlpha <= 0.01) continue;
-
-    if (debugThisFrame) {
-      const t = (performance.now() / 1000).toFixed(2);
-      const sparkleOn = step.effect === 'sparkle' ? Object.values(state.sparkleState).filter(v => v).length : '-';
-      const sparkleTotal = step.effect === 'sparkle' ? Object.keys(state.sparkleState).length : '-';
-      const regionCount = step.effect === 'sparkle' ? `sparkle ${sparkleOn}/${sparkleTotal} on` : `${group.regions.length} regions`;
-      const runsFound = group.regions.some(r => regionRuns[r] && regionRuns[r].length > 0);
-      console.log(`[${t}] RENDER key=${key} step=${state.stepIndex} effect=${step.effect} opacity=${state.opacity.toFixed(2)} litAlpha=${litAlpha.toFixed(3)} ${regionCount} hasRuns=${runsFound}`);
-    }
-
-    if (step.effect === 'sparkle' && Object.keys(state.sparkleState).length > 0) {
-      const onRegions = new Set();
-      for (const [rid, on] of Object.entries(state.sparkleState)) {
-        if (on) onRegions.add(parseInt(rid));
-      }
-      brightenRegions(onRegions, litAlpha);
+    if (xfadeActive && xfadeFromBg) {
+      // Crossfade: draw from-scene fading out, to-scene fading in
+      ctx.globalAlpha = (1 - xfadeAlpha) * bgAlpha;
+      ctx.drawImage(xfadeFromBg, 0, 0, IMG_W, IMG_H);
+      ctx.globalAlpha = xfadeAlpha * bgAlpha;
+      ctx.drawImage(bgImage, 0, 0, IMG_W, IMG_H);
     } else {
-      brightenRegions(new Set(group.regions), litAlpha);
+      // Normal render
+      ctx.globalAlpha = bgAlpha;
+      ctx.drawImage(bgImage, 0, 0, IMG_W, IMG_H);
+
+      // Brighten active sequence regions
+      if (rawFade < 1) {
+        for (const [key, state] of Object.entries(seqStates)) {
+          if (state.opacity <= 0 || state.stepIndex < 0) continue;
+          const seq = sequences[state.seqId];
+          const step = seq.steps[state.stepIndex];
+          const group = groups[step.groupId];
+          if (!group) continue;
+          const litAlpha = config.litLevel * state.opacity * sceneFade;
+          if (litAlpha <= 0.01) continue;
+          if (step.effect === 'sparkle' && Object.keys(state.sparkleState).length > 0) {
+            const onRegions = new Set();
+            for (const [rid, on] of Object.entries(state.sparkleState)) {
+              if (on) onRegions.add(parseInt(rid));
+            }
+            brightenRegions(onRegions, litAlpha);
+          } else {
+            brightenRegions(new Set(group.regions), litAlpha);
+          }
+        }
+      }
     }
-  }
 
-  ctx.restore();
+    ctx.restore();
 
-  // Letterbox bars
-  ctx.fillStyle = '#000';
-  if (offsetX > 0) {
-    ctx.fillRect(0, 0, offsetX, canvas.height);
-    ctx.fillRect(canvas.width - offsetX, 0, offsetX, canvas.height);
-  }
-  if (offsetY > 0) {
-    ctx.fillRect(0, 0, canvas.width, offsetY);
-    ctx.fillRect(0, canvas.height - offsetY, canvas.width, offsetY);
+    // Letterbox bars
+    ctx.fillStyle = '#000';
+    if (offsetX > 0) {
+      ctx.fillRect(0, 0, offsetX, canvas.height);
+      ctx.fillRect(canvas.width - offsetX, 0, offsetX, canvas.height);
+    }
+    if (offsetY > 0) {
+      ctx.fillRect(0, 0, canvas.width, offsetY);
+      ctx.fillRect(0, canvas.height - offsetY, canvas.width, offsetY);
+    }
   }
 
   // HUD
   if (showHud) {
+    const mvmt = masterConfig ? masterConfig.movements[movementIdx] : null;
+    const movName = mvmt ? mvmt.name : '—';
+    const sceneName = mvmt ? (mvmt.scenes[sceneIdx]?.name || '—') : '—';
+    const totalScenes = loadedScenes.length;
+
     const activeKeys = Object.entries(seqStates)
-      .filter(([k, s]) => s.opacity > 0)
+      .filter(([k, s]) => s.opacity > 0 && s.stepIndex >= 0)
       .map(([k, s]) => {
         const seq = sequences[s.seqId];
         const step = seq.steps[s.stepIndex];
@@ -739,14 +708,13 @@ function renderLoop(now) {
 
     hud.style.display = 'block';
     hud.innerHTML = [
-      `FPS: ${fps} | Scene: ${currentSceneNum}`,
-      `Dim: ${config.dimLevel} Lit: ${config.litLevel}`,
+      `FPS: ${fps} | ${movName} &gt; ${sceneName} (${sceneIdx + 1}/${totalScenes})`,
+      `Dim: ${config.dimLevel} Lit: ${config.litLevel} Sat: ${config.litSaturate} Con: ${config.litContrast}`,
       `FadeIn: ${config.defaultFadeIn}ms FadeOut: ${config.defaultFadeOut}ms`,
-      `Sparkle on: ${config.sparkleMinOn}-${config.sparkleMaxOn}ms off: ${config.sparkleMinOff}-${config.sparkleMaxOff}ms`,
-      `Scene fade: ${Math.round(sceneFade * 100)}% | Raw: ${Math.round(rawFade * 100)}%`,
-      `Hi-res: ${hiresImage ? 'loaded' : hiresLoadFailed ? 'FAILED' : 'loading...'}`,
+      `SceneFade: ${Math.round(sceneFade * 100)}% Raw: ${Math.round(rawFade * 100)}%`,
+      xfadeActive ? `Crossfade: ${Math.round(xfadeAlpha * 100)}%` : '',
       ...activeKeys
-    ].join('<br>');
+    ].filter(Boolean).join('<br>');
   } else {
     hud.style.display = 'none';
   }
@@ -758,51 +726,68 @@ function renderLoop(now) {
 document.addEventListener('keydown', (e) => {
   if (e.repeat) return;
 
-  const key = e.key.toLowerCase();
+  const key = e.key;
+  const keyL = key.toLowerCase();
 
   // HUD toggle
-  if (key === 'h') {
+  if (keyL === 'h') {
     showHud = !showHud;
     return;
   }
 
-  // Reload config (R key)
-  if (key === 'r') {
-    loadConfig().then(() => console.log('Config reloaded'));
+  // Reload config
+  if (keyL === 'r') {
+    loadMasterConfig().then(() => {
+      if (movementIdx >= 0) mergeConfig(movementIdx);
+      console.log('Config reloaded');
+    });
     return;
   }
 
-  // Scene switching: 1, 2, 3 (can switch while blacked out)
+  // Movement switching: 1, 2, 3
   if (key === '1' || key === '2' || key === '3') {
-    switchScene(parseInt(key));
+    const idx = parseInt(key) - 1;
+    if (!masterConfig || idx >= masterConfig.movements.length) return;
+    if (idx === movementIdx && !isLoading) return;
+    loadMovement(idx);
+    return;
+  }
+
+  // Enter = fade in from black
+  if (key === 'Enter') {
+    if (loadedScenes.length > 0) fadeSceneIn();
     return;
   }
 
   // Escape = fade to black
-  if (key === 'escape') {
+  if (key === 'Escape') {
     fadeRawOut();
     fadeSceneOut();
     return;
   }
 
-  // Enter = fade in from black
-  if (key === 'enter') {
-    fadeSceneIn();
+  // Space = toggle raw image
+  if (key === ' ') {
+    if (rawFadeTarget === 0) fadeRawIn(); else fadeRawOut();
     return;
   }
 
-  // Space = toggle raw image (tween between dim and full brightness)
-  if (key === ' ') {
-    if (rawFadeTarget === 0) {
-      fadeRawIn();
-    } else {
-      fadeRawOut();
+  // Left/Right arrow = crossfade between scenes (no wrap)
+  if (key === 'ArrowRight') {
+    if (!isLoading && !xfadeActive && sceneIdx < loadedScenes.length - 1) {
+      startSceneCrossfade(sceneIdx + 1);
+    }
+    return;
+  }
+  if (key === 'ArrowLeft') {
+    if (!isLoading && !xfadeActive && sceneIdx > 0) {
+      startSceneCrossfade(sceneIdx - 1);
     }
     return;
   }
 
-  // Fullscreen toggle
-  if (key === 'f') {
+  // Fullscreen
+  if (keyL === 'f') {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().then(resize);
     } else {
@@ -811,25 +796,17 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
-  // Zoom presets
-  if (zoomKeyStates[key]) {
-    cycleZoom(key);
-    return;
-  }
-
   // Sequence activation
-  if (seqStates[key]) {
-    activateSequence(key);
+  if (seqStates[keyL]) {
+    activateSequence(keyL);
     return;
   }
 });
 
 document.addEventListener('keyup', (e) => {
-  const key = e.key.toLowerCase();
-
-  if (seqStates[key]) {
-    deactivateSequence(key);
-    return;
+  const keyL = e.key.toLowerCase();
+  if (seqStates[keyL]) {
+    deactivateSequence(keyL);
   }
 });
 
@@ -838,6 +815,21 @@ document.addEventListener('contextmenu', e => e.preventDefault());
 // ============================================================
 // START
 // ============================================================
+async function init() {
+  resize();
+  loadingEl.textContent = 'Loading config...';
+
+  try {
+    await loadMasterConfig();
+  } catch (e) {
+    loadingEl.textContent = 'Error: config.json not found.\nCreate it or start server.py first.';
+    return;
+  }
+
+  requestAnimationFrame(renderLoop);
+  await loadMovement(0);
+}
+
 init();
 </script>
 </body>

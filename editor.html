@@ -59,29 +59,6 @@
   .group-delete { color: #888; font-size: 14px; cursor: pointer; padding: 0 4px; }
   .group-delete:hover { color: #f66; }
 
-  #zoom-section { border-top: 1px solid #444; }
-  #zoom-section h2 { padding: 10px 12px; font-size: 14px; border-bottom: 1px solid #444; background: #2a2a2a; }
-  #zoom-controls {
-    padding: 8px 12px; border-bottom: 1px solid #444;
-    display: flex; gap: 6px; flex-wrap: wrap;
-  }
-  #zoom-controls button, #zoom-controls input {
-    font-family: monospace; font-size: 12px;
-    padding: 4px 8px; border: 1px solid #555; border-radius: 3px;
-    background: #333; color: #ddd; cursor: pointer;
-  }
-  #zoom-controls input { width: 40px; text-align: center; }
-  #zoom-list { max-height: 150px; overflow-y: auto; padding: 4px 0; }
-  .zoom-item {
-    padding: 6px 12px; display: flex; align-items: center; gap: 8px;
-    border-bottom: 1px solid #2a2a2a; font-size: 12px;
-  }
-  .zoom-item:hover { background: #333; }
-  .zoom-key { background: #444; padding: 2px 6px; border-radius: 2px; min-width: 20px; text-align: center; }
-  .zoom-desc { flex: 1; color: #aaa; font-size: 11px; }
-  .zoom-test { color: #7a7; cursor: pointer; font-size: 11px; padding: 2px 6px; background: #2a3a2a; border: 1px solid #4a6a4a; border-radius: 2px; }
-  .zoom-test:hover { background: #3a4a3a; }
-
   #sequence-section { border-top: 1px solid #444; }
   #sequence-section h2 { padding: 10px 12px; font-size: 14px; border-bottom: 1px solid #444; background: #2a2a2a; }
 
@@ -107,7 +84,6 @@
   .seq-item.active { background: #3a3a4a; }
   .seq-key { background: #444; padding: 2px 6px; border-radius: 2px; min-width: 20px; text-align: center; }
   .seq-steps { flex: 1; color: #aaa; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .seq-effect { color: #888; font-size: 11px; }
 
   #seq-detail {
     padding: 8px 12px; border-top: 1px solid #444; font-size: 12px;
@@ -122,7 +98,7 @@
 
   #bottom-bar {
     padding: 8px 12px; border-top: 1px solid #444; background: #2a2a2a;
-    display: flex; gap: 8px;
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
   }
   #bottom-bar button {
     font-family: monospace; font-size: 12px;
@@ -132,6 +108,12 @@
   #bottom-bar button:hover { background: #555; }
   #bottom-bar button.primary { background: #3a6a3a; border-color: #5a8a5a; }
   #bottom-bar button.primary:hover { background: #4a7a4a; }
+  #bottom-bar select {
+    font-family: monospace; font-size: 12px;
+    padding: 4px 6px; background: #333; color: #ddd;
+    border: 1px solid #555; border-radius: 3px;
+  }
+  #bottom-bar label { font-size: 11px; color: #888; }
 
   #help-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -166,15 +148,6 @@
   </div>
   <div id="group-list"></div>
 
-  <div id="zoom-section">
-    <h2>Zoom Presets</h2>
-    <div id="zoom-controls">
-      <input type="text" id="zoom-key-input" placeholder="Key" maxlength="1">
-      <button id="btn-save-zoom">Save Current View</button>
-    </div>
-    <div id="zoom-list"></div>
-  </div>
-
   <div id="sequence-section">
     <h2>Sequences</h2>
     <div id="sequence-controls">
@@ -192,14 +165,12 @@
   </div>
 
   <div id="bottom-bar">
-    <select id="scene-num" style="font-family:monospace;font-size:12px;padding:2px 4px;background:#333;color:#ddd;border:1px solid #555;border-radius:3px">
-      <option value="1">Scene 1</option>
-      <option value="2">Scene 2</option>
-      <option value="3">Scene 3</option>
-    </select>
+    <label>Movement</label>
+    <select id="movement-select"></select>
+    <label>Scene</label>
+    <select id="scene-select"></select>
     <button class="primary" id="btn-save">Save</button>
-    <button id="btn-load">Load</button>
-    <button id="btn-help">Help (?)</button>
+    <button id="btn-help">?</button>
   </div>
 </div>
 
@@ -214,8 +185,9 @@
     <p><kbd>Drag</kbd> Pan</p>
     <p><kbd>G</kbd> Quick create group from selection</p>
     <p><kbd>Space</kbd> Advance to next step (in sequence test mode)</p>
-    <p>Zoom: navigate to desired view, type key, click "Save Current View"</p>
     <p><kbd>?</kbd> Toggle this help</p>
+    <br>
+    <p style="color:#aaa;font-size:11px">Groups and sequences are saved to config.json for the selected movement/scene.</p>
     <br>
     <button onclick="document.getElementById('help-overlay').classList.remove('visible')">Close</button>
   </div>
@@ -223,46 +195,42 @@
 
 <script>
 // ============================================================
-// DATA
+// CONSTANTS
 // ============================================================
 const IMG_W = 2731, IMG_H = 2048;
-let bgImage = null, overlayImage = null, idMapData = null, regionMeta = null, regionChildren = null;
-let idMapW = IMG_W, idMapH = IMG_H;
+const ASPECT = 16 / 9;
 
 // ============================================================
 // STATE
 // ============================================================
-const ASPECT = 16 / 9;
-// Initialize view to 16:9 crop centered on the image
+let masterConfig = null;
+let editMovIdx = 0, editScnIdx = 0;
+
+let bgImage = null, overlayImage = null, idMapData = null, regionMeta = null, regionChildren = null;
+let idMapW = IMG_W, idMapH = IMG_H;
+
+// View (16:9 crop of the image)
 let view = (() => {
-  // Fit the image within a 16:9 frame
   let w = IMG_W;
   let h = w / ASPECT;
-  if (h > IMG_H) {
-    h = IMG_H;
-    w = h * ASPECT;
-  }
+  if (h > IMG_H) { h = IMG_H; w = h * ASPECT; }
   return { x: (IMG_W - w) / 2, y: (IMG_H - h) / 2, w, h };
 })();
+
 let selectedRegions = new Set();
-let preChildrenSelection = null; // stored selection before "C" was pressed
+let preChildrenSelection = null;
 let hoveredRegion = -1;
 
 // Groups: { id: { name, regions: Set, color } }
 let groups = {};
 let groupIdCounter = 0;
 let activeGroupId = null;
-let selectedGroupIds = new Set(); // for multi-select in sidebar
+let selectedGroupIds = new Set();
 
-// Sequences: { id: { key, steps: [groupId, ...], effect, params } }
+// Sequences: { id: { key, steps: [...] } }
 let sequences = {};
 let seqIdCounter = 0;
 let activeSeqId = null;
-
-// Zoom presets: { id: { key, x, y, w, h, tweenDuration } }
-let zoomPresets = {};
-let zoomIdCounter = 0;
-let tweenAnim = null; // current tween animation frame id
 
 // ============================================================
 // CANVAS SETUP
@@ -289,14 +257,57 @@ function loadImage(src) {
   });
 }
 
-const cb = '?v=' + Date.now();
-Promise.all([
-  loadImage('ceiling1_upscayl_4x_upscayl-standard-4x.png' + cb),
-  loadImage('hires_region_overlay.png' + cb),
-  loadImage('hires_region_id_map.png' + cb),
-  fetch('hires_region_meta.json' + cb).then(r => r.json()),
-  fetch('hires_region_children.json' + cb).then(r => r.json())
-]).then(([bg, overlay, idMap, meta, children]) => {
+async function loadMasterConfig() {
+  const resp = await fetch('config.json?v=' + Date.now());
+  if (!resp.ok) throw new Error('config.json not found');
+  masterConfig = await resp.json();
+}
+
+function populateMovementDropdown() {
+  const sel = document.getElementById('movement-select');
+  sel.innerHTML = '';
+  for (const [i, mv] of masterConfig.movements.entries()) {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = mv.name;
+    sel.appendChild(opt);
+  }
+  populateSceneDropdown(0);
+}
+
+function populateSceneDropdown(movIdx) {
+  const sel = document.getElementById('scene-select');
+  sel.innerHTML = '';
+  const scenes = masterConfig.movements[movIdx].scenes || [];
+  if (scenes.length === 0) {
+    const opt = document.createElement('option');
+    opt.value = -1;
+    opt.textContent = '(no scenes)';
+    sel.appendChild(opt);
+  } else {
+    for (const [i, sc] of scenes.entries()) {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = sc.name;
+      sel.appendChild(opt);
+    }
+  }
+}
+
+async function loadSceneAssets(sceneData) {
+  document.getElementById('info-bar').textContent = 'Loading scene assets...';
+  const cb = '?v=' + Date.now();
+  const overlayUrl = sceneData.regionOverlay ||
+    sceneData.regionIdMap.replace('_id_map', '_overlay');
+
+  const [bg, overlay, idMap, meta, children] = await Promise.all([
+    loadImage(sceneData.image + cb),
+    loadImage(overlayUrl + cb).catch(() => null),
+    loadImage(sceneData.regionIdMap + cb),
+    fetch(sceneData.regionMeta + cb).then(r => r.json()),
+    fetch(sceneData.regionChildren + cb).then(r => r.json()).catch(() => ({}))
+  ]);
+
   bgImage = bg;
   overlayImage = overlay;
   regionChildren = children;
@@ -328,13 +339,132 @@ Promise.all([
   }
 
   document.getElementById('info-bar').textContent =
-    `Regions: ${Object.keys(regionMeta).length} | Children data: ${Object.keys(children).length} parents`;
+    `Regions: ${Object.keys(regionMeta).length} | Children: ${Object.keys(children).length} parents`;
 
+  loadSceneGroupsSeqs(sceneData);
   resize();
   render();
-  tryLoadScene();
-  loadPerformConfig();
-});
+}
+
+function loadSceneGroupsSeqs(sceneData) {
+  groups = {};
+  if (sceneData.groups) {
+    for (const [gid, g] of Object.entries(sceneData.groups)) {
+      groups[gid] = {
+        name: g.name,
+        regions: new Set(g.regions),
+        color: g.color
+      };
+    }
+  }
+  // Derive counters from existing IDs
+  let maxGid = -1;
+  for (const gid of Object.keys(groups)) {
+    const n = parseInt(gid.replace('g', ''));
+    if (!isNaN(n)) maxGid = Math.max(maxGid, n);
+  }
+  groupIdCounter = maxGid + 1;
+
+  sequences = {};
+  if (sceneData.sequences) {
+    for (const [sid, s] of Object.entries(sceneData.sequences)) {
+      sequences[sid] = { ...s };
+    }
+  }
+  let maxSid = -1;
+  for (const sid of Object.keys(sequences)) {
+    const n = parseInt(sid.replace('s', ''));
+    if (!isNaN(n)) maxSid = Math.max(maxSid, n);
+  }
+  seqIdCounter = maxSid + 1;
+
+  activeGroupId = null;
+  activeSeqId = null;
+  selectedRegions.clear();
+  selectedGroupIds.clear();
+  testStepIdx = -1;
+  stopSparkleTest();
+
+  renderGroupList();
+  renderSequenceList();
+  renderSeqDetail();
+  updateSelectionInfo();
+}
+
+async function loadSelectedScene() {
+  editMovIdx = parseInt(document.getElementById('movement-select').value);
+  editScnIdx = parseInt(document.getElementById('scene-select').value);
+
+  if (editScnIdx < 0) {
+    document.getElementById('info-bar').textContent = 'No scenes in this movement.';
+    groups = {};
+    sequences = {};
+    renderGroupList();
+    renderSequenceList();
+    renderSeqDetail();
+    return;
+  }
+
+  const sceneData = masterConfig.movements[editMovIdx].scenes[editScnIdx];
+  await loadSceneAssets(sceneData);
+}
+
+// ============================================================
+// SAVE
+// ============================================================
+async function saveScene() {
+  if (editScnIdx < 0) { alert('No scene selected.'); return; }
+
+  // Re-fetch config.json to get latest state (in case edited externally)
+  let cfg;
+  try {
+    const resp = await fetch('config.json?v=' + Date.now());
+    cfg = await resp.json();
+  } catch (e) {
+    alert('Could not read config.json: ' + e.message);
+    return;
+  }
+
+  const scene = cfg.movements[editMovIdx].scenes[editScnIdx];
+
+  // Build groups output
+  const groupsOut = {};
+  for (const [gid, g] of Object.entries(groups)) {
+    groupsOut[gid] = {
+      name: g.name,
+      regions: [...g.regions],
+      color: g.color
+    };
+  }
+  scene.groups = groupsOut;
+
+  // Build sequences output
+  const seqsOut = {};
+  for (const [sid, s] of Object.entries(sequences)) {
+    seqsOut[sid] = {
+      key: s.key,
+      steps: s.steps.map(step => ({ ...step }))
+    };
+  }
+  scene.sequences = seqsOut;
+
+  try {
+    const putResp = await fetch('config.json', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cfg, null, 2)
+    });
+    if (putResp.ok) {
+      masterConfig = cfg;
+      document.getElementById('btn-save').textContent = 'Saved!';
+      setTimeout(() => { document.getElementById('btn-save').textContent = 'Save'; }, 1500);
+    } else {
+      alert('Save failed: ' + putResp.status);
+    }
+  } catch (e) {
+    alert('Save failed: ' + e.message + '\nMake sure server.py is running.');
+  }
+}
 
 // ============================================================
 // RENDERING
@@ -346,16 +476,13 @@ const GROUP_COLORS = [
 ];
 
 function getCanvasTransform() {
-  // Fit the 16:9 view into the canvas with letterboxing
   const canvasAspect = canvas.width / canvas.height;
   const viewAspect = view.w / view.h;
   let scale, offsetX = 0, offsetY = 0;
   if (canvasAspect > viewAspect) {
-    // Canvas is wider — pillarbox (bars on sides)
     scale = canvas.height / view.h;
     offsetX = (canvas.width - view.w * scale) / 2;
   } else {
-    // Canvas is taller — letterbox (bars on top/bottom)
     scale = canvas.width / view.w;
     offsetY = (canvas.height - view.h * scale) / 2;
   }
@@ -380,8 +507,10 @@ function render() {
   ctx.drawImage(bgImage, 0, 0, IMG_W, IMG_H);
 
   // Overlay
-  ctx.globalAlpha = 0.3;
-  ctx.drawImage(overlayImage, 0, 0, IMG_W, IMG_H);
+  if (overlayImage) {
+    ctx.globalAlpha = 0.3;
+    ctx.drawImage(overlayImage, 0, 0, IMG_W, IMG_H);
+  }
 
   // Highlight selected groups in sidebar
   selectedGroupIds.forEach(gid => {
@@ -412,13 +541,11 @@ function render() {
 }
 
 function highlightRegions(regionSet, color) {
-  // Visible area in logical coordinates
   const visMinX = Math.max(0, Math.floor(view.x));
   const visMinY = Math.max(0, Math.floor(view.y));
   const visMaxX = Math.min(IMG_W, Math.ceil(view.x + view.w));
   const visMaxY = Math.min(IMG_H, Math.ceil(view.y + view.h));
 
-  // Sub-pixel step size: one id map pixel in logical coordinates
   const stepX = IMG_W / idMapW;
   const stepY = IMG_H / idMapH;
 
@@ -435,7 +562,6 @@ function highlightRegions(regionSet, color) {
     const y1 = Math.min(bb[3] + 1, visMaxY);
     if (x0 >= x1 || y0 >= y1) return;
 
-    // Iterate at id map resolution for hi-res highlights
     const my0 = Math.round(y0 * idMapH / IMG_H);
     const my1 = Math.round(y1 * idMapH / IMG_H);
     const mx0 = Math.round(x0 * idMapW / IMG_W);
@@ -471,17 +597,10 @@ function hexToRgb(hex) {
 }
 
 // ============================================================
-// PERFORM-STYLE RENDERING (for test mode)
+// PERFORM-STYLE TEST RENDERING
 // ============================================================
-let testRegionRuns = {}; // regionId -> flat array [y, x, w, ...]
+let testRegionRuns = {};
 let performConfig = { dimLevel: 0.15, litLevel: 1.0, litSaturate: 1.8, litContrast: 1.3 };
-
-async function loadPerformConfig() {
-  try {
-    const r = await fetch('perform_config.json?t=' + Date.now());
-    if (r.ok) performConfig = await r.json();
-  } catch (e) {}
-}
 
 function buildRunsForRegions(regionIds) {
   for (const regionId of regionIds) {
@@ -513,9 +632,6 @@ function buildRunsForRegions(regionIds) {
     testRegionRuns[regionId] = runs;
   }
 }
-
-// Not used — kept for reference
-// function brightenRegions() {}
 
 // ============================================================
 // HIT TESTING
@@ -555,7 +671,7 @@ canvas.addEventListener('wheel', (e) => {
   const mx = (e.clientX - rect.left) / canvas.width;
   const my = (e.clientY - rect.top) / canvas.height;
   const nw = view.w * factor;
-  const nh = nw / ASPECT; // maintain 16:9
+  const nh = nw / ASPECT;
   view.x += (view.w - nw) * mx;
   view.y += (view.h - nh) * my;
   view.w = nw; view.h = nh;
@@ -593,7 +709,7 @@ window.addEventListener('mousemove', (e) => {
         `Region ${region} | Size: ${r.size}px${groupStr}${childStr}`;
     } else {
       document.getElementById('info-bar').textContent =
-        `Regions: ${Object.keys(regionMeta).length}`;
+        `Regions: ${regionMeta ? Object.keys(regionMeta).length : 0}`;
     }
   }
 });
@@ -629,7 +745,6 @@ window.addEventListener('mouseup', (e) => {
 // KEYBOARD
 // ============================================================
 window.addEventListener('keydown', (e) => {
-  // Don't capture when typing in inputs
   if (e.target.tagName === 'INPUT') return;
 
   if (e.key === 'Escape') {
@@ -650,9 +765,7 @@ window.addEventListener('keydown', (e) => {
   }
 
   if (e.key === 'g' || e.key === 'G') {
-    if (selectedRegions.size > 0) {
-      quickCreateGroup();
-    }
+    if (selectedRegions.size > 0) quickCreateGroup();
   }
 
   if (e.key === '?' || e.key === '/') {
@@ -671,7 +784,6 @@ window.addEventListener('keydown', (e) => {
 function selectChildren() {
   if (selectedRegions.size === 0) return;
 
-  // If we already expanded children, toggle back to parents
   if (preChildrenSelection !== null) {
     selectedRegions = preChildrenSelection;
     preChildrenSelection = null;
@@ -702,7 +814,7 @@ function updateSelectionInfo() {
     el.textContent = 'No selection';
   } else if (selectedRegions.size === 1) {
     const rid = [...selectedRegions][0];
-    const childCount = regionChildren[rid] ? regionChildren[rid].length : 0;
+    const childCount = regionChildren && regionChildren[rid] ? regionChildren[rid].length : 0;
     el.textContent = `Selected: region ${rid}${childCount > 0 ? ` (${childCount} children - press C)` : ''}`;
   } else {
     el.textContent = `Selected: ${selectedRegions.size} regions`;
@@ -744,9 +856,8 @@ function quickCreateGroup() {
 function deleteGroup(gid) {
   delete groups[gid];
   if (activeGroupId === gid) activeGroupId = null;
-  // Remove from any sequences
   for (const seq of Object.values(sequences)) {
-    seq.steps = seq.steps.filter(s => s !== gid);
+    seq.steps = seq.steps.filter(s => s.groupId !== gid);
   }
   renderGroupList();
   renderSequenceList();
@@ -774,7 +885,6 @@ function renderGroupList() {
         return;
       }
       if (e.detail === 2) {
-        // Double click — cancel pending single click, start rename
         clearTimeout(clickTimer);
         clickTimer = null;
         const nameEl = div.querySelector('.group-name');
@@ -800,7 +910,6 @@ function renderGroupList() {
         });
         return;
       }
-      // Single click — delay to wait for possible double click
       clearTimeout(clickTimer);
       const shiftKey = e.shiftKey;
       clickTimer = setTimeout(() => {
@@ -808,11 +917,8 @@ function renderGroupList() {
         hoveredRegion = -1;
         selectedRegions.clear();
         if (shiftKey) {
-          if (selectedGroupIds.has(gid)) {
-            selectedGroupIds.delete(gid);
-          } else {
-            selectedGroupIds.add(gid);
-          }
+          if (selectedGroupIds.has(gid)) selectedGroupIds.delete(gid);
+          else selectedGroupIds.add(gid);
         } else {
           selectedGroupIds.clear();
           activeGroupId = (activeGroupId === gid) ? null : gid;
@@ -826,7 +932,6 @@ function renderGroupList() {
   }
 }
 
-// Create group button
 document.getElementById('btn-create-group').addEventListener('click', () => {
   if (selectedRegions.size === 0) return;
   const name = document.getElementById('group-name-input').value.trim();
@@ -839,7 +944,6 @@ document.getElementById('btn-create-group').addEventListener('click', () => {
   render();
 });
 
-// Merge selected groups into a new group
 document.getElementById('btn-merge-groups').addEventListener('click', () => {
   if (selectedGroupIds.size < 2) return;
   const mergedRegions = new Set();
@@ -859,7 +963,6 @@ document.getElementById('btn-merge-groups').addEventListener('click', () => {
   render();
 });
 
-// Add to group button
 document.getElementById('btn-add-to-group').addEventListener('click', () => {
   if (selectedRegions.size === 0 || activeGroupId === null) return;
   const group = groups[activeGroupId];
@@ -873,8 +976,7 @@ document.getElementById('btn-add-to-group').addEventListener('click', () => {
 // ============================================================
 // SEQUENCES
 // ============================================================
-// Each sequence: { key, steps: [{ groupId, effect, fadeIn, fadeOut, sparkleSpeed }, ...] }
-let testStepIdx = -1; // -1 = not testing
+let testStepIdx = -1;
 
 function createSequence(key) {
   const id = 's' + (seqIdCounter++);
@@ -953,7 +1055,6 @@ function renderSeqDetail() {
   });
   el.innerHTML = html;
 
-  // Bind effect change
   el.querySelectorAll('.seq-step-effect').forEach(sel => {
     sel.addEventListener('change', (e) => {
       const idx = parseInt(e.target.dataset.idx);
@@ -962,7 +1063,6 @@ function renderSeqDetail() {
     });
   });
 
-  // Bind move buttons
   el.querySelectorAll('.seq-step-move').forEach(btn => {
     btn.addEventListener('click', () => {
       const idx = parseInt(btn.dataset.idx);
@@ -977,7 +1077,6 @@ function renderSeqDetail() {
     });
   });
 
-  // Bind remove buttons
   el.querySelectorAll('.seq-step-remove').forEach(btn => {
     btn.addEventListener('click', () => {
       seq.steps.splice(parseInt(btn.dataset.idx), 1);
@@ -988,14 +1087,11 @@ function renderSeqDetail() {
     });
   });
 
-  // Bind test button
   el.querySelector('.seq-test-btn').addEventListener('click', () => {
     if (testStepIdx >= 0) {
-      // Stop testing
       testStepIdx = -1;
       stopSparkleTest();
     } else {
-      // Start testing from step 0
       testStepIdx = 0;
       showTestStep();
     }
@@ -1003,23 +1099,19 @@ function renderSeqDetail() {
   });
 }
 
-// Test mode: visualize the current test step on the canvas
 let sparkleInterval = null;
-let sparkleState = {}; // regionId -> on/off
+let sparkleState = {};
 
 function showTestStep() {
   stopSparkleTest();
   if (!activeSeqId || testStepIdx < 0) { render(); return; }
   const seq = sequences[activeSeqId];
-  if (testStepIdx >= seq.steps.length) {
-    testStepIdx = 0; // cycle
-  }
+  if (testStepIdx >= seq.steps.length) testStepIdx = 0;
   const step = seq.steps[testStepIdx];
   const group = groups[step.groupId];
   if (!group) { render(); return; }
 
   if (step.effect === 'sparkle') {
-    // Start sparkle animation
     sparkleState = {};
     group.regions.forEach(r => { sparkleState[r] = Math.random() > 0.5; });
     sparkleInterval = setInterval(() => {
@@ -1077,7 +1169,6 @@ function renderTestFrame(group, effect) {
   ctx.restore();
 }
 
-// Handle space bar to advance test step
 function advanceTestStep() {
   if (testStepIdx < 0 || !activeSeqId) return;
   const seq = sequences[activeSeqId];
@@ -1111,215 +1202,43 @@ document.getElementById('btn-add-step').addEventListener('click', () => {
 });
 
 // ============================================================
-// ZOOM PRESETS
+// BOTTOM BAR EVENT HANDLERS
 // ============================================================
-function saveZoomPreset(key) {
-  const id = 'z' + (zoomIdCounter++);
-  zoomPresets[id] = {
-    key: key.toLowerCase(),
-    x: view.x,
-    y: view.y,
-    w: view.w,
-    h: view.h,
-    tweenDuration: 500
-  };
-  renderZoomList();
-  return id;
-}
-
-function renderZoomList() {
-  const list = document.getElementById('zoom-list');
-  list.innerHTML = '';
-  for (const [zid, zp] of Object.entries(zoomPresets)) {
-    const div = document.createElement('div');
-    div.className = 'zoom-item';
-    div.innerHTML = `
-      <div class="zoom-key">${zp.key.toUpperCase()}</div>
-      <div class="zoom-desc">${(IMG_W / zp.w).toFixed(1)}x zoom, center (${Math.round(zp.x + zp.w/2)}, ${Math.round(zp.y + zp.h/2)})</div>
-      <button class="zoom-test" data-zid="${zid}">Test</button>
-      <div class="group-delete" data-zid="${zid}">&times;</div>
-    `;
-    div.querySelector('.zoom-test').addEventListener('click', (e) => {
-      e.stopPropagation();
-      tweenToView(zp, zp.tweenDuration);
-    });
-    div.querySelector('.group-delete').addEventListener('click', (e) => {
-      e.stopPropagation();
-      delete zoomPresets[e.target.dataset.zid];
-      renderZoomList();
-    });
-    list.appendChild(div);
-  }
-}
-
-function tweenToView(target, duration) {
-  duration = duration || target.tweenDuration || 500;
-  if (tweenAnim) cancelAnimationFrame(tweenAnim);
-
-  const startView = { ...view };
-  const startTime = performance.now();
-
-  function easeInOutCubic(t) {
-    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-  }
-
-  function step(now) {
-    const elapsed = now - startTime;
-    const t = Math.min(1, elapsed / duration);
-    const e = easeInOutCubic(t);
-
-    view.x = startView.x + (target.x - startView.x) * e;
-    view.y = startView.y + (target.y - startView.y) * e;
-    view.w = startView.w + (target.w - startView.w) * e;
-    view.h = startView.h + (target.h - startView.h) * e;
-
-    render();
-
-    if (t < 1) {
-      tweenAnim = requestAnimationFrame(step);
-    } else {
-      tweenAnim = null;
-    }
-  }
-
-  tweenAnim = requestAnimationFrame(step);
-}
-
-document.getElementById('btn-save-zoom').addEventListener('click', () => {
-  const key = document.getElementById('zoom-key-input').value.trim();
-  if (!key) return;
-  saveZoomPreset(key);
-  document.getElementById('zoom-key-input').value = '';
+document.getElementById('movement-select').addEventListener('change', (e) => {
+  const movIdx = parseInt(e.target.value);
+  populateSceneDropdown(movIdx);
+  loadSelectedScene();
 });
 
-// ============================================================
-// SAVE / LOAD
-// ============================================================
-function buildSceneJson() {
-  const groupsOut = {};
-  for (const [gid, g] of Object.entries(groups)) {
-    groupsOut[gid] = {
-      name: g.name,
-      regions: [...g.regions],
-      color: g.color
-    };
-  }
-
-  const seqsOut = {};
-  for (const [sid, s] of Object.entries(sequences)) {
-    seqsOut[sid] = {
-      key: s.key,
-      steps: s.steps.map(step => ({ ...step }))
-    };
-  }
-
-  return {
-    image: 'ceiling1_upscayl_4x_upscayl-standard-4x.png',
-    regionIdMap: 'hires_region_id_map.png',
-    regionMeta: 'hires_region_meta.json',
-    groups: groupsOut,
-    sequences: seqsOut,
-    groupIdCounter,
-    seqIdCounter,
-    zoomIdCounter,
-    zoomPresets: { ...zoomPresets },
-    fadeDuration: 1000
-  };
-}
-
-function getSceneFilename() {
-  return `scene${document.getElementById('scene-num').value}.json`;
-}
-
-function saveScene() {
-  const filename = getSceneFilename();
-  const json = JSON.stringify(buildSceneJson(), null, 2);
-
-  fetch(filename, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: json
-  }).then(r => {
-    if (r.ok) {
-      document.getElementById('btn-save').textContent = 'Saved!';
-      setTimeout(() => { document.getElementById('btn-save').textContent = 'Save'; }, 1500);
-    } else {
-      alert('Save failed: ' + r.status);
-    }
-  }).catch(e => {
-    alert('Save failed: ' + e.message + '\nMake sure server.py is running.');
-  });
-}
-
-function loadSceneFromJson(data) {
-  groups = {};
-  if (data.groups) {
-    for (const [gid, g] of Object.entries(data.groups)) {
-      groups[gid] = {
-        name: g.name,
-        regions: new Set(g.regions),
-        color: g.color
-      };
-    }
-  }
-  groupIdCounter = data.groupIdCounter || Object.keys(groups).length;
-
-  sequences = {};
-  if (data.sequences) {
-    for (const [sid, s] of Object.entries(data.sequences)) {
-      sequences[sid] = { ...s };
-    }
-  }
-  seqIdCounter = data.seqIdCounter || Object.keys(sequences).length;
-
-  zoomPresets = data.zoomPresets || {};
-  zoomIdCounter = data.zoomIdCounter || Object.keys(zoomPresets).length;
-
-  activeGroupId = null;
-  activeSeqId = null;
-  selectedRegions.clear();
-
-  renderGroupList();
-  renderSequenceList();
-  renderSeqDetail();
-  renderZoomList();
-  updateSelectionInfo();
-  render();
-}
-
-function tryLoadScene() {
-  const filename = getSceneFilename();
-  fetch(filename + '?v=' + Date.now())
-    .then(r => { if (r.ok) return r.json(); throw new Error('not found'); })
-    .then(data => { loadSceneFromJson(data); })
-    .catch(() => {});
-}
-
-// Reload scene when scene number changes
-document.getElementById('scene-num').addEventListener('change', tryLoadScene);
+document.getElementById('scene-select').addEventListener('change', () => {
+  loadSelectedScene();
+});
 
 document.getElementById('btn-save').addEventListener('click', saveScene);
-
-document.getElementById('btn-load').addEventListener('click', () => {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.json';
-  input.onchange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const data = JSON.parse(ev.target.result);
-      loadSceneFromJson(data);
-    };
-    reader.readAsText(file);
-  };
-  input.click();
-});
 
 document.getElementById('btn-help').addEventListener('click', () => {
   document.getElementById('help-overlay').classList.toggle('visible');
 });
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+  resize();
+  document.getElementById('info-bar').textContent = 'Loading config.json...';
+
+  try {
+    await loadMasterConfig();
+  } catch (e) {
+    document.getElementById('info-bar').textContent = 'Error: config.json not found. Start server.py first.';
+    return;
+  }
+
+  populateMovementDropdown();
+  await loadSelectedScene();
+}
+
+init();
 </script>
 </body>
 </html>
