@@ -150,10 +150,10 @@ python3 generate_regions.py <input_outline.png> [options]
 python3 generate_regions.py outlines_render.png
 
 # Hi-res with prefix, higher min-pixels threshold
-python3 generate_regions.py hires_outlines_render.png --prefix hires_ --min-pixels 150
+python3 generate_regions.py outlines_render_hires.png --prefix hires_ --min-pixels 150
 
 # Scene 2 with custom prefix
-python3 generate_regions.py scene2_outlines_render.png --prefix scene2_
+python3 generate_regions.py outlines_render_scene2.png --prefix scene2_
 ```
 
 ### Output files

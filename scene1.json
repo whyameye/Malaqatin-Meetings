@@ -1,0 +1,128 @@
+{
+  "image": "ceiling1_upscayl_4x_upscayl-standard-4x.png",
+  "regionIdMap": "hires_region_id_map.png",
+  "regionMeta": "hires_region_meta.json",
+  "groups": {
+    "g4": {
+      "name": "Group 1",
+      "regions": [
+        257
+      ],
+      "color": "#ff3366"
+    },
+    "g5": {
+      "name": "Group 2",
+      "regions": [
+        192
+      ],
+      "color": "#33ff66"
+    },
+    "g6": {
+      "name": "Group 3",
+      "regions": [
+        205,
+        207,
+        209,
+        215,
+        220,
+        223,
+        225,
+        229,
+        230,
+        244,
+        247,
+        248,
+        257,
+        258,
+        271,
+        277,
+        293,
+        308,
+        309,
+        316,
+        318,
+        326,
+        329,
+        343,
+        346,
+        348,
+        1285,
+        1296,
+        1303,
+        1304,
+        1311,
+        1316,
+        1319,
+        1321,
+        1328,
+        1334,
+        1335,
+        1344,
+        1347,
+        1352,
+        1357,
+        1362,
+        1364,
+        1368,
+        1372
+      ],
+      "color": "#6633ff"
+    },
+    "g7": {
+      "name": "Group 4",
+      "regions": [
+        1458
+      ],
+      "color": "#ffcc33"
+    }
+  },
+  "sequences": {
+    "s5": {
+      "key": "a",
+      "steps": [
+        {
+          "groupId": "g4",
+          "effect": "solid",
+          "fadeIn": 200,
+          "fadeOut": 500,
+          "sparkleSpeed": 100
+        },
+        {
+          "groupId": "g5",
+          "effect": "sparkle",
+          "fadeIn": 200,
+          "fadeOut": 500,
+          "sparkleSpeed": 100
+        },
+        {
+          "groupId": "g6",
+          "effect": "sparkle",
+          "fadeIn": 200,
+          "fadeOut": 500,
+          "sparkleSpeed": 100
+        },
+        {
+          "groupId": "g7",
+          "effect": "solid",
+          "fadeIn": 200,
+          "fadeOut": 500,
+          "sparkleSpeed": 100
+        }
+      ]
+    }
+  },
+  "groupIdCounter": 8,
+  "seqIdCounter": 6,
+  "zoomIdCounter": 1,
+  "zoomPresets": {
+    "z0": {
+      "key": "s",
+      "x": 1291.850078685788,
+      "y": 824.9177773309854,
+      "w": 176.45214639478056,
+      "h": 99.25433234706406,
+      "tweenDuration": 500
+    }
+  },
+  "fadeDuration": 1000
+}

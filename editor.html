@@ -291,15 +291,14 @@ function loadImage(src) {
 
 const cb = '?v=' + Date.now();
 Promise.all([
-  loadImage('ceiling1a.png' + cb),
-  loadImage('region_overlay.png' + cb),
-  loadImage('region_id_map.png' + cb),
-  fetch('region_meta.json' + cb).then(r => r.json()),
-  fetch('region_children.json' + cb).then(r => r.json())
+  loadImage('ceiling1_upscayl_4x_upscayl-standard-4x.png' + cb),
+  loadImage('hires_region_overlay.png' + cb),
+  loadImage('hires_region_id_map.png' + cb),
+  fetch('hires_region_meta.json' + cb).then(r => r.json()),
+  fetch('hires_region_children.json' + cb).then(r => r.json())
 ]).then(([bg, overlay, idMap, meta, children]) => {
   bgImage = bg;
   overlayImage = overlay;
-  regionMeta = meta;
   regionChildren = children;
 
   const tmpCanvas = document.createElement('canvas');
@@ -311,8 +310,25 @@ Promise.all([
   tmpCtx.drawImage(idMap, 0, 0);
   idMapData = tmpCtx.getImageData(0, 0, idMapW, idMapH).data;
 
+  // Scale region metadata from id map coordinates to logical coordinates
+  const sx = IMG_W / idMapW, sy = IMG_H / idMapH;
+  regionMeta = {};
+  for (const [k, v] of Object.entries(meta)) {
+    regionMeta[k] = {
+      ...v,
+      cx: Math.round(v.cx * sx),
+      cy: Math.round(v.cy * sy),
+      bbox: [
+        Math.round(v.bbox[0] * sx),
+        Math.round(v.bbox[1] * sy),
+        Math.round(v.bbox[2] * sx),
+        Math.round(v.bbox[3] * sy)
+      ]
+    };
+  }
+
   document.getElementById('info-bar').textContent =
-    `Regions: ${Object.keys(meta).length} | Children data: ${Object.keys(children).length} parents`;
+    `Regions: ${Object.keys(regionMeta).length} | Children data: ${Object.keys(children).length} parents`;
 
   resize();
   render();
@@ -396,11 +412,15 @@ function render() {
 }
 
 function highlightRegions(regionSet, color) {
-  // Visible area is just the 16:9 view rectangle
+  // Visible area in logical coordinates
   const visMinX = Math.max(0, Math.floor(view.x));
   const visMinY = Math.max(0, Math.floor(view.y));
   const visMaxX = Math.min(IMG_W, Math.ceil(view.x + view.w));
   const visMaxY = Math.min(IMG_H, Math.ceil(view.y + view.h));
+
+  // Sub-pixel step size: one id map pixel in logical coordinates
+  const stepX = IMG_W / idMapW;
+  const stepY = IMG_H / idMapH;
 
   ctx.globalAlpha = color[3] / 255;
   ctx.fillStyle = `rgb(${color[0]},${color[1]},${color[2]})`;
@@ -415,21 +435,26 @@ function highlightRegions(regionSet, color) {
     const y1 = Math.min(bb[3] + 1, visMaxY);
     if (x0 >= x1 || y0 >= y1) return;
 
-    for (let py = y0; py < y1; py++) {
+    // Iterate at id map resolution for hi-res highlights
+    const my0 = Math.round(y0 * idMapH / IMG_H);
+    const my1 = Math.round(y1 * idMapH / IMG_H);
+    const mx0 = Math.round(x0 * idMapW / IMG_W);
+    const mx1 = Math.round(x1 * idMapW / IMG_W);
+
+    for (let my = my0; my < my1; my++) {
       let runStart = -1;
-      for (let px = x0; px <= x1; px++) {
-        const mpx = Math.round(px * idMapW / IMG_W);
-        const mpy = Math.round(py * idMapH / IMG_H);
-        const offset = (mpy * idMapW + mpx) * 4;
+      const rowOffset = my * idMapW;
+      for (let mx = mx0; mx <= mx1; mx++) {
+        const offset = (rowOffset + mx) * 4;
         const r = idMapData[offset];
         const g = idMapData[offset + 1];
         const m = idMapData[offset + 2];
         const id = (m >= 250) ? (r | (g << 8)) : -1;
-        if (id === regionId && px < x1) {
-          if (runStart < 0) runStart = px;
+        if (id === regionId && mx < mx1) {
+          if (runStart < 0) runStart = mx;
         } else {
           if (runStart >= 0) {
-            ctx.fillRect(runStart, py, px - runStart, 1);
+            ctx.fillRect(runStart * stepX, my * stepY, (mx - runStart) * stepX, stepY);
             runStart = -1;
           }
         }
@@ -780,6 +805,8 @@ function renderGroupList() {
       const shiftKey = e.shiftKey;
       clickTimer = setTimeout(() => {
         clickTimer = null;
+        hoveredRegion = -1;
+        selectedRegions.clear();
         if (shiftKey) {
           if (selectedGroupIds.has(gid)) {
             selectedGroupIds.delete(gid);
@@ -790,6 +817,7 @@ function renderGroupList() {
           selectedGroupIds.clear();
           activeGroupId = (activeGroupId === gid) ? null : gid;
         }
+        updateSelectionInfo();
         renderGroupList();
         render();
       }, 250);
@@ -1186,11 +1214,9 @@ function buildSceneJson() {
   }
 
   return {
-    image: 'ceiling1a.png',
-    hiresImage: 'ceiling1_upscayl_4x_upscayl-standard-4x.png',
-    regionIdMap: 'region_id_map.png',
-    regionMeta: 'region_meta.json',
-    regionOverlay: 'region_overlay.png',
+    image: 'ceiling1_upscayl_4x_upscayl-standard-4x.png',
+    regionIdMap: 'hires_region_id_map.png',
+    regionMeta: 'hires_region_meta.json',
     groups: groupsOut,
     sequences: seqsOut,
     groupIdCounter,

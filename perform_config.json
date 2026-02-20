@@ -12,8 +12,8 @@
   "tweenDuration": 500,
   "sceneFadeDuration": 1000,
   "sceneImages": {
-    "1": { "image": "ceiling1a.png", "hiresImage": "ceiling1_upscayl_4x_upscayl-standard-4x.png" },
-    "2": { "image": "", "hiresImage": "" },
-    "3": { "image": "", "hiresImage": "" }
+    "1": { "image": "ceiling1_upscayl_4x_upscayl-standard-4x.png" },
+    "2": { "image": "" },
+    "3": { "image": "" }
   }
 }

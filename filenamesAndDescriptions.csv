@@ -1,0 +1,38 @@
+filename,description,resolution X,resolution Y
+ceiling1.jpg,photo of ceiling cleaned up by nano banana,2058,1536
+Movement I Ceiling Tiles motive 1-9.jpg,photo of ceiling with Susan’s annotations of motives,low,low
+hires_region_children.json,,,
+hires_region_meta.json,,,
+perform_config.json,configuration parameters for performer and editor,,
+region_children.json,,,
+region_meta.json,,,
+scene1.json,"zoom, key, sequences for scene 1 (ceiling)",,
+README.md,readme for project,,
+editor.html,code to run editor to create scenes,,
+perform.html,code to play scenes,,
+Malaqatin Meetings I. Thatta.mp3,music for visuals,,
+"Absolutey the final, final Score Malaqatin Meetings.pdf",score in pdf format,,
+notes on motives.txt,which groups go with which motives,,
+ceiling middle.png,low res photo of very center for tracing,117,114
+ceiling_outline.png,bad human-drawn outline of a group for nano banana to copy,,
+Ceiling1.png,photo of ceiling cleaned up by nano banana,2058,1536
+ceiling1a.png,photo of outlines of groups (B&W),2731,2048
+Gemini_Generated_Image_3atxx53atxx53atx.png,photo of outlines of very center of ceiling photo,1200,896
+Gemini_Generated_Image_cdpnwbcdpnwbcdpn.png,photo of outlines of entire ceiling photo,2400,1792
+hires_outlines_render.png,claude creation of outlines,8192,6144
+hires_region_id_map.png,claude creation id map (what is this for?),8192,6144
+hires_region_overlay.png,claude creation of overlay,8192,6144
+outlines_noaa.png,photo of outlines of groups (B&W),2731,2048
+outlines_render.png,photo of outlines of groups (B&W),2731,2048
+outlines_render.png,photo of outlines of groups (B&W),2716,2043
+region_id_map.png,,,
+region_overlay.png,,,
+regions_preview.png,,,
+regions_preview2.png,,,
+generate_regions.py,generate needed files for outlines and groups,,
+server.py,run this to use editor and performer,,
+ceiling_outline.svg,bad human-drawn outline of a group for nano banana to copy,,
+ceiling1_absolute.svg,svg of outlines of groups (B&W),,
+ceiling1_outline.svg,photo of ceiling with svg of groups,2721,2048
+ceiling1_outline no image.svg,svg of groups,,
+ceiling1_outline no image_inkscapeformat.svg,svg of groups,,
