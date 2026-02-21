@@ -2,17 +2,17 @@
   "config": {
     "dimLevel": 1,
     "litLevel": 1,
-    "fadeIn": 200,
-    "fadeOut": 500,
+    "fadeIn": 120,
+    "fadeOut": 150,
     "sparkleSpeed": 100,
     "sparkleMinOn": 20,
     "sparkleMaxOn": 80,
     "sparkleMinOff": 20,
     "sparkleMaxOff": 80,
-    "litSaturate": 1,
-    "litContrast": 1,
-    "sceneFadeDuration": 1000,
-    "crossfadeDuration": 1500
+    "litSaturate": 4,
+    "litContrast": 2,
+    "sceneFadeDuration": 100,
+    "crossfadeDuration": 1000
   },
   "movements": [
     {
@@ -29,56 +29,83 @@
           "groups": {
             "g0": {
               "name": "Group 1",
-              "regions": [178, 90],
+              "regions": [
+                178,
+                90
+              ],
               "color": "#ff3366"
             },
             "g1": {
               "name": "Group 2",
-              "regions": [178, 96],
+              "regions": [
+                178,
+                96
+              ],
               "color": "#33ff66"
             },
             "g2": {
               "name": "Group 3",
-              "regions": [178, 106],
+              "regions": [
+                178,
+                106
+              ],
               "color": "#6633ff"
             }
           },
           "sequences": {
             "s0": {
               "key": "a",
-              "fadeIn": 200,
-              "fadeOut": 500,
-              "sparkleSpeed": 100,
               "steps": [
-                { "groupId": "g0", "effect": "solid" },
-                { "groupId": "g1", "effect": "solid" },
-                { "groupId": "g2", "effect": "solid" }
+                {
+                  "groupId": "g0",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g1",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g2",
+                  "effect": "solid"
+                }
               ]
             }
           }
         },
         {
           "name": "Scene 2",
-          "image": "ceiling_20Feb1811.png",
+          "image": "ceiling1_medium_up.png",
           "regionIdMap": "m1s2_region_id_map.png",
           "regionMeta": "m1s2_region_meta.json",
           "regionChildren": "m1s2_region_children.json",
           "regionOverlay": "m1s2_region_overlay.png",
+          "groups": {},
+          "sequences": {}
+        },
+        {
+          "name": "Scene 3",
+          "image": "ceiling_20Feb1811.png",
+          "regionIdMap": "m1s3_region_id_map.png",
+          "regionMeta": "m1s3_region_meta.json",
+          "regionChildren": "m1s3_region_children.json",
+          "regionOverlay": "m1s3_region_overlay.png",
           "groups": {
             "g8": {
               "name": "Group 1",
-              "regions": [14],
+              "regions": [
+                14
+              ],
               "color": "#ff3366"
             }
           },
           "sequences": {
             "s7": {
               "key": "a",
-              "fadeIn": 200,
-              "fadeOut": 500,
-              "sparkleSpeed": 100,
               "steps": [
-                { "groupId": "g8", "effect": "solid" }
+                {
+                  "groupId": "g8",
+                  "effect": "sparkle"
+                }
               ]
             }
           }
