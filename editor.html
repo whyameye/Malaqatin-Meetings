@@ -497,7 +497,13 @@ function render() {
 
   const { scale, offsetX, offsetY } = getCanvasTransform();
 
+  // Clip all drawing to the letterboxed image area so highlights
+  // can't bleed into the bars at the top/bottom/sides
   ctx.save();
+  ctx.beginPath();
+  ctx.rect(offsetX, offsetY, view.w * scale, view.h * scale);
+  ctx.clip();
+
   ctx.translate(offsetX, offsetY);
   ctx.scale(scale, scale);
   ctx.translate(-view.x, -view.y);
@@ -538,14 +544,22 @@ function render() {
   }
 
   ctx.restore();
+
+  // Letterbox bars — drawn after restore so they're always clean
+  ctx.fillStyle = '#111';
+  if (offsetX > 0) {
+    ctx.fillRect(0, 0, offsetX, canvas.height);
+    ctx.fillRect(canvas.width - offsetX, 0, offsetX, canvas.height);
+  }
+  if (offsetY > 0) {
+    ctx.fillRect(0, 0, canvas.width, offsetY);
+    ctx.fillRect(0, canvas.height - offsetY, canvas.width, offsetY);
+  }
 }
 
 function highlightRegions(regionSet, color) {
-  const visMinX = Math.max(0, Math.floor(view.x));
-  const visMinY = Math.max(0, Math.floor(view.y));
-  const visMaxX = Math.min(IMG_W, Math.ceil(view.x + view.w));
-  const visMaxY = Math.min(IMG_H, Math.ceil(view.y + view.h));
-
+  // No row-level clipping needed — canvas is already clipped to the
+  // image display area, so nothing bleeds into the letterbox bars.
   const stepX = IMG_W / idMapW;
   const stepY = IMG_H / idMapH;
 
@@ -556,27 +570,26 @@ function highlightRegions(regionSet, color) {
     const meta = regionMeta[regionId];
     if (!meta) return;
     const bb = meta.bbox;
-    const x0 = Math.max(bb[0], visMinX);
-    const y0 = Math.max(bb[1], visMinY);
-    const x1 = Math.min(bb[2] + 1, visMaxX);
-    const y1 = Math.min(bb[3] + 1, visMaxY);
-    if (x0 >= x1 || y0 >= y1) return;
 
-    const my0 = Math.round(y0 * idMapH / IMG_H);
-    const my1 = Math.round(y1 * idMapH / IMG_H);
-    const mx0 = Math.round(x0 * idMapW / IMG_W);
-    const mx1 = Math.round(x1 * idMapW / IMG_W);
+    // Coarse skip: entire bbox is outside the view (performance optimisation)
+    if (bb[2] < view.x || bb[0] > view.x + view.w ||
+        bb[3] < view.y || bb[1] > view.y + view.h) return;
 
-    for (let my = my0; my < my1; my++) {
+    const my0 = Math.round(bb[1] * idMapH / IMG_H);
+    const my1 = Math.round(bb[3] * idMapH / IMG_H);
+    const mx0 = Math.round(bb[0] * idMapW / IMG_W);
+    const mx1 = Math.round(bb[2] * idMapW / IMG_W);
+
+    for (let my = my0; my <= my1; my++) {
       let runStart = -1;
       const rowOffset = my * idMapW;
-      for (let mx = mx0; mx <= mx1; mx++) {
+      for (let mx = mx0; mx <= mx1 + 1; mx++) {
         const offset = (rowOffset + mx) * 4;
         const r = idMapData[offset];
         const g = idMapData[offset + 1];
         const m = idMapData[offset + 2];
         const id = (m >= 250) ? (r | (g << 8)) : -1;
-        if (id === regionId && mx < mx1) {
+        if (id === regionId && mx <= mx1) {
           if (runStart < 0) runStart = mx;
         } else {
           if (runStart >= 0) {
