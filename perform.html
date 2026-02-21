@@ -46,8 +46,9 @@ let masterConfig = null;
 let config = {
   dimLevel: 0.15,
   litLevel: 1.00,
-  defaultFadeIn: 200,
-  defaultFadeOut: 500,
+  fadeIn: 200,
+  fadeOut: 500,
+  sparkleSpeed: 100,
   sparkleMinOn: 20,
   sparkleMaxOn: 80,
   sparkleMinOff: 20,
@@ -437,7 +438,7 @@ function getCanvasTransform(v) {
   return { scale, offsetX, offsetY };
 }
 
-function brightenRegions(regionSet, litAlpha) {
+function brightenRegions(regionSet, litAlpha, sat, con) {
   const stepY = IMG_H / idMapH;
   ctx.save();
   ctx.beginPath();
@@ -453,8 +454,6 @@ function brightenRegions(regionSet, litAlpha) {
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, IMG_W, IMG_H);
   ctx.globalAlpha = litAlpha;
-  const sat = config.litSaturate || 1;
-  const con = config.litContrast || 1;
   if (sat !== 1 || con !== 1) {
     ctx.filter = `saturate(${sat}) contrast(${con})`;
   }
@@ -494,8 +493,8 @@ function updateSequenceOpacity(state, now) {
   const seq = sequences[state.seqId];
   const step = seq.steps[state.stepIndex];
   const duration = state.fadeDirection === 'in'
-    ? (seq.fadeIn || config.defaultFadeIn)
-    : (seq.fadeOut || config.defaultFadeOut);
+    ? (seq.fadeIn || config.fadeIn)
+    : (seq.fadeOut || config.fadeOut);
   const elapsed = now - state.fadeStartTime;
   const t = Math.min(1, elapsed / duration);
   const e = easeInOutCubic(t);
@@ -643,7 +642,17 @@ function renderLoop(now) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   if (bgImage) {
-    const bgAlpha = (config.dimLevel + (1 - config.dimLevel) * rawFade) * sceneFade;
+    // Compute effectiveDimLevel: active sequences can darken the background further
+    let effectiveDimLevel = config.dimLevel;
+    for (const state of Object.values(seqStates)) {
+      if (state.opacity <= 0 || state.stepIndex < 0) continue;
+      const seq = sequences[state.seqId];
+      if (seq.dimLevel != null) {
+        const d = config.dimLevel + (seq.dimLevel - config.dimLevel) * state.opacity;
+        effectiveDimLevel = Math.min(effectiveDimLevel, d);
+      }
+    }
+    const bgAlpha = (effectiveDimLevel + (1 - effectiveDimLevel) * rawFade) * sceneFade;
 
     if (xfadeActive && xfadeFromBg) {
       // Crossfade: each scene uses its own transform so neither changes
@@ -686,16 +695,18 @@ function renderLoop(now) {
           const step = seq.steps[state.stepIndex];
           const group = groups[step.groupId];
           if (!group) continue;
-          const litAlpha = config.litLevel * state.opacity * sceneFade;
+          const litAlpha = (seq.litLevel ?? config.litLevel) * state.opacity * sceneFade;
           if (litAlpha <= 0.01) continue;
+          const sat = seq.litSaturate ?? config.litSaturate ?? 1;
+          const con = seq.litContrast ?? config.litContrast ?? 1;
           if (step.effect === 'sparkle' && Object.keys(state.sparkleState).length > 0) {
             const onRegions = new Set();
             for (const [rid, on] of Object.entries(state.sparkleState)) {
               if (on) onRegions.add(parseInt(rid));
             }
-            brightenRegions(onRegions, litAlpha);
+            brightenRegions(onRegions, litAlpha, sat, con);
           } else {
-            brightenRegions(new Set(group.regions), litAlpha);
+            brightenRegions(new Set(group.regions), litAlpha, sat, con);
           }
         }
       }
@@ -735,7 +746,7 @@ function renderLoop(now) {
     hud.innerHTML = [
       `FPS: ${fps} | ${movName} &gt; ${sceneName} (${sceneIdx + 1}/${totalScenes})`,
       `Dim: ${config.dimLevel} Lit: ${config.litLevel} Sat: ${config.litSaturate} Con: ${config.litContrast}`,
-      `FadeIn: ${config.defaultFadeIn}ms FadeOut: ${config.defaultFadeOut}ms`,
+      `FadeIn: ${config.fadeIn}ms FadeOut: ${config.fadeOut}ms Sparkle: ${config.sparkleSpeed}ms`,
       `SceneFade: ${Math.round(sceneFade * 100)}% Raw: ${Math.round(rawFade * 100)}%`,
       xfadeActive ? `Crossfade: ${Math.round(xfadeAlpha * 100)}%` : '',
       ...activeKeys

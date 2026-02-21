@@ -1,15 +1,16 @@
 {
   "config": {
-    "dimLevel": 0.15,
+    "dimLevel": 1,
     "litLevel": 1,
-    "defaultFadeIn": 200,
-    "defaultFadeOut": 500,
+    "fadeIn": 200,
+    "fadeOut": 500,
+    "sparkleSpeed": 100,
     "sparkleMinOn": 20,
     "sparkleMaxOn": 80,
     "sparkleMinOff": 20,
     "sparkleMaxOff": 80,
-    "litSaturate": 1.8,
-    "litContrast": 1.3,
+    "litSaturate": 1,
+    "litContrast": 1,
     "sceneFadeDuration": 1000,
     "crossfadeDuration": 1500
   },
