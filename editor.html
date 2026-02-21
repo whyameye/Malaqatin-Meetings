@@ -1065,19 +1065,24 @@ function renderSeqDetail() {
     return;
   }
   const seq = sequences[activeSeqId];
-  const inStyle = 'width:42px;font-family:monospace;font-size:11px;padding:1px 4px;background:#333;color:#ddd;border:1px solid #555;border-radius:2px';
-  const visStyle = 'width:38px;font-family:monospace;font-size:11px;padding:1px 4px;background:#333;color:#ddd;border:1px solid #555;border-radius:2px';
-  let html = `<div style="margin-bottom:4px;color:#aaa;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+  const inStyle = 'width:60px;font-family:monospace;font-size:11px;padding:1px 4px;background:#333;color:#ddd;border:1px solid #555;border-radius:2px';
+  const visStyle = 'width:55px;font-family:monospace;font-size:11px;padding:1px 4px;background:#333;color:#ddd;border:1px solid #555;border-radius:2px';
+  const rowStyle = 'display:flex;align-items:center;gap:12px;margin-bottom:3px;font-size:11px;color:#aaa';
+  let html = `<div style="${rowStyle}">
     <span>Key <b>${seq.key.toUpperCase()}</b></span>
-    <label style="font-size:11px">In <input class="seq-fadein" type="number" value="${seq.fadeIn ?? 200}" style="${inStyle}">ms</label>
-    <label style="font-size:11px">Out <input class="seq-fadeout" type="number" value="${seq.fadeOut ?? 500}" style="${inStyle}">ms</label>
-    <label style="font-size:11px">Sparkle <input class="seq-sparkle" type="number" value="${seq.sparkleSpeed ?? 100}" style="${inStyle}">ms</label>
-    <button class="seq-test-btn" style="margin-left:auto;font-family:monospace;font-size:11px;padding:2px 8px;background:#3a5a3a;border:1px solid #5a8a5a;color:#ddd;border-radius:3px;cursor:pointer">
+    <button class="seq-test-btn" style="font-family:monospace;font-size:11px;padding:2px 8px;background:#3a5a3a;border:1px solid #5a8a5a;color:#ddd;border-radius:3px;cursor:pointer">
       ${testStepIdx >= 0 ? 'Stop Test' : 'Test'}
     </button>
   </div>
-  <div style="margin-bottom:6px;color:#888;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px">
-    <span style="color:#666">override:</span>
+  <div style="${rowStyle}">
+    <label>In <input class="seq-fadein" type="number" value="${seq.fadeIn ?? 200}" style="${inStyle}">ms</label>
+    <label>Out <input class="seq-fadeout" type="number" value="${seq.fadeOut ?? 500}" style="${inStyle}">ms</label>
+  </div>
+  <div style="${rowStyle}">
+    <label>Sparkle <input class="seq-sparkle" type="number" value="${seq.sparkleSpeed ?? 100}" style="${inStyle}">ms</label>
+  </div>
+  <div style="${rowStyle};color:#666;margin-bottom:3px">
+    <span>override:</span>
     <label>Dim <input class="seq-dimlevel" type="number" step="0.01" value="${seq.dimLevel ?? ''}" placeholder="—" style="${visStyle}"></label>
     <label>Lit <input class="seq-litlevel" type="number" step="0.01" value="${seq.litLevel ?? ''}" placeholder="—" style="${visStyle}"></label>
     <label>Sat <input class="seq-litsat" type="number" step="0.1" value="${seq.litSaturate ?? ''}" placeholder="—" style="${visStyle}"></label>
