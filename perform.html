@@ -378,11 +378,8 @@ function activateScene(idx) {
   groups = sd.groups;
   sequences = sd.sequences;
 
-  // Reset view to full image (16:9 crop)
-  let w = IMG_W;
-  let h = w / ASPECT;
-  if (h > IMG_H) { h = IMG_H; w = h * ASPECT; }
-  view = { x: (IMG_W - w) / 2, y: (IMG_H - h) / 2, w, h };
+  // Reset view to full image
+  view = { x: 0, y: 0, w: IMG_W, h: IMG_H };
 
   // Build sequence key states
   seqStates = {};
