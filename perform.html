@@ -665,17 +665,8 @@ function renderLoop(now) {
       ctx.globalAlpha = xfadeAlpha * bgAlpha;
       ctx.drawImage(bgImage, 0, 0, IMG_W, IMG_H);
       ctx.restore();
-
-      // Letterbox bars
-      ctx.fillStyle = '#000';
-      if (tt.offsetX > 0) {
-        ctx.fillRect(0, 0, tt.offsetX, canvas.height);
-        ctx.fillRect(canvas.width - tt.offsetX, 0, tt.offsetX, canvas.height);
-      }
-      if (tt.offsetY > 0) {
-        ctx.fillRect(0, 0, canvas.width, tt.offsetY);
-        ctx.fillRect(0, canvas.height - tt.offsetY, canvas.width, tt.offsetY);
-      }
+      // No explicit letterbox bars during crossfade — clearRect leaves
+      // uncovered areas transparent, showing the black body background.
     } else {
       // Normal render
       const { scale, offsetX, offsetY } = getCanvasTransform(view);
