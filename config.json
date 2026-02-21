@@ -2,16 +2,16 @@
   "config": {
     "dimLevel": 1,
     "litLevel": 1,
-    "fadeIn": 120,
+    "fadeIn": 0,
     "fadeOut": 150,
     "sparkleSpeed": 100,
     "sparkleMinOn": 20,
     "sparkleMaxOn": 80,
     "sparkleMinOff": 20,
     "sparkleMaxOff": 80,
-    "litBrightness": 1,
-    "litSaturate": 4,
-    "litContrast": 2,
+    "litBrightness": 2,
+    "litSaturate": 1,
+    "litContrast": 1,
     "sceneFadeDuration": 1000,
     "crossfadeDuration": 1000
   },
@@ -92,34 +92,6 @@
           "regionOverlay": "m1s3_region_overlay.png",
           "groups": {},
           "sequences": {}
-        },
-        {
-          "name": "Scene 4",
-          "image": "ceiling_20Feb1811.png",
-          "regionIdMap": "m1s4_region_id_map.png",
-          "regionMeta": "m1s4_region_meta.json",
-          "regionChildren": "m1s4_region_children.json",
-          "regionOverlay": "m1s4_region_overlay.png",
-          "groups": {
-            "g8": {
-              "name": "Group 1",
-              "regions": [
-                14
-              ],
-              "color": "#ff3366"
-            }
-          },
-          "sequences": {
-            "s7": {
-              "key": "a",
-              "steps": [
-                {
-                  "groupId": "g8",
-                  "effect": "sparkle"
-                }
-              ]
-            }
-          }
         }
       ]
     },
