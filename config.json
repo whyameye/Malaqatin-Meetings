@@ -20,11 +20,21 @@
       "scenes": [
         {
           "name": "Scene 1",
-          "image": "ceiling_20Feb1811.png",
+          "image": "ceiling1_closeup_21Feb0747.png",
           "regionIdMap": "m1s1_region_id_map.png",
           "regionMeta": "m1s1_region_meta.json",
           "regionChildren": "m1s1_region_children.json",
           "regionOverlay": "m1s1_region_overlay.png",
+          "groups": {},
+          "sequences": {}
+        },
+        {
+          "name": "Scene 2",
+          "image": "ceiling_20Feb1811.png",
+          "regionIdMap": "m1s2_region_id_map.png",
+          "regionMeta": "m1s2_region_meta.json",
+          "regionChildren": "m1s2_region_children.json",
+          "regionOverlay": "m1s2_region_overlay.png",
           "groups": {
             "g4": {
               "name": "Group 1",

@@ -197,7 +197,7 @@
 // ============================================================
 // CONSTANTS
 // ============================================================
-const IMG_W = 2731, IMG_H = 2048;
+let IMG_W = 2731, IMG_H = 2048; // updated per scene from bgImage dimensions
 const ASPECT = 16 / 9;
 
 // ============================================================
@@ -309,6 +309,13 @@ async function loadSceneAssets(sceneData) {
   ]);
 
   bgImage = bg;
+  IMG_W = bg.naturalWidth;
+  IMG_H = bg.naturalHeight;
+  // Reset view to fit new image dimensions
+  { let w = IMG_W; let h = w / ASPECT;
+    if (h > IMG_H) { h = IMG_H; w = h * ASPECT; }
+    view = { x: (IMG_W - w) / 2, y: (IMG_H - h) / 2, w, h }; }
+
   overlayImage = overlay;
   regionChildren = children;
 
@@ -383,6 +390,7 @@ function loadSceneGroupsSeqs(sceneData) {
   selectedRegions.clear();
   selectedGroupIds.clear();
   testStepIdx = -1;
+  testRegionRuns = {};
   stopSparkleTest();
 
   renderGroupList();

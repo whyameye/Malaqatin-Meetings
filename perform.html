@@ -31,7 +31,7 @@
 // ============================================================
 // CONSTANTS
 // ============================================================
-const IMG_W = 2731, IMG_H = 2048;
+let IMG_W = 2731, IMG_H = 2048; // updated per scene from bgImage dimensions
 const ASPECT = 16 / 9;
 
 const canvas = document.getElementById('canvas');
@@ -86,6 +86,7 @@ let seqStates = {};
 // Crossfade between scenes
 let xfadeActive = false;
 let xfadeFromBg = null;     // bgImage of the "from" scene
+let xfadeFromImgW = 2731, xfadeFromImgH = 2048; // dimensions of the from-scene image
 let xfadeAlpha = 0;         // 0 = from scene, 1 = to scene
 let xfadeStart = null;
 
@@ -176,6 +177,9 @@ async function loadSceneAssets(sceneData, label) {
     fetch(sceneData.regionMeta + cb).then(r => r.json())
   ]);
 
+  // Use this scene's image dimensions throughout — don't rely on global IMG_W/H
+  const imgW = bg.naturalWidth, imgH = bg.naturalHeight;
+
   const mapW = idMap.naturalWidth;
   const mapH = idMap.naturalHeight;
   const tmpCanvas = document.createElement('canvas');
@@ -186,7 +190,7 @@ async function loadSceneAssets(sceneData, label) {
   const mapData = tmpCtx.getImageData(0, 0, mapW, mapH).data;
 
   // Scale metadata to logical coordinates
-  const sx = IMG_W / mapW, sy = IMG_H / mapH;
+  const sx = imgW / mapW, sy = imgH / mapH;
   const scaledMeta = {};
   for (const [k, v] of Object.entries(meta)) {
     scaledMeta[k] = {
@@ -209,18 +213,18 @@ async function loadSceneAssets(sceneData, label) {
     for (const rid of g.regions) usedRegions.add(rid);
   }
 
-  const stepX = IMG_W / mapW;
-  const stepY = IMG_H / mapH;
+  const stepX = imgW / mapW;
+  const stepY = imgH / mapH;
   const runs = {};
   for (const regionId of usedRegions) {
     const m = scaledMeta[regionId];
     if (!m) continue;
     const runList = [];
     const bb = m.bbox;
-    const my0 = Math.round(bb[1] * mapH / IMG_H);
-    const my1 = Math.round(bb[3] * mapH / IMG_H);
-    const mx0 = Math.round(bb[0] * mapW / IMG_W);
-    const mx1 = Math.round(bb[2] * mapW / IMG_W);
+    const my0 = Math.round(bb[1] * mapH / imgH);
+    const my1 = Math.round(bb[3] * mapH / imgH);
+    const mx0 = Math.round(bb[0] * mapW / imgW);
+    const mx1 = Math.round(bb[2] * mapW / imgW);
     for (let my = my0; my <= my1; my++) {
       let runStart = -1;
       const rowOffset = my * mapW;
@@ -257,12 +261,12 @@ async function loadSceneAssets(sceneData, label) {
     const bx = m.bbox[0], by = m.bbox[1];
     const bw = m.bbox[2] - m.bbox[0] + 1;
     const bh = m.bbox[3] - m.bbox[1] + 1;
-    const hbw = Math.ceil(bw * mapW / IMG_W);
-    const hbh = Math.ceil(bh * mapH / IMG_H);
+    const hbw = Math.ceil(bw * mapW / imgW);
+    const hbh = Math.ceil(bh * mapH / imgH);
     tmpMask.width = hbw;
     tmpMask.height = hbh;
-    const scaleToHX = mapW / IMG_W;
-    const scaleToHY = mapH / IMG_H;
+    const scaleToHX = mapW / imgW;
+    const scaleToHY = mapH / imgH;
     tmpMaskCtx.clearRect(0, 0, hbw, hbh);
     tmpMaskCtx.globalCompositeOperation = 'source-over';
     tmpMaskCtx.globalAlpha = 1;
@@ -287,6 +291,8 @@ async function loadSceneAssets(sceneData, label) {
 
   return {
     bgImage: bg,
+    imgW,
+    imgH,
     idMapData: mapData,
     idMapW: mapW,
     idMapH: mapH,
@@ -361,6 +367,8 @@ function activateScene(idx) {
   for (const state of Object.values(seqStates)) stopSparkle(state);
 
   bgImage = sd.bgImage;
+  IMG_W = sd.imgW;
+  IMG_H = sd.imgH;
   idMapData = sd.idMapData;
   idMapW = sd.idMapW;
   idMapH = sd.idMapH;
@@ -403,6 +411,8 @@ function startSceneCrossfade(newIdx) {
   seqStates = {};
 
   xfadeFromBg = bgImage;
+  xfadeFromImgW = IMG_W;
+  xfadeFromImgH = IMG_H;
   xfadeActive = true;
   xfadeAlpha = 0;
   xfadeStart = performance.now();
@@ -645,7 +655,7 @@ function renderLoop(now) {
     if (xfadeActive && xfadeFromBg) {
       // Crossfade: draw from-scene fading out, to-scene fading in
       ctx.globalAlpha = (1 - xfadeAlpha) * bgAlpha;
-      ctx.drawImage(xfadeFromBg, 0, 0, IMG_W, IMG_H);
+      ctx.drawImage(xfadeFromBg, 0, 0, xfadeFromImgW, xfadeFromImgH);
       ctx.globalAlpha = xfadeAlpha * bgAlpha;
       ctx.drawImage(bgImage, 0, 0, IMG_W, IMG_H);
     } else {
