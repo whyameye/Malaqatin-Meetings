@@ -9,9 +9,10 @@
     "sparkleMaxOn": 80,
     "sparkleMinOff": 20,
     "sparkleMaxOff": 80,
+    "litBrightness": 1,
     "litSaturate": 4,
     "litContrast": 2,
-    "sceneFadeDuration": 100,
+    "sceneFadeDuration": 1000,
     "crossfadeDuration": 1000
   },
   "movements": [

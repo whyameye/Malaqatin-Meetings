@@ -456,6 +456,7 @@ async function saveScene() {
       ...(s.sparkleSpeed != null ? { sparkleSpeed: s.sparkleSpeed } : {}),
       ...(s.dimLevel != null ? { dimLevel: s.dimLevel } : {}),
       ...(s.litLevel != null ? { litLevel: s.litLevel } : {}),
+      ...(s.litBrightness != null ? { litBrightness: s.litBrightness } : {}),
       ...(s.litSaturate != null ? { litSaturate: s.litSaturate } : {}),
       ...(s.litContrast != null ? { litContrast: s.litContrast } : {}),
       steps: s.steps.map(({ groupId, effect }) => ({ groupId, effect }))
@@ -1018,6 +1019,7 @@ function createSequence(key) {
     sparkleSpeed: null,
     dimLevel: null,
     litLevel: null,
+    litBrightness: null,
     litSaturate: null,
     litContrast: null,
     steps: []
@@ -1088,6 +1090,7 @@ function renderSeqDetail() {
   </div>
   <div style="${rowStyle};color:#666;margin-bottom:3px">
     <span style="visibility:hidden">override:</span>
+    <label>Bri <input class="seq-litbri" type="number" step="0.1" value="${seq.litBrightness ?? ''}" placeholder="—" style="${visStyle}"></label>
     <label>Sat <input class="seq-litsat" type="number" step="0.1" value="${seq.litSaturate ?? ''}" placeholder="—" style="${visStyle}"></label>
     <label>Con <input class="seq-litcon" type="number" step="0.1" value="${seq.litContrast ?? ''}" placeholder="—" style="${visStyle}"></label>
   </div>`;
@@ -1150,6 +1153,7 @@ function renderSeqDetail() {
   el.querySelector('.seq-sparkle').addEventListener('change', e => { const v = e.target.value.trim(); seq.sparkleSpeed = v === '' ? null : parseInt(v); });
   el.querySelector('.seq-dimlevel').addEventListener('change', e => { const v = e.target.value.trim(); seq.dimLevel = v === '' ? null : parseFloat(v); });
   el.querySelector('.seq-litlevel').addEventListener('change', e => { const v = e.target.value.trim(); seq.litLevel = v === '' ? null : parseFloat(v); });
+  el.querySelector('.seq-litbri').addEventListener('change', e => { const v = e.target.value.trim(); seq.litBrightness = v === '' ? null : parseFloat(v); });
   el.querySelector('.seq-litsat').addEventListener('change', e => { const v = e.target.value.trim(); seq.litSaturate = v === '' ? null : parseFloat(v); });
   el.querySelector('.seq-litcon').addEventListener('change', e => { const v = e.target.value.trim(); seq.litContrast = v === '' ? null : parseFloat(v); });
 
