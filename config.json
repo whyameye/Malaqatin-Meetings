@@ -84,11 +84,21 @@
         },
         {
           "name": "Scene 3",
-          "image": "ceiling_20Feb1811.png",
+          "image": "ceiling_9by16.png",
           "regionIdMap": "m1s3_region_id_map.png",
           "regionMeta": "m1s3_region_meta.json",
           "regionChildren": "m1s3_region_children.json",
           "regionOverlay": "m1s3_region_overlay.png",
+          "groups": {},
+          "sequences": {}
+        },
+        {
+          "name": "Scene 4",
+          "image": "ceiling_20Feb1811.png",
+          "regionIdMap": "m1s4_region_id_map.png",
+          "regionMeta": "m1s4_region_meta.json",
+          "regionChildren": "m1s4_region_children.json",
+          "regionOverlay": "m1s4_region_overlay.png",
           "groups": {
             "g8": {
               "name": "Group 1",
