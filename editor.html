@@ -451,9 +451,9 @@ async function saveScene() {
   for (const [sid, s] of Object.entries(sequences)) {
     seqsOut[sid] = {
       key: s.key,
-      fadeIn: s.fadeIn ?? 200,
-      fadeOut: s.fadeOut ?? 500,
-      sparkleSpeed: s.sparkleSpeed ?? 100,
+      ...(s.fadeIn != null ? { fadeIn: s.fadeIn } : {}),
+      ...(s.fadeOut != null ? { fadeOut: s.fadeOut } : {}),
+      ...(s.sparkleSpeed != null ? { sparkleSpeed: s.sparkleSpeed } : {}),
       ...(s.dimLevel != null ? { dimLevel: s.dimLevel } : {}),
       ...(s.litLevel != null ? { litLevel: s.litLevel } : {}),
       ...(s.litSaturate != null ? { litSaturate: s.litSaturate } : {}),
@@ -1013,9 +1013,9 @@ function createSequence(key) {
   const id = 's' + (seqIdCounter++);
   sequences[id] = {
     key: key.toLowerCase(),
-    fadeIn: 200,
-    fadeOut: 500,
-    sparkleSpeed: 100,
+    fadeIn: null,
+    fadeOut: null,
+    sparkleSpeed: null,
     dimLevel: null,
     litLevel: null,
     litSaturate: null,
@@ -1065,6 +1065,7 @@ function renderSeqDetail() {
     return;
   }
   const seq = sequences[activeSeqId];
+  const effConfig = { ...masterConfig.config, ...(masterConfig.movements[editMovIdx]?.config || {}) };
   const inStyle = 'width:60px;font-family:monospace;font-size:11px;padding:1px 4px;background:#333;color:#ddd;border:1px solid #555;border-radius:2px';
   const visStyle = 'width:55px;font-family:monospace;font-size:11px;padding:1px 4px;background:#333;color:#ddd;border:1px solid #555;border-radius:2px';
   const rowStyle = 'display:flex;align-items:center;gap:12px;margin-bottom:3px;font-size:11px;color:#aaa';
@@ -1075,11 +1076,11 @@ function renderSeqDetail() {
     </button>
   </div>
   <div style="${rowStyle}">
-    <label>In <input class="seq-fadein" type="number" value="${seq.fadeIn ?? 200}" style="${inStyle}">ms</label>
-    <label>Out <input class="seq-fadeout" type="number" value="${seq.fadeOut ?? 500}" style="${inStyle}">ms</label>
+    <label>In <input class="seq-fadein" type="number" value="${seq.fadeIn ?? ''}" placeholder="${effConfig.fadeIn ?? 200}" style="${inStyle}">ms</label>
+    <label>Out <input class="seq-fadeout" type="number" value="${seq.fadeOut ?? ''}" placeholder="${effConfig.fadeOut ?? 500}" style="${inStyle}">ms</label>
   </div>
   <div style="${rowStyle}">
-    <label>Sparkle <input class="seq-sparkle" type="number" value="${seq.sparkleSpeed ?? 100}" style="${inStyle}">ms</label>
+    <label>Sparkle <input class="seq-sparkle" type="number" value="${seq.sparkleSpeed ?? ''}" placeholder="${effConfig.sparkleSpeed ?? 100}" style="${inStyle}">ms</label>
   </div>
   <div style="${rowStyle};color:#666;margin-bottom:3px">
     <span>override:</span>
@@ -1142,9 +1143,9 @@ function renderSeqDetail() {
     });
   });
 
-  el.querySelector('.seq-fadein').addEventListener('change', e => { seq.fadeIn = parseInt(e.target.value) || 200; });
-  el.querySelector('.seq-fadeout').addEventListener('change', e => { seq.fadeOut = parseInt(e.target.value) || 500; });
-  el.querySelector('.seq-sparkle').addEventListener('change', e => { seq.sparkleSpeed = parseInt(e.target.value) || 100; });
+  el.querySelector('.seq-fadein').addEventListener('change', e => { const v = e.target.value.trim(); seq.fadeIn = v === '' ? null : parseInt(v); });
+  el.querySelector('.seq-fadeout').addEventListener('change', e => { const v = e.target.value.trim(); seq.fadeOut = v === '' ? null : parseInt(v); });
+  el.querySelector('.seq-sparkle').addEventListener('change', e => { const v = e.target.value.trim(); seq.sparkleSpeed = v === '' ? null : parseInt(v); });
   el.querySelector('.seq-dimlevel').addEventListener('change', e => { const v = e.target.value.trim(); seq.dimLevel = v === '' ? null : parseFloat(v); });
   el.querySelector('.seq-litlevel').addEventListener('change', e => { const v = e.target.value.trim(); seq.litLevel = v === '' ? null : parseFloat(v); });
   el.querySelector('.seq-litsat').addEventListener('change', e => { const v = e.target.value.trim(); seq.litSaturate = v === '' ? null : parseFloat(v); });
