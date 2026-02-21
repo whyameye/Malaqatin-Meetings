@@ -669,7 +669,10 @@ function hitTest(ix, iy) {
   const g = idMapData[offset + 1];
   const marker = idMapData[offset + 2];
   if (marker < 250) return -1;
-  return r | (g << 8);
+  const id = r | (g << 8);
+  // Black regions are outline boundaries — not selectable
+  if (regionMeta && regionMeta[id] && regionMeta[id].type === 'black') return -1;
+  return id;
 }
 
 // ============================================================
