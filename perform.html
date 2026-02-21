@@ -864,11 +864,13 @@ document.addEventListener('keyup', (e) => {
 });
 
 document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('mousemove', () => { document.body.style.cursor = 'none'; });
 
 // ============================================================
 // START
 // ============================================================
 async function init() {
+  document.body.style.cursor = 'none';
   resize();
   loadingEl.textContent = 'Loading config...';
 
