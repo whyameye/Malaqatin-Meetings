@@ -1,6 +1,6 @@
-# Malaqatin-Meetings — Ceiling Lighting Performance Tool
+# Malaqatin-Meetings — Live Image Performance Tool
 
-A browser-based tool for designing and performing live projection shows. Regions of a ceiling image are grouped, assigned effects, and triggered via keyboard in real time during a musical performance. The image is projected onto a screen.
+A browser-based tool for designing and performing live projection shows. Regions of a photo are grouped, assigned effects, and triggered via keyboard in real time during a musical performance. The image is projected onto a screen.
 
 ## Setup
 
@@ -16,7 +16,7 @@ Open `editor.html` to design scenes, `perform.html` to perform them. Both can ru
 
 ## Editor (`editor.html`)
 
-Design scenes by grouping ceiling regions and assigning keyboard-triggered effect sequences.
+Design scenes by grouping image regions and assigning keyboard-triggered effect sequences.
 
 ### Mouse
 
@@ -81,7 +81,7 @@ Live performance engine. Loads `config.json` and responds to keyboard input in r
 2. A short audio tone plays when loading is complete (audible to operator, not audience).
 3. Press **Enter** to fade in when ready.
 4. Use **Left/Right** arrows to crossfade between scenes within the movement.
-5. Hold sequence keys to activate lighting effects on groups; release to fade out.
+5. Hold sequence keys to activate effects on groups; release to fade out.
 6. Press **Escape** to fade to black at any time (e.g. between movements).
 
 ---
@@ -119,7 +119,7 @@ Single master config file. Edited by hand for structure; groups and sequences ar
       "scenes": [
         {
           "name": "Scene 1",
-          "image": "ceiling1_photo.png",
+          "image": "scene_photo.png",
           "regionIdMap": "m1s1_region_id_map.png",
           "regionMeta": "m1s1_region_meta.json",
           "regionChildren": "m1s1_region_children.json",
@@ -241,8 +241,8 @@ Used by the editor's **C** key to select all children of a selected region.
 | `generate_regions.py` | Region data generator |
 | `config.json` | Master config: global settings, movements, scenes, groups, sequences |
 | `plan-20-Feb-2026.md` | Design plan for the movement/scene architecture |
-| `ceiling1_closeup_21Feb0747.png` | Ceiling photo — Movement 1, Scene 1 |
-| `ceiling_20Feb1811.png` | Ceiling photo — Movement 1, Scene 2 |
+| `ceiling1_closeup_21Feb0747.png` | Photo — Movement 1, Scene 1 |
+| `ceiling_20Feb1811.png` | Photo — Movement 1, Scene 2 |
 | `m1s1_region_id_map.png` | Region ID map — Movement 1, Scene 1 |
 | `m1s1_region_meta.json` | Region metadata — Movement 1, Scene 1 |
 | `m1s1_region_overlay.png` | Region overlay — Movement 1, Scene 1 |
