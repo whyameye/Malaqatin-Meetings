@@ -87,6 +87,7 @@ let seqStates = {};
 let xfadeActive = false;
 let xfadeFromBg = null;     // bgImage of the "from" scene
 let xfadeFromImgW = 2731, xfadeFromImgH = 2048; // dimensions of the from-scene image
+let xfadeFromView = null;   // view of the "from" scene
 let xfadeAlpha = 0;         // 0 = from scene, 1 = to scene
 let xfadeStart = null;
 
@@ -413,6 +414,7 @@ function startSceneCrossfade(newIdx) {
   xfadeFromBg = bgImage;
   xfadeFromImgW = IMG_W;
   xfadeFromImgH = IMG_H;
+  xfadeFromView = { ...view };
   xfadeActive = true;
   xfadeAlpha = 0;
   xfadeStart = performance.now();
@@ -424,16 +426,16 @@ function startSceneCrossfade(newIdx) {
 // ============================================================
 // RENDERING
 // ============================================================
-function getCanvasTransform() {
+function getCanvasTransform(v) {
   const canvasAspect = canvas.width / canvas.height;
-  const viewAspect = view.w / view.h;
+  const viewAspect = v.w / v.h;
   let scale, offsetX = 0, offsetY = 0;
   if (canvasAspect > viewAspect) {
-    scale = canvas.height / view.h;
-    offsetX = (canvas.width - view.w * scale) / 2;
+    scale = canvas.height / v.h;
+    offsetX = (canvas.width - v.w * scale) / 2;
   } else {
-    scale = canvas.width / view.w;
-    offsetY = (canvas.height - view.h * scale) / 2;
+    scale = canvas.width / v.w;
+    offsetY = (canvas.height - v.h * scale) / 2;
   }
   return { scale, offsetX, offsetY };
 }
@@ -644,22 +646,47 @@ function renderLoop(now) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   if (bgImage) {
-    const { scale, offsetX, offsetY } = getCanvasTransform();
-    ctx.save();
-    ctx.translate(offsetX, offsetY);
-    ctx.scale(scale, scale);
-    ctx.translate(-view.x, -view.y);
-
     const bgAlpha = (config.dimLevel + (1 - config.dimLevel) * rawFade) * sceneFade;
 
     if (xfadeActive && xfadeFromBg) {
-      // Crossfade: draw from-scene fading out, to-scene fading in
+      // Crossfade: each scene uses its own transform so neither changes
+      // apparent size during the transition
+      const ft = getCanvasTransform(xfadeFromView);
+      ctx.save();
+      ctx.translate(ft.offsetX, ft.offsetY);
+      ctx.scale(ft.scale, ft.scale);
+      ctx.translate(-xfadeFromView.x, -xfadeFromView.y);
       ctx.globalAlpha = (1 - xfadeAlpha) * bgAlpha;
       ctx.drawImage(xfadeFromBg, 0, 0, xfadeFromImgW, xfadeFromImgH);
+      ctx.restore();
+
+      const tt = getCanvasTransform(view);
+      ctx.save();
+      ctx.translate(tt.offsetX, tt.offsetY);
+      ctx.scale(tt.scale, tt.scale);
+      ctx.translate(-view.x, -view.y);
       ctx.globalAlpha = xfadeAlpha * bgAlpha;
       ctx.drawImage(bgImage, 0, 0, IMG_W, IMG_H);
+      ctx.restore();
+
+      // Letterbox bars
+      ctx.fillStyle = '#000';
+      if (tt.offsetX > 0) {
+        ctx.fillRect(0, 0, tt.offsetX, canvas.height);
+        ctx.fillRect(canvas.width - tt.offsetX, 0, tt.offsetX, canvas.height);
+      }
+      if (tt.offsetY > 0) {
+        ctx.fillRect(0, 0, canvas.width, tt.offsetY);
+        ctx.fillRect(0, canvas.height - tt.offsetY, canvas.width, tt.offsetY);
+      }
     } else {
       // Normal render
+      const { scale, offsetX, offsetY } = getCanvasTransform(view);
+      ctx.save();
+      ctx.translate(offsetX, offsetY);
+      ctx.scale(scale, scale);
+      ctx.translate(-view.x, -view.y);
+
       ctx.globalAlpha = bgAlpha;
       ctx.drawImage(bgImage, 0, 0, IMG_W, IMG_H);
 
@@ -684,19 +711,19 @@ function renderLoop(now) {
           }
         }
       }
-    }
 
-    ctx.restore();
+      ctx.restore();
 
-    // Letterbox bars
-    ctx.fillStyle = '#000';
-    if (offsetX > 0) {
-      ctx.fillRect(0, 0, offsetX, canvas.height);
-      ctx.fillRect(canvas.width - offsetX, 0, offsetX, canvas.height);
-    }
-    if (offsetY > 0) {
-      ctx.fillRect(0, 0, canvas.width, offsetY);
-      ctx.fillRect(0, canvas.height - offsetY, canvas.width, offsetY);
+      // Letterbox bars
+      ctx.fillStyle = '#000';
+      if (offsetX > 0) {
+        ctx.fillRect(0, 0, offsetX, canvas.height);
+        ctx.fillRect(canvas.width - offsetX, 0, offsetX, canvas.height);
+      }
+      if (offsetY > 0) {
+        ctx.fillRect(0, 0, canvas.width, offsetY);
+        ctx.fillRect(0, canvas.height - offsetY, canvas.width, offsetY);
+      }
     }
   }
 
