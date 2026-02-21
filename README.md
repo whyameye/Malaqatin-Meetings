@@ -94,10 +94,11 @@ Single master config file. Edited by hand for structure; groups and sequences ar
 
 | Setting | Default | Description |
 |---|---|---|
-| dimLevel | 0.15 | Background image opacity when regions are unlit |
-| litLevel | 1.00 | Opacity of lit regions |
-| defaultFadeIn | 200 | Fade-in duration (ms) when a sequence key is pressed |
-| defaultFadeOut | 500 | Fade-out duration (ms) when a sequence key is released |
+| dimLevel | 0.15 | Background image opacity when regions are unlit (0–1) |
+| litLevel | 1.00 | Opacity of lit regions (0–1; cannot exceed 1) |
+| fadeIn | 200 | Default fade-in duration (ms) when a sequence key is pressed |
+| fadeOut | 500 | Default fade-out duration (ms) when a sequence key is released |
+| sparkleSpeed | 100 | Default sparkle interval (ms) |
 | sparkleMinOn | 20 | Min time a region stays lit during sparkle (ms) |
 | sparkleMaxOn | 80 | Max time a region stays lit during sparkle (ms) |
 | sparkleMinOff | 20 | Min time a region stays dark during sparkle (ms) |
