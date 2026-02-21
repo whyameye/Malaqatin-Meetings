@@ -1,6 +1,6 @@
-# Susan — Ceiling Lighting Performance Tool
+# Malaqatin-Meetings — Ceiling Lighting Performance Tool
 
-A browser-based tool for designing and performing live ceiling lighting shows. Regions of a ceiling image can be grouped, sequenced with effects, and triggered via keyboard in real time.
+A browser-based tool for designing and performing live ceiling lighting shows. Regions of a ceiling image are grouped, assigned effects, and triggered via keyboard in real time during a musical performance.
 
 ## Setup
 
@@ -12,121 +12,160 @@ Serves on http://localhost:8080
 
 Open `editor.html` to design scenes, `perform.html` to perform them. Both can run in separate browser tabs simultaneously.
 
+---
+
 ## Editor (`editor.html`)
 
-Design scenes by grouping ceiling regions, assigning effects, and setting up keyboard-triggered sequences.
+Design scenes by grouping ceiling regions and assigning keyboard-triggered effect sequences.
 
 ### Mouse
+
 | Action | Description |
 |---|---|
 | Click | Select region |
 | Shift+Click | Toggle region in selection |
 | Scroll | Zoom |
 | Drag | Pan |
-| Click group name | Select/deselect group |
+| Click group name | Activate group (highlights its regions) |
+| Shift+click group name | Multi-select groups |
 | Double-click group name | Rename group |
 
 ### Keyboard
+
 | Key | Description |
 |---|---|
-| C | Select children of selected regions |
-| G | Quick-create group from selection |
+| C | Select children of selected regions (press again to restore previous selection) |
+| G | Quick-create group from current selection |
 | Escape | Clear selection |
-| Space | Advance to next step (sequence test mode) |
+| Space | Advance to next step (in sequence test mode) |
 | ? | Toggle help overlay |
 
-### UI Controls
-- **Scene selector** (1/2/3) — choose which scene file to edit
-- **Save / Load** — save/load scene JSON via server
-- **Save Current View** — save the current zoom/pan as a zoom preset
+### Workflow
+
+1. Select **Movement** and **Scene** from the dropdowns in the bottom bar
+2. Click regions on the canvas to select them
+3. Create a **Group** from the selection (name it, then click Create, or press G)
+4. Select a group and create a **Sequence** — assign a keyboard key and add steps (group + effect per step)
+5. Click **Save** — writes groups and sequences for the current scene to `config.json`
+
+### Groups and Sequences
+
+- A **group** is a named set of regions with a display color
+- A **sequence** maps a keyboard key to an ordered list of steps; each step specifies a group and an effect
+- During performance, holding a key activates the current step; releasing fades it out; pressing again advances to the next step
+- Effects: **solid** (all regions on), **sparkle** (regions randomly flicker on/off), **fade** (same as solid)
+
+---
 
 ## Performer (`perform.html`)
 
-Live performance engine. Loads scene JSON and responds to keyboard input in real time.
+Live performance engine. Loads `config.json` and responds to keyboard input in real time.
 
 ### Keyboard
+
 | Key | Description |
 |---|---|
-| Space | Toggle raw image (full brightness, no effects) |
-| Escape | Fade to black |
+| 1 / 2 / 3 | Load movement — fades to black, loads all scenes for that movement, plays audio cue when ready |
 | Enter | Fade in from black |
-| 1 / 2 / 3 | Switch scene (works anytime, including while black) |
+| Escape | Fade to black |
+| Left / Right arrow | Crossfade to previous / next scene within the current movement (no wrap) |
+| Space | Toggle raw image (full brightness, effects suppressed) |
 | F | Toggle fullscreen |
-| H | Toggle HUD (shows FPS, config values, active keys, hi-res status) |
-| R | Reload config from `perform_config.json` |
-| *Sequence keys* | Hold to activate group effect, release to fade out. Press again to advance to next step. |
-| *Zoom keys* | Tween to zoom preset. Press again to cycle through presets on same key. |
+| H | Toggle HUD (FPS, config values, active sequences) |
+| R | Reload config from `config.json` |
+| *Sequence keys* | Hold to activate effect, release to fade out. Press again (after release) to advance to next step. |
 
 ### Performance workflow
-1. Press **Space** to show the full image to the audience
-2. Press **Escape** to fade to black
-3. Use **1/2/3** to switch scenes while black
-4. Press **Enter** to fade in (dimmed, ready for effects)
-5. Hold sequence keys to light up groups
-6. Use zoom keys to focus on areas of interest
 
-## Configuration (`perform_config.json`)
+1. Press **1**, **2**, or **3** to load a movement. The display fades to black while all scenes load.
+2. A short audio tone plays when loading is complete (audible to operator, not audience).
+3. Press **Enter** to fade in when ready.
+4. Use **Left/Right** arrows to crossfade between scenes within the movement.
+5. Hold sequence keys to activate lighting effects on groups; release to fade out.
+6. Press **Escape** to fade to black at any time (e.g. between movements).
+
+---
+
+## Configuration (`config.json`)
+
+Single master config file. Edited by hand for structure; groups and sequences are written by the editor UI.
+
+### Global settings
 
 | Setting | Default | Description |
 |---|---|---|
-| dimLevel | 0.15 | Background image opacity (unlit areas) |
-| litLevel | 1.00 | Lit region target opacity |
-| defaultFadeIn | 200 | Fade-in duration (ms) when key pressed |
-| defaultFadeOut | 500 | Fade-out duration (ms) when key released |
+| dimLevel | 0.15 | Background image opacity when regions are unlit |
+| litLevel | 1.00 | Opacity of lit regions |
+| defaultFadeIn | 200 | Fade-in duration (ms) when a sequence key is pressed |
+| defaultFadeOut | 500 | Fade-out duration (ms) when a sequence key is released |
 | sparkleMinOn | 20 | Min time a region stays lit during sparkle (ms) |
 | sparkleMaxOn | 80 | Max time a region stays lit during sparkle (ms) |
 | sparkleMinOff | 20 | Min time a region stays dark during sparkle (ms) |
 | sparkleMaxOff | 80 | Max time a region stays dark during sparkle (ms) |
-| litSaturate | 1.8 | Color saturation boost for lit regions (1.0 = normal) |
-| litContrast | 1.3 | Contrast boost for lit regions (1.0 = normal) |
-| tweenDuration | 500 | Zoom tween duration (ms) |
+| litSaturate | 1.8 | Color saturation multiplier for lit regions (1.0 = unchanged) |
+| litContrast | 1.3 | Contrast multiplier for lit regions (1.0 = unchanged) |
 | sceneFadeDuration | 1000 | Fade to/from black duration (ms) |
-| sceneImages | {} | Per-scene image overrides (see below) |
+| crossfadeDuration | 1500 | Scene crossfade duration (ms) |
 
-### Scene images
-Each scene can use a different background image. Configure in `sceneImages`:
+### Structure
+
 ```json
-"sceneImages": {
-  "1": { "image": "ceiling1a.png", "hiresImage": "ceiling1_upscayl_4x.png" },
-  "2": { "image": "ceiling2.png", "hiresImage": "" },
-  "3": { "image": "ceiling3.png", "hiresImage": "" }
+{
+  "config": { ... },
+  "movements": [
+    {
+      "name": "Movement 1",
+      "config": { "dimLevel": 0.10 },
+      "scenes": [
+        {
+          "name": "Scene 1",
+          "image": "ceiling1_photo.png",
+          "regionIdMap": "m1s1_region_id_map.png",
+          "regionMeta": "m1s1_region_meta.json",
+          "regionChildren": "m1s1_region_children.json",
+          "regionOverlay": "m1s1_region_overlay.png",
+          "groups": { },
+          "sequences": { }
+        }
+      ]
+    }
+  ]
 }
 ```
-If left empty, falls back to the image specified in the scene JSON.
+
+### Config merging
+
+A movement's `config` block overrides the global `config` where specified. Global values fill everything else. Config is per-movement — there is no per-scene config.
+
+### Division of responsibility
+
+- **Edit by hand in JSON**: movement names, scene names, image and region file paths, adding/removing movements or scenes
+- **Edit via editor UI**: groups and sequences within a scene
+
+---
 
 ## Generating Region Data
 
-Each scene needs a set of region data files generated from an outline image. The outline image is a PNG where **white areas** are selectable regions and **black areas** (thin lines or thick shapes) are boundaries — not selectable.
+Each scene needs region data generated from an outline image. The outline image must be a PNG with **white areas** as selectable regions and **black lines** as boundaries (not selectable).
 
-### Input file
+### Producing the input PNG
 
-The input to `generate_regions.py` is always a **grayscale PNG** — black outlines on a white background. Black pixels mark boundaries between regions; white pixels are the interiors of regions. The PNG must be the same dimensions as the background photo for that scene.
-
-There are two common ways to produce this PNG:
-
-**Option A — render from an SVG (using Inkscape):**
+**From an SVG (via Inkscape):**
 ```bash
-inkscape "ceiling1_outline no image.svg" \
-  --export-type=png \
-  --export-filename=outlines_render.png \
-  --export-width=8192 --export-height=6144 \
-  --export-background=white
+inkscape outline.svg \
+  --export-filename outlines_render.png \
+  --export-width 2007 --export-height 1134 \
+  --export-background '#ffffff' --export-background-opacity 1.0
 ```
-Use `--export-background=white` so transparent areas become white (selectable), not black.
+The `--export-background` flag ensures transparent areas become white (selectable), not black.
 
-**Option B — convert a transparent PNG (e.g. an outline layer exported from Inkscape):**
-
-If the outline layer was exported as a transparent PNG with black lines on a clear background, convert it to white-background first:
-```bash
-python3 -c "
+**From a transparent PNG (e.g. an outline layer exported from Inkscape):**
+```python
 from PIL import Image
-import numpy as np
-img = np.array(Image.open('ceiling1_outline_lines_up.png').convert('RGBA'))
-# Where alpha is 0 (transparent) → white; where alpha > 0 → black
-result = np.ones((img.shape[0], img.shape[1]), dtype=np.uint8) * 255
-result[img[:,:,3] > 128] = 0
-Image.fromarray(result, 'L').save('outlines_render.png')
-"
+img = Image.open('outline_transparent.png').convert('RGBA')
+bg = Image.new('RGB', img.size, (255, 255, 255))
+bg.paste(img, mask=img.split()[3])
+bg.save('outlines_render.png')
 ```
 
 ### Running generate_regions.py
@@ -135,70 +174,83 @@ Image.fromarray(result, 'L').save('outlines_render.png')
 python3 generate_regions.py <input_outline.png> [options]
 ```
 
-**Parameters:**
-
 | Parameter | Description |
 |---|---|
 | `input_outline.png` | Path to the outline PNG (required) |
-| `--prefix PREFIX` | Prefix for all output filenames, e.g. `hires_` produces `hires_region_id_map.png` etc. Default: none |
+| `--prefix PREFIX` | Prefix for all output filenames, e.g. `m1s1_` produces `m1s1_region_id_map.png` etc. Default: none |
 | `--outdir DIR` | Directory to write output files. Default: current directory |
-| `--min-pixels N` | Minimum region size in pixels. Smaller regions are discarded. Default: 50. For hi-res images (~3x scale), try 150–450. |
+| `--min-pixels N` | Minimum region size in pixels. Regions smaller than this are discarded. Default: 50 |
 
-**Examples:**
+**Example:**
 ```bash
-# Low-res, default output names
-python3 generate_regions.py outlines_render.png
-
-# Hi-res with prefix, higher min-pixels threshold
-python3 generate_regions.py outlines_render_hires.png --prefix hires_ --min-pixels 150
-
-# Scene 2 with custom prefix
-python3 generate_regions.py outlines_render_scene2.png --prefix scene2_
+python3 generate_regions.py outlines_render_m1s1.png --prefix m1s1_ --min-pixels 50
 ```
+
+Choosing `--min-pixels`: too low causes thin line artifacts and noise to appear as regions; too high discards small but meaningful decorative details. For a ~2000×1100 image, 50 is a reasonable starting point.
 
 ### Output files
 
-| File | Description |
-|---|---|
-| `region_id_map.png` | Lookup map: each pixel encodes the region ID it belongs to. R and G channels encode the ID (up to 65535 regions); B=255 means "region pixel", B=0 means "boundary — not selectable". Used at runtime for hit testing and highlight rendering. |
-| `region_meta.json` | JSON object keyed by region ID. Each entry has: `bbox` [xmin, ymin, xmax, ymax], `cx`/`cy` (centroid), `size` (pixel count), `type` ("white" or "black"). Coordinates are in the id map's native pixel space. |
-| `region_overlay.png` | Transparent PNG with each region filled in a random color at 50% opacity. Used in the editor to visualize region boundaries. Not used by the performer. |
-| `region_children.json` | JSON object mapping parent region IDs to lists of child region IDs. A child is a region whose area is enclosed within a parent. Used by the editor's **C** key ("select children"). |
+Four files are produced (with the given prefix applied to each name):
 
-### Choosing --min-pixels
+**`region_id_map.png`**
 
-Too low: noise, thin line artifacts, and outline strokes may be detected as tiny regions.
-Too high: small but meaningful regions (fine decorative details) get discarded.
+A PNG the same dimensions as the input. Each pixel encodes which region it belongs to:
+- R channel = low byte of region ID
+- G channel = high byte of region ID
+- B channel = 255 for region pixels, 0 for boundary pixels (boundaries are pure black: 0,0,0)
 
-- Low-res (2731×2048): `--min-pixels 50` (default)
-- Hi-res (8192×6144, ~3× scale): `--min-pixels 150` to `--min-pixels 450`
+Region IDs are 0-indexed integers. White regions are assigned IDs 0…N-1; black regions follow with IDs N…N+M-1. Up to 65535 regions are supported. Used at runtime for hit testing (which region did the user click?) and highlight rendering.
 
-Run time increases significantly at hi-res due to image size. Expect 20–40 minutes on a typical machine.
+**`region_meta.json`**
+
+JSON object keyed by region ID (as a string). Each entry contains:
+- `bbox`: [xmin, ymin, xmax, ymax] — bounding box in id map pixel coordinates
+- `cx`, `cy`: centroid in id map pixel coordinates
+- `size`: pixel count
+- `type`: `"white"` or `"black"`
+- `idx`: integer ID (same as the key parsed as int)
+
+Coordinates are in the id map's native pixel space. The editor and performer scale them to logical image coordinates at load time using the ratio of image dimensions to id map dimensions.
+
+**`region_overlay.png`**
+
+Transparent RGBA PNG with each region filled in a distinct color at 50% opacity (alpha=128). Colors are deterministic — the same input always produces the same colors (RNG seeded with 42). Used in the editor to visualize region boundaries. Not used by the performer.
+
+**`region_children.json`**
+
+JSON object mapping parent region IDs (strings) to lists of child region IDs (integers). A region is only considered a potential parent if it is ≥ 5000 pixels. Children are detected using two methods combined:
+1. **Flood-fill containment**: treat parent pixels as walls; any region whose centroid is enclosed is a child
+2. **Bounding-box containment**: child bbox fully inside parent bbox (with 10px margin) and child is less than half the parent's size
+
+Used by the editor's **C** key to select all children of a selected region.
 
 ### Requirements
 
-- Python 3 with numpy, Pillow, scipy
-- Inkscape (for SVG rendering)
+- Python 3 with `numpy`, `Pillow`, `scipy`
+- Inkscape (for SVG rendering only)
+
+---
 
 ## Files
 
 | File | Description |
 |---|---|
-| editor.html | Scene editor |
-| perform.html | Live performer |
-| server.py | HTTP server with PUT support for saving |
-| generate_regions.py | Region data file generator (from rendered SVG outline) |
-| perform_config.json | Performance tuning parameters |
-| scene1.json / scene2.json / scene3.json | Scene data (groups, sequences, zoom presets) |
-| ceiling1.png / ceiling1.jpg | Original low-res photo (2048×1536) |
-| ceiling1_upscayl_4x_*.png | Hi-res background photo (8192×6144) |
-| outlines_render.png | Rendered outline PNG used to generate low-res region data |
-| hires_outlines_render.png | Rendered outline PNG used to generate hi-res region data |
-| region_id_map.png | Pixel-to-region ID lookup map (low-res) |
-| region_meta.json | Region bounding boxes and centroids (low-res) |
-| region_overlay.png | Region color overlay for editor (low-res) |
-| region_children.json | Region parent-child relationships (low-res) |
-| hires_region_id_map.png | Pixel-to-region ID lookup map (hi-res) |
-| hires_region_meta.json | Region bounding boxes and centroids (hi-res) |
-| hires_region_overlay.png | Region color overlay for editor (hi-res) |
-| hires_region_children.json | Region parent-child relationships (hi-res) |
+| `editor.html` | Scene editor |
+| `perform.html` | Live performer |
+| `server.py` | HTTP server with PUT support for saving `config.json` |
+| `generate_regions.py` | Region data generator |
+| `config.json` | Master config: global settings, movements, scenes, groups, sequences |
+| `plan-20-Feb-2026.md` | Design plan for the movement/scene architecture |
+| `ceiling1_closeup_21Feb0747.png` | Ceiling photo — Movement 1, Scene 1 |
+| `ceiling_20Feb1811.png` | Ceiling photo — Movement 1, Scene 2 |
+| `m1s1_region_id_map.png` | Region ID map — Movement 1, Scene 1 |
+| `m1s1_region_meta.json` | Region metadata — Movement 1, Scene 1 |
+| `m1s1_region_overlay.png` | Region overlay — Movement 1, Scene 1 |
+| `m1s1_region_children.json` | Region children — Movement 1, Scene 1 |
+| `m1s2_region_id_map.png` | Region ID map — Movement 1, Scene 2 |
+| `m1s2_region_meta.json` | Region metadata — Movement 1, Scene 2 |
+| `m1s2_region_overlay.png` | Region overlay — Movement 1, Scene 2 |
+| `m1s2_region_children.json` | Region children — Movement 1, Scene 2 |
+| `ceiling1_closeup_with_contours.svg` | Inkscape SVG — outline for M1S1 |
+| `ceiling1_outline.svg` | Inkscape SVG — outline for M1S2 |
+| `outlines_render_m1s1.png` | Rendered outline PNG used to generate M1S1 region data |
