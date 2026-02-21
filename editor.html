@@ -1086,6 +1086,9 @@ function renderSeqDetail() {
     <span>override:</span>
     <label>Dim <input class="seq-dimlevel" type="number" step="0.01" value="${seq.dimLevel ?? ''}" placeholder="—" style="${visStyle}"></label>
     <label>Lit <input class="seq-litlevel" type="number" step="0.01" value="${seq.litLevel ?? ''}" placeholder="—" style="${visStyle}"></label>
+  </div>
+  <div style="${rowStyle};color:#666;margin-bottom:3px">
+    <span style="visibility:hidden">override:</span>
     <label>Sat <input class="seq-litsat" type="number" step="0.1" value="${seq.litSaturate ?? ''}" placeholder="—" style="${visStyle}"></label>
     <label>Con <input class="seq-litcon" type="number" step="0.1" value="${seq.litContrast ?? ''}" placeholder="—" style="${visStyle}"></label>
   </div>`;
