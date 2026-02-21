@@ -1,6 +1,6 @@
 # Malaqatin-Meetings — Ceiling Lighting Performance Tool
 
-A browser-based tool for designing and performing live ceiling lighting shows. Regions of a ceiling image are grouped, assigned effects, and triggered via keyboard in real time during a musical performance.
+A browser-based tool for designing and performing live projection shows. Regions of a ceiling image are grouped, assigned effects, and triggered via keyboard in real time during a musical performance. The image is projected onto a screen.
 
 ## Setup
 
