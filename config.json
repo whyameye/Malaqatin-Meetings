@@ -1,7 +1,7 @@
 {
   "config": {
     "dimLevel": 0.15,
-    "litLevel": 1.00,
+    "litLevel": 1,
     "defaultFadeIn": 200,
     "defaultFadeOut": 500,
     "sparkleMinOn": 20,
@@ -25,8 +25,36 @@
           "regionMeta": "m1s1_region_meta.json",
           "regionChildren": "m1s1_region_children.json",
           "regionOverlay": "m1s1_region_overlay.png",
-          "groups": {},
-          "sequences": {}
+          "groups": {
+            "g0": {
+              "name": "Group 1",
+              "regions": [178, 90],
+              "color": "#ff3366"
+            },
+            "g1": {
+              "name": "Group 2",
+              "regions": [178, 96],
+              "color": "#33ff66"
+            },
+            "g2": {
+              "name": "Group 3",
+              "regions": [178, 106],
+              "color": "#6633ff"
+            }
+          },
+          "sequences": {
+            "s0": {
+              "key": "a",
+              "fadeIn": 200,
+              "fadeOut": 500,
+              "sparkleSpeed": 100,
+              "steps": [
+                { "groupId": "g0", "effect": "solid" },
+                { "groupId": "g1", "effect": "solid" },
+                { "groupId": "g2", "effect": "solid" }
+              ]
+            }
+          }
         },
         {
           "name": "Scene 2",
@@ -36,35 +64,20 @@
           "regionChildren": "m1s2_region_children.json",
           "regionOverlay": "m1s2_region_overlay.png",
           "groups": {
-            "g4": {
+            "g8": {
               "name": "Group 1",
-              "regions": [257],
+              "regions": [14],
               "color": "#ff3366"
-            },
-            "g5": {
-              "name": "Group 2",
-              "regions": [192],
-              "color": "#33ff66"
-            },
-            "g6": {
-              "name": "Group 3",
-              "regions": [205, 207, 209, 215, 220, 223, 225, 229, 230, 244, 247, 248, 257, 258, 271, 277, 293, 308, 309, 316, 318, 326, 329, 343, 346, 348, 1285, 1296, 1303, 1304, 1311, 1316, 1319, 1321, 1328, 1334, 1335, 1344, 1347, 1352, 1357, 1362, 1364, 1368, 1372],
-              "color": "#6633ff"
-            },
-            "g7": {
-              "name": "Group 4",
-              "regions": [1458],
-              "color": "#ffcc33"
             }
           },
           "sequences": {
-            "s5": {
+            "s7": {
               "key": "a",
+              "fadeIn": 200,
+              "fadeOut": 500,
+              "sparkleSpeed": 100,
               "steps": [
-                { "groupId": "g4", "effect": "solid",   "fadeIn": 200, "fadeOut": 500, "sparkleSpeed": 100 },
-                { "groupId": "g5", "effect": "sparkle", "fadeIn": 200, "fadeOut": 500, "sparkleSpeed": 100 },
-                { "groupId": "g6", "effect": "sparkle", "fadeIn": 200, "fadeOut": 500, "sparkleSpeed": 100 },
-                { "groupId": "g7", "effect": "solid",   "fadeIn": 200, "fadeOut": 500, "sparkleSpeed": 100 }
+                { "groupId": "g8", "effect": "solid" }
               ]
             }
           }

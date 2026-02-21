@@ -451,7 +451,10 @@ async function saveScene() {
   for (const [sid, s] of Object.entries(sequences)) {
     seqsOut[sid] = {
       key: s.key,
-      steps: s.steps.map(step => ({ ...step }))
+      fadeIn: s.fadeIn ?? 200,
+      fadeOut: s.fadeOut ?? 500,
+      sparkleSpeed: s.sparkleSpeed ?? 100,
+      steps: s.steps.map(({ groupId, effect }) => ({ groupId, effect }))
     };
   }
   scene.sequences = seqsOut;
@@ -1006,6 +1009,9 @@ function createSequence(key) {
   const id = 's' + (seqIdCounter++);
   sequences[id] = {
     key: key.toLowerCase(),
+    fadeIn: 200,
+    fadeOut: 500,
+    sparkleSpeed: 100,
     steps: []
   };
   renderSequenceList();
@@ -1051,8 +1057,12 @@ function renderSeqDetail() {
     return;
   }
   const seq = sequences[activeSeqId];
-  let html = `<div style="margin-bottom:8px;color:#aaa;display:flex;align-items:center;gap:8px">
-    <span>Key <b>${seq.key.toUpperCase()}</b> \u2014 ${seq.steps.length} steps</span>
+  const inStyle = 'width:42px;font-family:monospace;font-size:11px;padding:1px 4px;background:#333;color:#ddd;border:1px solid #555;border-radius:2px';
+  let html = `<div style="margin-bottom:6px;color:#aaa;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <span>Key <b>${seq.key.toUpperCase()}</b></span>
+    <label style="font-size:11px">In <input class="seq-fadein" type="number" value="${seq.fadeIn ?? 200}" style="${inStyle}">ms</label>
+    <label style="font-size:11px">Out <input class="seq-fadeout" type="number" value="${seq.fadeOut ?? 500}" style="${inStyle}">ms</label>
+    <label style="font-size:11px">Sparkle <input class="seq-sparkle" type="number" value="${seq.sparkleSpeed ?? 100}" style="${inStyle}">ms</label>
     <button class="seq-test-btn" style="margin-left:auto;font-family:monospace;font-size:11px;padding:2px 8px;background:#3a5a3a;border:1px solid #5a8a5a;color:#ddd;border-radius:3px;cursor:pointer">
       ${testStepIdx >= 0 ? 'Stop Test' : 'Test'}
     </button>
@@ -1110,6 +1120,10 @@ function renderSeqDetail() {
       render();
     });
   });
+
+  el.querySelector('.seq-fadein').addEventListener('change', e => { seq.fadeIn = parseInt(e.target.value) || 200; });
+  el.querySelector('.seq-fadeout').addEventListener('change', e => { seq.fadeOut = parseInt(e.target.value) || 500; });
+  el.querySelector('.seq-sparkle').addEventListener('change', e => { seq.sparkleSpeed = parseInt(e.target.value) || 100; });
 
   el.querySelector('.seq-test-btn').addEventListener('click', () => {
     if (testStepIdx >= 0) {
@@ -1216,10 +1230,7 @@ document.getElementById('btn-add-step').addEventListener('click', () => {
   const effect = document.getElementById('seq-effect-select').value;
   sequences[activeSeqId].steps.push({
     groupId: activeGroupId,
-    effect: effect,
-    fadeIn: 200,
-    fadeOut: 500,
-    sparkleSpeed: 100
+    effect: effect
   });
   renderSequenceList();
   renderSeqDetail();

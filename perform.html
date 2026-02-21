@@ -494,8 +494,8 @@ function updateSequenceOpacity(state, now) {
   const seq = sequences[state.seqId];
   const step = seq.steps[state.stepIndex];
   const duration = state.fadeDirection === 'in'
-    ? (step.fadeIn || config.defaultFadeIn)
-    : (step.fadeOut || config.defaultFadeOut);
+    ? (seq.fadeIn || config.defaultFadeIn)
+    : (seq.fadeOut || config.defaultFadeOut);
   const elapsed = now - state.fadeStartTime;
   const t = Math.min(1, elapsed / duration);
   const e = easeInOutCubic(t);
