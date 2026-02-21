@@ -779,11 +779,6 @@ function renderLoop(now) {
 document.addEventListener('keydown', (e) => {
   if (e.repeat) return;
 
-  // Acquire pointer lock on any non-Escape key to hide cursor at OS level
-  if (e.key !== 'Escape' && !document.pointerLockElement) {
-    canvas.requestPointerLock().catch(() => {});
-  }
-
   const key = e.key;
   const keyL = key.toLowerCase();
 
