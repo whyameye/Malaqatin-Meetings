@@ -91,6 +91,7 @@ let xfadeFromImgW = 2731, xfadeFromImgH = 2048; // dimensions of the from-scene 
 let xfadeFromView = null;   // view of the "from" scene
 let xfadeAlpha = 0;         // 0 = from scene, 1 = to scene
 let xfadeStart = null;
+let pendingCrossfadeIdx = -1; // waiting for sequences to fade out before starting
 
 // Global scene fade (0 = black, 1 = visible)
 let sceneFade = 0;
@@ -345,6 +346,7 @@ async function loadMovement(idx) {
   movementIdx = idx;
   xfadeActive = false;
   xfadeFromBg = null;
+  pendingCrossfadeIdx = -1;
 
   if (loadedScenes.length > 0) {
     activateScene(0);
@@ -405,7 +407,19 @@ function startSceneCrossfade(newIdx) {
   if (newIdx < 0 || newIdx >= loadedScenes.length) return;
   if (newIdx === sceneIdx || xfadeActive) return;
 
-  // Stop active sequences
+  // Force-deactivate any active sequences so they fade out first
+  for (const state of Object.values(seqStates)) {
+    if (state.active) {
+      state.active = false;
+      state.fadeFromOpacity = state.opacity;
+      state.fadeStartTime = performance.now();
+      state.fadeDirection = 'out';
+    }
+  }
+  pendingCrossfadeIdx = newIdx;
+}
+
+function _beginCrossfade(newIdx) {
   for (const state of Object.values(seqStates)) stopSparkle(state);
   seqStates = {};
 
@@ -417,7 +431,6 @@ function startSceneCrossfade(newIdx) {
   xfadeAlpha = 0;
   xfadeStart = performance.now();
 
-  // Switch to new scene data (sequences start fresh, hidden until xfadeAlpha > 0)
   activateScene(newIdx);
 }
 
@@ -450,9 +463,6 @@ function brightenRegions(regionSet, litAlpha, sat, con) {
     }
   });
   ctx.clip();
-  ctx.globalAlpha = 1;
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, IMG_W, IMG_H);
   ctx.globalAlpha = litAlpha;
   if (sat !== 1 || con !== 1) {
     ctx.filter = `saturate(${sat}) contrast(${con})`;
@@ -637,6 +647,11 @@ function renderLoop(now) {
     for (const state of Object.values(seqStates)) {
       updateSequenceOpacity(state, now);
     }
+    // Start pending crossfade once all sequences have faded out
+    if (pendingCrossfadeIdx >= 0 && Object.values(seqStates).every(s => s.opacity <= 0.01)) {
+      _beginCrossfade(pendingCrossfadeIdx);
+      pendingCrossfadeIdx = -1;
+    }
   }
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -695,7 +710,7 @@ function renderLoop(now) {
           const step = seq.steps[state.stepIndex];
           const group = groups[step.groupId];
           if (!group) continue;
-          const litAlpha = (seq.litLevel ?? config.litLevel) * state.opacity * sceneFade;
+          const litAlpha = Math.min(1, (seq.litLevel ?? config.litLevel) * state.opacity * sceneFade);
           if (litAlpha <= 0.01) continue;
           const sat = seq.litSaturate ?? config.litSaturate ?? 1;
           const con = seq.litContrast ?? config.litContrast ?? 1;
