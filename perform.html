@@ -888,6 +888,24 @@ function handleRemoteEvent(msg) {
 }
 
 // ============================================================
+// WAKE LOCK — prevent screensaver / display sleep
+// ============================================================
+let wakeLock = null;
+
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch (e) {}
+}
+
+// Re-acquire wake lock if released when tab becomes visible again
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && !wakeLock) requestWakeLock();
+});
+
+// ============================================================
 // MIDI
 // ============================================================
 function initMidi() {
@@ -1209,6 +1227,7 @@ async function init() {
   buildMidiNoteMap();
   connectWebSocket();
   initMidi();
+  requestWakeLock();
 
   requestAnimationFrame(renderLoop);
   await loadMovement(0);
