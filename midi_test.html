@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MIDI Test</title>
+<style>
+  body { background: #111; color: #eee; font-family: monospace; padding: 20px; }
+  h2 { color: #aaa; margin-bottom: 8px; }
+  #status { color: #ff0; margin-bottom: 16px; }
+  #devices { color: #6cf; margin-bottom: 16px; }
+  #log { font-size: 13px; line-height: 1.6; }
+  .note-on  { color: #6f6; }
+  .note-off { color: #f66; }
+  .cc       { color: #6cf; }
+  .other    { color: #aaa; }
+</style>
+</head>
+<body>
+<h2>MIDI Test — Oxygen 8</h2>
+<div id="status">Requesting MIDI access...</div>
+<div id="devices"></div>
+<div id="log"></div>
+
+<script>
+const statusEl = document.getElementById('status');
+const devicesEl = document.getElementById('devices');
+const logEl = document.getElementById('log');
+
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+function noteName(n) { return NOTE_NAMES[n % 12] + Math.floor(n / 12 - 1); }
+
+function log(msg, cls) {
+  const line = document.createElement('div');
+  line.className = cls || 'other';
+  line.textContent = new Date().toISOString().slice(11,23) + '  ' + msg;
+  logEl.prepend(line);
+  // Keep log from growing forever
+  while (logEl.children.length > 200) logEl.removeChild(logEl.lastChild);
+}
+
+function onMidiMessage(e) {
+  const [status, data1, data2] = e.data;
+  const type = status & 0xf0;
+  const ch   = (status & 0x0f) + 1;
+
+  if (type === 0x90 && data2 > 0) {
+    log(`Note On   ch${ch}  note=${data1} (${noteName(data1)})  vel=${data2}`, 'note-on');
+  } else if (type === 0x80 || (type === 0x90 && data2 === 0)) {
+    log(`Note Off  ch${ch}  note=${data1} (${noteName(data1)})  vel=${data2}`, 'note-off');
+  } else if (type === 0xb0) {
+    log(`CC        ch${ch}  cc=${data1}  val=${data2}`, 'cc');
+  } else {
+    const hex = Array.from(e.data).map(b => b.toString(16).padStart(2,'0')).join(' ');
+    log(`Raw: ${hex}`, 'other');
+  }
+}
+
+function listDevices(midi) {
+  const inputs = [...midi.inputs.values()];
+  if (inputs.length === 0) {
+    devicesEl.textContent = 'No MIDI input devices found.';
+    return;
+  }
+  devicesEl.textContent = 'Inputs: ' + inputs.map(i => i.name).join(', ');
+  inputs.forEach(input => { input.onmidimessage = onMidiMessage; });
+}
+
+if (!navigator.requestMIDIAccess) {
+  statusEl.textContent = 'Web MIDI API not supported in this browser. Use Chrome.';
+} else {
+  navigator.requestMIDIAccess({ sysex: false }).then(midi => {
+    statusEl.textContent = 'MIDI access granted.';
+    listDevices(midi);
+    midi.onstatechange = () => {
+      listDevices(midi);
+      log('MIDI device state changed', 'other');
+    };
+  }).catch(err => {
+    statusEl.textContent = 'MIDI access denied: ' + err;
+  });
+}
+</script>
+</body>
+</html>
