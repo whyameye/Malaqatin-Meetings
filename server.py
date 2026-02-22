@@ -1,11 +1,22 @@
 #!/usr/bin/env python3
-"""Simple HTTP server that also handles PUT requests to save JSON files."""
+"""
+Combined server:
+  HTTP on port 8080 — serves files, handles PUT saves
+  WebSocket on port 8765 — relays events between performer and display
+"""
+import asyncio
 import http.server
 import os
+import socket
+import threading
+import websockets
 
+HTTP_PORT = 8080
+WS_PORT   = 8765
 ALLOWED_FILES = {'scene1.json', 'scene2.json', 'scene3.json', 'perform_config.json', 'config.json'}
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
+# ── HTTP ─────────────────────────────────────────────────────
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=DIRECTORY, **kwargs)
@@ -17,14 +28,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b'Not allowed')
             return
-
         length = int(self.headers.get('Content-Length', 0))
         body = self.rfile.read(length)
-
         filepath = os.path.join(DIRECTORY, filename)
         with open(filepath, 'wb') as f:
             f.write(body)
-
         print(f'Saved {filename} ({len(body)} bytes)')
         self.send_response(200)
         self.send_header('Content-Type', 'text/plain')
@@ -39,17 +47,47 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.end_headers()
 
-if __name__ == '__main__':
-    import socket
-    port = 8080
+    def log_message(self, format, *args):
+        pass  # suppress per-request logging
+
+# ── WebSocket relay ───────────────────────────────────────────
+ws_clients = set()
+
+async def ws_handler(ws):
+    ws_clients.add(ws)
+    addr = ws.remote_address
+    print(f'[WS] +{addr}  ({len(ws_clients)} connected)')
+    try:
+        async for message in ws:
+            others = ws_clients - {ws}
+            if others:
+                await asyncio.gather(*[c.send(message) for c in others])
+    except websockets.ConnectionClosed:
+        pass
+    finally:
+        ws_clients.discard(ws)
+        print(f'[WS] -{addr}  ({len(ws_clients)} connected)')
+
+async def main():
     hostname = socket.gethostname()
     try:
         lan_ip = socket.gethostbyname(hostname)
     except Exception:
         lan_ip = '?.?.?.?'
-    print(f'Serving on http://localhost:{port}  (this machine)')
-    print(f'         on http://{lan_ip}:{port}  (other machines on LAN)')
+
+    print(f'HTTP  http://localhost:{HTTP_PORT}     (this machine)')
+    print(f'      http://{lan_ip}:{HTTP_PORT}  (LAN)')
+    print(f'WS    ws://localhost:{WS_PORT}')
+    print(f'      ws://{lan_ip}:{WS_PORT}  (LAN)')
     print(f'Directory: {DIRECTORY}')
-    print(f'Allowed saves: {ALLOWED_FILES}')
-    server = http.server.HTTPServer(('', port), Handler)
-    server.serve_forever()
+
+    # HTTP in a background thread
+    http_server = http.server.HTTPServer(('', HTTP_PORT), Handler)
+    t = threading.Thread(target=http_server.serve_forever, daemon=True)
+    t.start()
+
+    # WebSocket in the asyncio loop
+    async with websockets.serve(ws_handler, '0.0.0.0', WS_PORT):
+        await asyncio.Future()
+
+asyncio.run(main())
