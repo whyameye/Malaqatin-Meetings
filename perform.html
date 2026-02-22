@@ -813,7 +813,7 @@ function renderLoop(now) {
 
     hud.style.display = 'block';
     hud.innerHTML = [
-      `FPS: ${fps} | ${wsLabel} | ${midiLabel}`,
+      `FPS: ${fps} | ${wsLabel} | ${midiLabel} | Wake: ${wakeLockStatus}`,
       `${movName} &gt; ${sceneName} (${sceneIdx + 1}/${totalScenes})`,
       `Dim: ${config.dimLevel} Lit: ${config.litLevel} Sat: ${config.litSaturate} Con: ${config.litContrast}`,
       `FadeIn: ${config.fadeIn}ms FadeOut: ${config.fadeOut}ms Sparkle: ${config.sparkleSpeed}ms`,
@@ -891,13 +891,20 @@ function handleRemoteEvent(msg) {
 // WAKE LOCK — prevent screensaver / display sleep
 // ============================================================
 let wakeLock = null;
+let wakeLockStatus = 'pending'; // 'pending' | 'active' | 'released' | 'unavailable'
 
 async function requestWakeLock() {
-  if (!('wakeLock' in navigator)) return;
+  if (!('wakeLock' in navigator)) {
+    wakeLockStatus = 'unavailable';
+    return;
+  }
   try {
     wakeLock = await navigator.wakeLock.request('screen');
-    wakeLock.addEventListener('release', () => { wakeLock = null; });
-  } catch (e) {}
+    wakeLockStatus = 'active';
+    wakeLock.addEventListener('release', () => { wakeLock = null; wakeLockStatus = 'released'; });
+  } catch (e) {
+    wakeLockStatus = 'unavailable';
+  }
 }
 
 // Re-acquire wake lock if released when tab becomes visible again
