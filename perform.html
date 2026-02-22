@@ -73,7 +73,10 @@ let movementIdx = -1;       // currently loaded movement (0-indexed)
 let sceneIdx = 0;           // current scene within movement
 let loadedScenes = [];      // array of scene data objects
 let isLoading = false;
-let awaitingEnter = false;  // after loading, waiting for Enter to fade in
+let awaitingEnter = false;       // after loading, waiting for Enter to fade in
+let awaitingKnobReset = false;   // waiting for all knobs to confirm below halfway
+let knobsToConfirm = new Set();  // CCs that must report < 64
+let knobsConfirmed = new Set();  // CCs that have confirmed < 64
 
 // Current scene's render data (set from loadedScenes[sceneIdx])
 let bgImage = null;
@@ -369,12 +372,22 @@ async function loadMovement(idx) {
     isLoading = false;
     loadingEl.style.display = 'block';
     if (midiStatus === 'connected') {
-      loadingEl.textContent = 'Set all knobs below halfway\nthen press any key to begin';
+      // Build set of CCs to confirm — all configured knobs + fade knob
+      knobsToConfirm = new Set([...getKnobCCs(), getFadeKnobCC()].filter(cc => cc != null));
+      knobsConfirmed = new Set();
+      if (knobsToConfirm.size > 0) {
+        awaitingKnobReset = true;
+        updateKnobResetPrompt();
+      } else {
+        loadingEl.textContent = 'Press Enter to begin';
+        playReadyTone();
+        awaitingEnter = true;
+      }
     } else {
       loadingEl.textContent = 'Press Enter to begin';
+      playReadyTone();
+      awaitingEnter = true;
     }
-    playReadyTone();
-    awaitingEnter = true;
   } else {
     isLoading = false;
     loadingEl.textContent = `${movement.name} has no scenes.`;
@@ -962,6 +975,22 @@ function onPitchWheel(value) {
 
 function onMidiCC(cc, value) {
   knobValues[cc] = value;
+
+  // During knob reset phase: track confirmations, suppress all other knob actions
+  if (awaitingKnobReset) {
+    if (knobsToConfirm.has(cc) && value < 64) {
+      knobsConfirmed.add(cc);
+      updateKnobResetPrompt();
+      if (knobsConfirmed.size >= knobsToConfirm.size) {
+        awaitingKnobReset = false;
+        awaitingEnter = true;
+        loadingEl.textContent = 'Press Enter to begin';
+        playReadyTone();
+      }
+    }
+    return;
+  }
+
   evaluateKnobs(cc);
 }
 
@@ -972,6 +1001,11 @@ function getKnobCCs() {
   return (masterConfig && masterConfig.config && masterConfig.config.midiKnobCCs)
     ? masterConfig.config.midiKnobCCs
     : []; // no defaults — must be set in config.json
+}
+
+function updateKnobResetPrompt() {
+  const remaining = knobsToConfirm.size - knobsConfirmed.size;
+  loadingEl.textContent = `Lower all knobs to minimum\n${remaining} knob${remaining === 1 ? '' : 's'} remaining`;
 }
 
 function getFadeKnobCC() {
@@ -985,8 +1019,8 @@ function evaluateKnobs(changedCC) {
   const knobCCs = getKnobCCs();
   const fadeCC  = getFadeKnobCC();
 
-  // Fade knob (CC 83): edge-triggered at halfway
-  if (changedCC === fadeCC) {
+  // Fade knob (CC 83): edge-triggered at halfway — only during active performance
+  if (changedCC === fadeCC && !awaitingEnter) {
     const val = knobValues[fadeCC];
     if (val >= 64 && fadeKnobAboveHalf !== true) {
       fadeKnobAboveHalf = true;
