@@ -385,10 +385,14 @@ async function loadMovement(idx) {
         playReadyTone();
         awaitingEnter = true;
       }
-    } else {
+    } else if (!initialKnobCheckDone) {
       loadingEl.textContent = 'Press Enter to begin';
       playReadyTone();
       awaitingEnter = true;
+    } else {
+      // Subsequent movement loads — fade in automatically
+      fadeSceneIn();
+      loadingEl.style.display = 'none';
     }
   } else {
     isLoading = false;
