@@ -1,5 +1,8 @@
 {
   "config": {
+    "midiNoteMap": {
+      "q": 48
+    },
     "dimLevel": 1,
     "litLevel": 1,
     "fadeIn": 0,
