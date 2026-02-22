@@ -73,7 +73,8 @@ let movementIdx = -1;       // currently loaded movement (0-indexed)
 let sceneIdx = 0;           // current scene within movement
 let loadedScenes = [];      // array of scene data objects
 let isLoading = false;
-let awaitingEnter = false;  // after loading, waiting for Enter to fade in
+let awaitingEnter = false;      // after loading, waiting for Enter to fade in
+let awaitingKnobReset = false;  // waiting for all knobs to be below halfway
 
 // Current scene's render data (set from loadedScenes[sceneIdx])
 let bgImage = null;
@@ -367,10 +368,16 @@ async function loadMovement(idx) {
   if (loadedScenes.length > 0) {
     activateScene(0);
     isLoading = false;
-    loadingEl.textContent = 'Press Enter to begin';
-    loadingEl.style.display = 'block';
-    playReadyTone();
-    awaitingEnter = true;
+    if (midiStatus === 'connected' && !allKnobsBelowHalf()) {
+      loadingEl.textContent = 'Turn all knobs below halfway to continue';
+      loadingEl.style.display = 'block';
+      awaitingKnobReset = true;
+    } else {
+      loadingEl.textContent = 'Press Enter to begin';
+      loadingEl.style.display = 'block';
+      playReadyTone();
+      awaitingEnter = true;
+    }
   } else {
     isLoading = false;
     loadingEl.textContent = `${movement.name} has no scenes.`;
@@ -970,6 +977,11 @@ function getKnobCCs() {
     : []; // no defaults — must be set in config.json
 }
 
+function allKnobsBelowHalf() {
+  const ccs = [...getKnobCCs(), getFadeKnobCC()].filter(cc => cc != null);
+  return ccs.every(cc => (knobValues[cc] ?? 0) < 64);
+}
+
 function getFadeKnobCC() {
   return (masterConfig && masterConfig.config && masterConfig.config.midiFadeKnobCC != null)
     ? masterConfig.config.midiFadeKnobCC
@@ -996,6 +1008,14 @@ function evaluateKnobs(changedCC) {
       fadeSceneOut();
       sendEvent({ type: 'fade', action: 'out' });
     }
+  }
+
+  // If waiting for knobs to be reset, check and transition
+  if (awaitingKnobReset && allKnobsBelowHalf()) {
+    awaitingKnobReset = false;
+    awaitingEnter = true;
+    loadingEl.textContent = 'Press Enter to begin';
+    playReadyTone();
   }
 
   // Knob 1: start performer (Enter equivalent)
