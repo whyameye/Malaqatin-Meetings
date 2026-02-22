@@ -379,7 +379,7 @@ async function loadMovement(idx) {
         awaitingKnobReset = true;
         updateKnobResetPrompt();
       } else {
-        loadingEl.textContent = 'Press Enter to begin';
+        loadingEl.textContent = 'Press Enter or any piano key to begin';
         playReadyTone();
         awaitingEnter = true;
       }
@@ -978,14 +978,18 @@ function onMidiCC(cc, value) {
 
   // During knob reset phase: track confirmations, suppress all other knob actions
   if (awaitingKnobReset) {
-    if (knobsToConfirm.has(cc) && value < 64) {
-      knobsConfirmed.add(cc);
-      updateKnobResetPrompt();
-      if (knobsConfirmed.size >= knobsToConfirm.size) {
-        awaitingKnobReset = false;
-        awaitingEnter = true;
-        loadingEl.textContent = 'Press Enter to begin';
-        playReadyTone();
+    if (knobsToConfirm.has(cc)) {
+      const fadeCC = getFadeKnobCC();
+      const confirmed = (cc === fadeCC) ? value >= 64 : value < 64;
+      if (confirmed) {
+        knobsConfirmed.add(cc);
+        updateKnobResetPrompt();
+        if (knobsConfirmed.size >= knobsToConfirm.size) {
+          awaitingKnobReset = false;
+          awaitingEnter = true;
+          loadingEl.textContent = 'Press Enter or any piano key to begin';
+          playReadyTone();
+        }
       }
     }
     return;
@@ -1005,7 +1009,7 @@ function getKnobCCs() {
 
 function updateKnobResetPrompt() {
   const remaining = knobsToConfirm.size - knobsConfirmed.size;
-  loadingEl.textContent = `Lower all knobs to minimum\n${remaining} knob${remaining === 1 ? '' : 's'} remaining`;
+  loadingEl.textContent = `Set knobs: movement knobs DOWN, fade knob (8) UP\n${remaining} knob${remaining === 1 ? '' : 's'} remaining`;
 }
 
 function getFadeKnobCC() {
