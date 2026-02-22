@@ -40,8 +40,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
 if __name__ == '__main__':
+    import socket
     port = 8080
-    print(f'Serving on http://localhost:{port}')
+    hostname = socket.gethostname()
+    try:
+        lan_ip = socket.gethostbyname(hostname)
+    except Exception:
+        lan_ip = '?.?.?.?'
+    print(f'Serving on http://localhost:{port}  (this machine)')
+    print(f'         on http://{lan_ip}:{port}  (other machines on LAN)')
     print(f'Directory: {DIRECTORY}')
     print(f'Allowed saves: {ALLOWED_FILES}')
     server = http.server.HTTPServer(('', port), Handler)
