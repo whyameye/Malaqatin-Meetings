@@ -74,9 +74,10 @@ let sceneIdx = 0;           // current scene within movement
 let loadedScenes = [];      // array of scene data objects
 let isLoading = false;
 let awaitingEnter = false;       // after loading, waiting for Enter to fade in
-let awaitingKnobReset = false;   // waiting for all knobs to confirm below halfway
-let knobsToConfirm = new Set();  // CCs that must report < 64
-let knobsConfirmed = new Set();  // CCs that have confirmed < 64
+let awaitingKnobReset = false;   // waiting for all knobs to confirm positions
+let knobsToConfirm = new Set();  // CCs that must be confirmed
+let knobsConfirmed = new Set();  // CCs that have confirmed
+let initialKnobCheckDone = false; // knob check only happens once at startup
 
 // Current scene's render data (set from loadedScenes[sceneIdx])
 let bgImage = null;
@@ -371,7 +372,7 @@ async function loadMovement(idx) {
     activateScene(0);
     isLoading = false;
     loadingEl.style.display = 'block';
-    if (midiStatus === 'connected') {
+    if (midiStatus === 'connected' && !initialKnobCheckDone) {
       // Build set of CCs to confirm — all configured knobs + fade knob
       knobsToConfirm = new Set([...getKnobCCs(), getFadeKnobCC()].filter(cc => cc != null));
       knobsConfirmed = new Set();
@@ -379,6 +380,7 @@ async function loadMovement(idx) {
         awaitingKnobReset = true;
         updateKnobResetPrompt();
       } else {
+        initialKnobCheckDone = true;
         loadingEl.textContent = 'Press Enter or any piano key to begin';
         playReadyTone();
         awaitingEnter = true;
@@ -987,6 +989,7 @@ function onMidiCC(cc, value) {
         if (knobsConfirmed.size >= knobsToConfirm.size) {
           awaitingKnobReset = false;
           awaitingEnter = true;
+          initialKnobCheckDone = true;
           loadingEl.textContent = 'Press Enter or any piano key to begin';
           playReadyTone();
         }
