@@ -14,6 +14,53 @@ Open `editor.html` to design scenes, `perform.html` to perform them. Both can ru
 
 ---
 
+## Two-Machine Performance Setup
+
+The performer and display run as separate roles of the same `perform.html` file, connected via WebSocket.
+
+### Primary — Private WiFi Router
+
+Both machines connect to a WiFi router (brought to venue, needs only a power outlet). Performer laptop runs `server.py` which serves assets and the WebSocket relay.
+
+**Performer laptop** (static IP `192.168.1.10`, opens in Chrome):
+```
+http://localhost:8080/perform.html?role=performer&ws=ws://192.168.1.10:8765
+```
+
+**Display laptop** (opens in Chrome, projector connected):
+```
+http://192.168.1.10:8080/perform.html?role=display&ws=ws://192.168.1.10:8765
+```
+
+### Fallback — Cloud Server
+
+If the private router isn't available, both machines connect to a cloud server independently via venue WiFi. Requires HTTPS and WSS (nginx + SSL on cloud server).
+
+**Performer laptop:**
+```
+https://cloudserver.com/perform.html?role=performer&ws=wss://cloudserver.com:8765
+```
+
+**Display laptop:**
+```
+https://cloudserver.com/perform.html?role=display&ws=wss://cloudserver.com:8765
+```
+
+### Development (no display machine)
+
+Run standalone with no WebSocket — no `ws=` parameter needed:
+```
+http://localhost:8080/perform.html
+```
+
+### Notes
+- `server.py` prints the performer laptop's LAN IP on startup — use that IP in the display URL
+- The display machine never needs a known/static IP — only the performer's IP matters
+- WebSocket is optional: if `ws=` is omitted the performer works fully standalone
+- HUD is shown by default on `role=performer`, never on `role=display`
+
+---
+
 ## Editor (`editor.html`)
 
 Design scenes by grouping image regions and assigning keyboard-triggered effect sequences.
@@ -59,7 +106,7 @@ Design scenes by grouping image regions and assigning keyboard-triggered effect 
 
 ## Performer (`perform.html`)
 
-Live performance engine. Loads `config.json` and responds to keyboard input in real time.
+Live performance engine. Loads `config.json` and responds to keyboard and MIDI input in real time.
 
 ### Keyboard
 
@@ -71,17 +118,38 @@ Live performance engine. Loads `config.json` and responds to keyboard input in r
 | Left / Right arrow | Crossfade to previous / next scene within the current movement (no wrap) |
 | Space | Toggle raw image (full brightness, effects suppressed) |
 | F | Toggle fullscreen |
-| H | Toggle HUD (FPS, config values, active sequences) |
+| H | Toggle HUD (shown by default; toggle off to hide) |
 | R | Reload config from `config.json` |
 | *Sequence keys* | Hold to activate effect, release to fade out. Press again (after release) to advance to next step. |
 
+### MIDI (Oxygen 8)
+
+| Control | Action |
+|---|---|
+| Piano keys | Activate/deactivate sequences (mapped via `midiNoteMap` in config) |
+| Pitch wheel >75% | Next scene |
+| Pitch wheel <25% | Previous scene |
+| Knob 1 past halfway | Fade in (same as Enter) |
+| Knobs 2–8 past halfway | Load movement 2–8 (highest knob past halfway wins; none = movement 1) |
+
+MIDI is additive — all keyboard bindings still work alongside MIDI.
+
+### HUD
+
+Shown by default on `role=performer`, never on `role=display`. Displays:
+- WebSocket status (`WS: connected / disconnected / off`)
+- MIDI device name or status
+- Current movement and scene
+- Active sequences with effect, step, and opacity
+- FPS
+
 ### Performance workflow
 
-1. Press **1**, **2**, or **3** to load a movement. The display fades to black while all scenes load.
+1. Press **1**, **2**, or **3** (or turn knob 2/3) to load a movement. The display fades to black while all scenes load.
 2. A short audio tone plays when loading is complete (audible to operator, not audience).
-3. Press **Enter** to fade in when ready.
-4. Use **Left/Right** arrows to crossfade between scenes within the movement.
-5. Hold sequence keys to activate effects on groups; release to fade out.
+3. Press **Enter** (or turn knob 1 past halfway) to fade in when ready.
+4. Use **Left/Right** arrows (or pitch wheel) to crossfade between scenes.
+5. Hold sequence keys or MIDI keys to activate effects; release to fade out.
 6. Press **Escape** to fade to black at any time (e.g. between movements).
 
 ---
@@ -238,7 +306,8 @@ Used by the editor's **C** key to select all children of a selected region.
 |---|---|
 | `editor.html` | Scene editor |
 | `perform.html` | Live performer |
-| `server.py` | HTTP server with PUT support for saving `config.json` |
+| `server.py` | Combined HTTP server (port 8080) and WebSocket relay (port 8765) |
+| `architecture.md` | System architecture and networking plan |
 | `generate_regions.py` | Region data generator |
 | `config.json` | Master config: global settings, movements, scenes, groups, sequences |
 | `plan-20-Feb-2026.md` | Design plan for the movement/scene architecture |
