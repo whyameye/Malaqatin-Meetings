@@ -10,82 +10,94 @@ The system runs entirely in Chrome browser — no native installs required on an
 
 ## Machines
 
-### 1. Cloud Linux Box (asset server)
-- Serves all static assets (HTML, images, JSON) over HTTPS
-- Runs `server.py` (Python HTTP server with PUT support for the editor)
-- Optionally runs a WebSocket relay endpoint (see Networking below)
-- Accessible from anywhere with internet
-
-### 2. Performer Linux Laptop
+### 1. Performer Linux Laptop
 - Runs Chrome with `perform.html?role=performer`
 - Connected to Oxygen 8 USB MIDI controller
-- Receives MIDI Note On/Off events → triggers sequences
-- Sends sequence events to display machine via WebSocket
-- Renders the performance view locally (performer can watch their own screen)
-- Hosts the WebSocket relay (preferred) or connects to cloud relay (fallback)
+- Runs `server.py` — serves all assets (HTML, images, JSON) to both machines
+- Runs `relay.py` — WebSocket relay, broadcasts events to display machine
+- HUD displayed by default — shows connection status, MIDI status, active sequences, FPS
+- Performer (keyboardist) watches this screen during performance
 
-### 3. Display Machine (venue/school property)
-- Any machine running Chrome browser — no installation required
-- Runs `perform.html?role=display`
-- Connects to WebSocket relay, receives sequence events from performer
-- Renders the projection — identical logic to performer, driven by incoming events
-- No MIDI, no keyboard input — purely reactive
+### 2. Display Laptop (brought to venue)
+- Runs Chrome with `perform.html?role=display`
+- Connects to performer laptop via WiFi router for assets and WebSocket events
+- Renders the projection — identical visual logic, driven by incoming WebSocket events
+- No HUD, no keyboard input, no MIDI — purely reactive
+- Projector connects to this machine
 
 ---
 
 ## Networking
 
-The WebSocket URL is a single configurable value. Three options in order of preference:
+### Primary — Private WiFi Router
+```
+WiFi Router (brought to venue, power only)
+├── Performer laptop: serves assets + relay, opens http://localhost
+└── Display laptop: opens http://[performer-laptop-ip]
+                    WebSocket: ws://[performer-laptop-ip]:8765
+```
+- Bring any standard WiFi router to the venue — needs only a power outlet
+- Both machines connect wirelessly to it; all traffic stays on private LAN
+- No internet required — completely self-contained
+- Performer opens `http://localhost` (secure context → Web MIDI works)
+- Display opens `http://[performer-laptop-ip]` (no MIDI needed)
+- Low latency (~2–5ms), immune to venue network issues
 
-### Option 1 — Performer Laptop Hotspot (preferred)
+### Fallback — Internet Relay
 ```
-Venue WiFi → Performer Laptop (internet) → shares hotspot
-                                          ↘
-                              Display Machine connects to hotspot
-                              WebSocket: ws://192.168.x.x:8765
-```
-- Performer laptop connects to venue WiFi for internet (asset loading)
-- Simultaneously shares its connection as a WiFi hotspot
-- Display machine connects to that hotspot
-- WebSocket relay runs on performer laptop (`localhost:8765` from its perspective)
-- Fully self-contained LAN — immune to venue firewall/client isolation
-- On Linux: `nmcli device wifi hotspot ifname wlan0 ssid SusanPerf password yourpass`
-
-### Option 2 — Phone Hotspot (fallback)
-```
-Phone hotspot LAN
-├── Performer laptop (WebSocket relay + performer view)
-└── Display machine (display view)
-```
-- Both machines connect to phone's hotspot
-- Phone has no client isolation — peer-to-peer works
-- WebSocket relay runs on performer laptop
-- Use if performer laptop can't simultaneously connect to venue WiFi + share hotspot
-
-### Option 3 — Cloud Relay (fallback)
-```
-Both machines → venue WiFi → internet → cloud Linux box (WebSocket relay)
+Both machines → venue WiFi or phone tether → internet → relay server
 WebSocket: wss://yourserver.com/relay
 ```
-- Works on any internet connection regardless of client isolation
-- Latency: ~50–150ms (imperceptible for visual art)
-- Use if no hotspot is available
+- If private router isn't available or fails
+- Both machines independently connect to any available internet
+- WebSocket events routed through internet relay (~50–100ms latency)
+- Assets still served from performer laptop (requires both on same network)
+  or from a cloud server (no shared network needed)
+- Switch by changing the `ws=` URL parameter — no code changes
+
+### Development (no WebSocket)
+```
+perform.html (no ws= parameter)
+```
+- Runs fully standalone — no WebSocket connection attempted
+- Full keyboard and MIDI input, all rendering works normally
+- Use for building and configuring without needing two machines
 
 ---
 
 ## Single HTML File
 
-`perform.html` handles both roles via URL parameter:
+`perform.html` handles both roles via URL parameters:
 
 ```
+# Performer (primary)
 perform.html?role=performer&ws=ws://192.168.x.x:8765
+
+# Display
 perform.html?role=display&ws=ws://192.168.x.x:8765
+
+# Standalone development (no WebSocket)
+perform.html
 ```
 
-- `role=performer`: enables MIDI input, keyboard fallback, sends events to relay
-- `role=display`: connects to relay, receives events, renders projection
-- `ws=` : WebSocket relay URL (defaults to `ws://localhost:8765` if omitted)
+- `role=performer`: MIDI input, keyboard input, sends events via WebSocket if connected, HUD shown by default
+- `role=display`: receives WebSocket events only, renders visuals, no HUD, no input
+- `ws=`: WebSocket relay URL — if omitted, runs standalone with no WebSocket
+- WebSocket connection is optional — performer works fully without it
 - Both roles run identical rendering code — same visual output
+
+---
+
+## HUD (Performer Only)
+
+Shown by default on `role=performer`, never on `role=display`. Toggle with H key.
+
+Displays:
+- WebSocket status: `WS: connected` / `WS: disconnected` / `WS: off`
+- MIDI status: `MIDI: Oxygen 8` / `MIDI: not found`
+- Current movement and scene
+- Active sequences with effect, step, and opacity
+- FPS
 
 ---
 
@@ -107,9 +119,9 @@ perform.html?role=display&ws=ws://192.168.x.x:8765
 
 ### Pitch Wheel → Scene Changes
 - Pitch wheel value range: 0–127 (center = 64, springs back to center when released)
-- Value > 96 (above 75%) → next scene (triggers once per gesture, dead zone in middle prevents repeat)
+- Value > 96 (above 75%) → next scene (triggers once per gesture, resets when wheel returns to center)
 - Value < 32 (below 25%) → previous scene
-- Middle zone (32–96) = no action / reset trigger ready for next gesture
+- Middle zone (32–96) = no action / resets trigger ready for next gesture
 
 ### Knobs → Movement Selection
 - 8 knobs send CC messages, values 0–127 (halfway = 64)
@@ -120,8 +132,8 @@ perform.html?role=display&ws=ws://192.168.x.x:8765
 - Knob state evaluated on every CC message received (not edge-triggered)
 - Visual params (dimLevel, litLevel, etc.) are set in config and do not change during performance — knobs not used for these
 
-### HTTPS requirement
-Web MIDI API requires a secure context. Assets served from cloud over HTTPS satisfies this. Hotspot relay uses `ws://` (not `wss://`) which is allowed from an HTTPS page when the relay is on a local/private IP.
+### Secure Context for Web MIDI
+Web MIDI API requires a secure context (HTTPS or localhost). Performer opens `http://localhost` which satisfies this. Display machine does not use MIDI so no secure context required there.
 
 ---
 
@@ -130,21 +142,23 @@ Web MIDI API requires a secure context. Assets served from cloud over HTTPS sati
 Performer sends minimal JSON events to relay; relay broadcasts to all display clients:
 
 ```json
-{ "type": "activate",   "seqId": "s0" }
-{ "type": "deactivate", "seqId": "s0" }
+{ "type": "activate",   "key": "q" }
+{ "type": "deactivate", "key": "q" }
 { "type": "scene",      "sceneIdx": 1 }
+{ "type": "movement",   "movementIdx": 0 }
+{ "type": "fade",       "action": "in" | "out" }
 ```
 
-Relay is a simple broadcast server — no state, no logic. Any message received from performer is forwarded to all connected display clients.
+Relay (`relay.py`) is a simple broadcast server — no state, no logic. Any message received is forwarded to all connected clients.
 
 ---
 
 ## Asset Loading
 
-All assets (images, region maps, JSON) are loaded by both performer and display machines directly from the cloud server over HTTPS. The WebSocket relay carries only lightweight event messages — not image data.
+All assets use relative URLs and load from wherever `perform.html` is served:
 
 ```
-Cloud server (HTTPS)
+Performer laptop (server.py)
 ├── perform.html
 ├── config.json
 ├── ceiling1_closeup_21Feb0747.png
@@ -153,23 +167,28 @@ Cloud server (HTTPS)
 └── ...etc
 ```
 
+All scenes within the current movement are loaded when the movement is selected. Switching movements requires network access to performer laptop. Assets are held in memory once loaded.
+
 ---
 
 ## Editor
 
-`editor.html` — scene editor, runs in browser, saves via HTTP PUT to `server.py`. Used on any machine with access to the cloud server. Not part of the live performance stack.
+`editor.html` — scene editor, runs in browser, saves via HTTP PUT to `server.py`. Used on development machine (currently desktop). Not part of the live performance stack.
 
 ---
 
 ## Pre-Performance Checklist
 
-1. Cloud server running (`server.py`)
-2. Performer laptop: connect to venue WiFi, start hotspot, plug in Oxygen 8
-3. Display machine: connect to performer hotspot, open Chrome, navigate to display URL
-4. Performer: open Chrome, navigate to performer URL, confirm MIDI device detected
-5. Test: press MIDI key on Oxygen 8 → verify regions light on display
-6. Disable display machine screensaver/sleep
-7. Set Chrome to fullscreen (F11) on display machine
+1. `git pull` on performer laptop to sync latest code and assets
+2. Plug in WiFi router, connect both laptops to it
+3. Plug in Oxygen 8 — verify `midisport-firmware` is installed
+4. On performer laptop: start `server.py` and `relay.py`
+5. Performer opens Chrome: `http://localhost/perform.html?role=performer&ws=ws://localhost:8765`
+6. Display opens Chrome: `http://[performer-ip]/perform.html?role=display&ws=ws://[performer-ip]:8765`
+7. Verify HUD shows `WS: connected` and `MIDI: Oxygen 8`
+8. Test: press Oxygen 8 key → verify regions light on display
+9. Disable display laptop screensaver/sleep
+10. Set display Chrome to fullscreen (F11), connect projector
 
 ---
 
@@ -178,8 +197,8 @@ Cloud server (HTTPS)
 | Component | Technology |
 |-----------|------------|
 | Asset server | Python (`server.py`) |
-| WebSocket relay | Python (`websockets` library) |
-| Performer/Display UI | Vanilla HTML/JS/Canvas (single file) |
-| MIDI | Web MIDI API (Chrome) |
+| WebSocket relay | Python (`relay.py`, `websockets` library) |
+| Performer/Display UI | Vanilla HTML/JS/Canvas (`perform.html`) |
+| MIDI | Web MIDI API (Chrome, localhost) |
 | Region processing | Python (`generate_regions.py`) |
 | Scene editing | `editor.html` (browser) |
