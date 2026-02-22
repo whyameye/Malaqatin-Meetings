@@ -69,9 +69,10 @@ async def ws_handler(ws):
         print(f'[WS] -{addr}  ({len(ws_clients)} connected)')
 
 async def main():
-    hostname = socket.gethostname()
     try:
-        lan_ip = socket.gethostbyname(hostname)
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(('8.8.8.8', 80))
+            lan_ip = s.getsockname()[0]
     except Exception:
         lan_ip = '?.?.?.?'
 
