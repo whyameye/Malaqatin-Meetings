@@ -339,15 +339,11 @@ async function loadMovement(idx) {
   for (const state of Object.values(seqStates)) stopSparkle(state);
   seqStates = {};
 
-  // Fade to black if currently visible
-  if (sceneFade > 0.01) {
-    fadeSceneOut();
-    await new Promise(r => {
-      const check = setInterval(() => {
-        if (sceneFade < 0.01) { clearInterval(check); r(); }
-      }, 50);
-    });
-  }
+  // Save current scene for crossfade after loading
+  const prevBgImage = bgImage;
+  const prevImgW = IMG_W;
+  const prevImgH = IMG_H;
+  const prevView = { ...view };
 
   mergeConfig(idx);
 
@@ -364,11 +360,22 @@ async function loadMovement(idx) {
   }
 
   movementIdx = idx;
-  xfadeActive = false;
-  xfadeFromBg = null;
   pendingCrossfadeIdx = -1;
 
   if (loadedScenes.length > 0) {
+    // Crossfade from previous scene if one was showing
+    if (prevBgImage) {
+      xfadeFromBg = prevBgImage;
+      xfadeFromImgW = prevImgW;
+      xfadeFromImgH = prevImgH;
+      xfadeFromView = prevView;
+      xfadeActive = true;
+      xfadeAlpha = 0;
+      xfadeStart = performance.now();
+    } else {
+      xfadeActive = false;
+      xfadeFromBg = null;
+    }
     activateScene(0);
     isLoading = false;
     loadingEl.style.display = 'block';
