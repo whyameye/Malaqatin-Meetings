@@ -9,8 +9,8 @@
     "sparkleMaxOn": 80,
     "sparkleMinOff": 20,
     "sparkleMaxOff": 80,
-    "litBrightness": 2,
-    "litSaturate": 1,
+    "litBrightness": 1,
+    "litSaturate": 10,
     "litContrast": 1,
     "sceneFadeDuration": 1000,
     "crossfadeDuration": 1000
@@ -28,45 +28,206 @@
           "regionChildren": "m1s1_region_children.json",
           "regionOverlay": "m1s1_region_overlay.png",
           "groups": {
-            "g0": {
-              "name": "Group 1",
+            "g3": {
+              "name": "M1",
               "regions": [
-                178,
-                90
+                33,
+                178
               ],
-              "color": "#ff3366"
+              "color": "#ffcc33"
             },
-            "g1": {
-              "name": "Group 2",
+            "g4": {
+              "name": "M2a",
               "regions": [
-                178,
-                96
+                90
               ],
               "color": "#33ff66"
             },
-            "g2": {
-              "name": "Group 3",
+            "g5": {
+              "name": "M2b",
               "regions": [
-                178,
-                106
+                96
               ],
               "color": "#6633ff"
+            },
+            "g6": {
+              "name": "M2c",
+              "regions": [
+                106
+              ],
+              "color": "#ffcc33"
+            },
+            "g7": {
+              "name": "M2d",
+              "regions": [
+                134
+              ],
+              "color": "#33ccff"
+            },
+            "g8": {
+              "name": "M2e",
+              "regions": [
+                174
+              ],
+              "color": "#ff6633"
+            },
+            "g9": {
+              "name": "M2f",
+              "regions": [
+                194
+              ],
+              "color": "#66ff33"
+            },
+            "g10": {
+              "name": "M2g",
+              "regions": [
+                217
+              ],
+              "color": "#3366ff"
+            },
+            "g11": {
+              "name": "M2h",
+              "regions": [
+                216
+              ],
+              "color": "#ff33cc"
+            },
+            "g12": {
+              "name": "M2i",
+              "regions": [
+                208
+              ],
+              "color": "#33ffcc"
+            },
+            "g13": {
+              "name": "M2j",
+              "regions": [
+                203
+              ],
+              "color": "#cc33ff"
+            },
+            "g14": {
+              "name": "M2k",
+              "regions": [
+                197
+              ],
+              "color": "#ccff33"
+            },
+            "g15": {
+              "name": "M2l",
+              "regions": [
+                187
+              ],
+              "color": "#ff9966"
+            },
+            "g16": {
+              "name": "M2m",
+              "regions": [
+                173
+              ],
+              "color": "#6699ff"
+            },
+            "g17": {
+              "name": "M2n",
+              "regions": [
+                129
+              ],
+              "color": "#99ff66"
+            },
+            "g18": {
+              "name": "M2o",
+              "regions": [
+                105
+              ],
+              "color": "#ff3366"
+            },
+            "g19": {
+              "name": "M2p",
+              "regions": [
+                94
+              ],
+              "color": "#33ff66"
             }
           },
           "sequences": {
             "s0": {
               "key": "a",
+              "steps": []
+            },
+            "s1": {
+              "key": "q",
               "steps": [
                 {
-                  "groupId": "g0",
+                  "groupId": "g3",
+                  "effect": "solid"
+                }
+              ]
+            },
+            "s2": {
+              "key": "w",
+              "steps": [
+                {
+                  "groupId": "g4",
                   "effect": "solid"
                 },
                 {
-                  "groupId": "g1",
+                  "groupId": "g5",
                   "effect": "solid"
                 },
                 {
-                  "groupId": "g2",
+                  "groupId": "g6",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g7",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g8",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g9",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g10",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g11",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g12",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g13",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g14",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g15",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g16",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g17",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g18",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g19",
                   "effect": "solid"
                 }
               ]
@@ -80,16 +241,407 @@
           "regionMeta": "m1s2_region_meta.json",
           "regionChildren": "m1s2_region_children.json",
           "regionOverlay": "m1s2_region_overlay.png",
-          "groups": {},
-          "sequences": {}
+          "groups": {
+            "g0": {
+              "name": "M1",
+              "regions": [
+                535,
+                374
+              ],
+              "color": "#ff3366"
+            },
+            "g1": {
+              "name": "M2a",
+              "regions": [
+                438
+              ],
+              "color": "#33ff66"
+            },
+            "g2": {
+              "name": "M2b",
+              "regions": [
+                450
+              ],
+              "color": "#6633ff"
+            },
+            "g3": {
+              "name": "M2c",
+              "regions": [
+                464
+              ],
+              "color": "#ffcc33"
+            },
+            "g4": {
+              "name": "M2d",
+              "regions": [
+                503
+              ],
+              "color": "#33ccff"
+            },
+            "g5": {
+              "name": "M2e",
+              "regions": [
+                531
+              ],
+              "color": "#ff6633"
+            },
+            "g6": {
+              "name": "M2f",
+              "regions": [
+                568
+              ],
+              "color": "#66ff33"
+            },
+            "g7": {
+              "name": "M2g",
+              "regions": [
+                586
+              ],
+              "color": "#3366ff"
+            },
+            "g8": {
+              "name": "M2h",
+              "regions": [
+                585
+              ],
+              "color": "#ff33cc"
+            },
+            "g9": {
+              "name": "M2i",
+              "regions": [
+                582
+              ],
+              "color": "#33ffcc"
+            },
+            "g10": {
+              "name": "M2j",
+              "regions": [
+                578
+              ],
+              "color": "#cc33ff"
+            },
+            "g11": {
+              "name": "M2k",
+              "regions": [
+                572
+              ],
+              "color": "#ccff33"
+            },
+            "g12": {
+              "name": "M2l",
+              "regions": [
+                557
+              ],
+              "color": "#ff9966"
+            },
+            "g13": {
+              "name": "M2m",
+              "regions": [
+                530
+              ],
+              "color": "#6699ff"
+            },
+            "g14": {
+              "name": "M2n",
+              "regions": [
+                497
+              ],
+              "color": "#99ff66"
+            },
+            "g15": {
+              "name": "M2o",
+              "regions": [
+                461
+              ],
+              "color": "#ff3366"
+            },
+            "g16": {
+              "name": "M2p",
+              "regions": [
+                443
+              ],
+              "color": "#33ff66"
+            },
+            "g17": {
+              "name": "M3a",
+              "regions": [
+                97
+              ],
+              "color": "#6633ff"
+            },
+            "g18": {
+              "name": "M3b",
+              "regions": [
+                164
+              ],
+              "color": "#ffcc33"
+            },
+            "g19": {
+              "name": "M3c",
+              "regions": [
+                251
+              ],
+              "color": "#33ccff"
+            },
+            "g20": {
+              "name": "M3d",
+              "regions": [
+                396
+              ],
+              "color": "#ff6633"
+            },
+            "g21": {
+              "name": "M3e",
+              "regions": [
+                554
+              ],
+              "color": "#66ff33"
+            },
+            "g22": {
+              "name": "M3f",
+              "regions": [
+                714
+              ],
+              "color": "#3366ff"
+            },
+            "g23": {
+              "name": "M3g",
+              "regions": [
+                822
+              ],
+              "color": "#ff33cc"
+            },
+            "g24": {
+              "name": "M3h",
+              "regions": [
+                880
+              ],
+              "color": "#33ffcc"
+            },
+            "g25": {
+              "name": "M3i",
+              "regions": [
+                885
+              ],
+              "color": "#cc33ff"
+            },
+            "g26": {
+              "name": "M3j",
+              "regions": [
+                840
+              ],
+              "color": "#ccff33"
+            },
+            "g27": {
+              "name": "M3k",
+              "regions": [
+                734
+              ],
+              "color": "#ff9966"
+            },
+            "g28": {
+              "name": "M3l",
+              "regions": [
+                571
+              ],
+              "color": "#6699ff"
+            },
+            "g29": {
+              "name": "M3m",
+              "regions": [
+                403
+              ],
+              "color": "#99ff66"
+            },
+            "g30": {
+              "name": "M3n",
+              "regions": [
+                254
+              ],
+              "color": "#ff3366"
+            },
+            "g31": {
+              "name": "M3o",
+              "regions": [
+                169
+              ],
+              "color": "#33ff66"
+            },
+            "g32": {
+              "name": "M3p",
+              "regions": [
+                101
+              ],
+              "color": "#6633ff"
+            }
+          },
+          "sequences": {
+            "s0": {
+              "key": "q",
+              "steps": [
+                {
+                  "groupId": "g0",
+                  "effect": "solid"
+                }
+              ]
+            },
+            "s1": {
+              "key": "w",
+              "steps": [
+                {
+                  "groupId": "g1",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g2",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g3",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g4",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g5",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g6",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g7",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g8",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g9",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g10",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g11",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g12",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g13",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g14",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g15",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g16",
+                  "effect": "solid"
+                }
+              ]
+            },
+            "s2": {
+              "key": "e",
+              "steps": [
+                {
+                  "groupId": "g17",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g18",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g19",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g20",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g21",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g22",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g23",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g24",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g25",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g26",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g27",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g28",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g29",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g30",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g31",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g32",
+                  "effect": "solid"
+                }
+              ]
+            }
+          }
         },
         {
           "name": "Scene 3",
-          "image": "ceiling_9by16.png",
+          "image": "ceiling_zoomOut.png",
           "regionIdMap": "m1s3_region_id_map.png",
           "regionMeta": "m1s3_region_meta.json",
           "regionChildren": "m1s3_region_children.json",
           "regionOverlay": "m1s3_region_overlay.png",
+          "groups": {},
+          "sequences": {}
+        },
+        {
+          "name": "Scene 4",
+          "image": "ceiling_9by16.png",
+          "regionIdMap": "m1s4_region_id_map.png",
+          "regionMeta": "m1s4_region_meta.json",
+          "regionChildren": "m1s4_region_children.json",
+          "regionOverlay": "m1s4_region_overlay.png",
           "groups": {},
           "sequences": {}
         }
