@@ -69,12 +69,18 @@ async def ws_handler(ws):
         print(f'[WS] -{addr}  ({len(ws_clients)} connected)')
 
 async def main():
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-            s.connect(('8.8.8.8', 80))
-            lan_ip = s.getsockname()[0]
-    except Exception:
-        lan_ip = '?.?.?.?'
+    lan_ip = '?.?.?.?'
+    # Try each common gateway to find the active LAN interface
+    for target in ('8.8.8.8', '192.168.1.1', '192.168.0.1', '10.0.0.1'):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                s.connect((target, 80))
+                ip = s.getsockname()[0]
+                if not ip.startswith('127.'):
+                    lan_ip = ip
+                    break
+        except Exception:
+            continue
 
     print(f'HTTP  http://localhost:{HTTP_PORT}     (this machine)')
     print(f'      http://{lan_ip}:{HTTP_PORT}  (LAN)')
