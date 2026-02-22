@@ -390,8 +390,7 @@ async function loadMovement(idx) {
       playReadyTone();
       awaitingEnter = true;
     } else {
-      // Subsequent movement loads — fade in automatically
-      fadeSceneIn();
+      // Subsequent movement loads — knob 8 controls fade in/out
       loadingEl.style.display = 'none';
     }
   } else {
