@@ -242,14 +242,6 @@
           "regionChildren": "m1s2_region_children.json",
           "regionOverlay": "m1s2_region_overlay.png",
           "groups": {
-            "g0": {
-              "name": "M1",
-              "regions": [
-                535,
-                374
-              ],
-              "color": "#ff3366"
-            },
             "g1": {
               "name": "M2a",
               "regions": [
@@ -473,6 +465,37 @@
                 101
               ],
               "color": "#6633ff"
+            },
+            "g33": {
+              "name": "M1",
+              "regions": [
+                658,
+                808,
+                745,
+                517,
+                367,
+                280,
+                205,
+                200,
+                161,
+                111,
+                118,
+                123,
+                39,
+                87,
+                48,
+                126,
+                152,
+                153,
+                144,
+                125,
+                172,
+                204,
+                218,
+                374,
+                535
+              ],
+              "color": "#ffcc33"
             }
           },
           "sequences": {
@@ -480,7 +503,7 @@
               "key": "q",
               "steps": [
                 {
-                  "groupId": "g0",
+                  "groupId": "g33",
                   "effect": "solid"
                 }
               ]
@@ -632,8 +655,28 @@
           "regionMeta": "m1s3_region_meta.json",
           "regionChildren": "m1s3_region_children.json",
           "regionOverlay": "m1s3_region_overlay.png",
-          "groups": {},
-          "sequences": {}
+          "groups": {
+            "g0": {
+              "name": "M1",
+              "regions": [
+                210,
+                312,
+                370
+              ],
+              "color": "#ff3366"
+            }
+          },
+          "sequences": {
+            "s0": {
+              "key": "q",
+              "steps": [
+                {
+                  "groupId": "g0",
+                  "effect": "solid"
+                }
+              ]
+            }
+          }
         },
         {
           "name": "Scene 4",
