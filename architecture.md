@@ -91,14 +91,37 @@ perform.html?role=display&ws=ws://192.168.x.x:8765
 
 ## MIDI
 
-- **Controller**: M-Audio Oxygen 8 (USB)
+- **Controller**: M-Audio Oxygen 8 — 25 mini keys (2 octaves), 8 assignable knobs, pitch wheel (springs to center), mod wheel
 - **Browser API**: Web MIDI API (Chrome only, requires HTTPS or localhost)
-- **Mapping**:
-  - Note On → `activateSequence(key)` (equivalent to key down)
-  - Note Off → `deactivateSequence(key)` (equivalent to key up)
-  - MIDI note numbers mapped to sequence keys in config
-  - Knobs (CCs) → config parameters (dimLevel, litLevel, etc.) — future
-- **HTTPS requirement**: Web MIDI API requires a secure context. Assets served from cloud over HTTPS satisfies this. Hotspot relay uses `ws://` (not `wss://`) which is allowed from an HTTPS page when the relay is on a local/private IP.
+- **Linux firmware**: Oxygen 8 requires firmware upload on connect — install `midisport-firmware` package (`sudo apt install midisport-firmware`), then replug device
+- **MIDI is additive**: all existing computer keyboard bindings continue to work alongside MIDI
+
+### Piano Keys → Sequences
+- Note On → `activateSequence()` (equivalent to key down)
+- Note Off → `deactivateSequence()` (equivalent to key up)
+- Mapping defined in `config.json` as `midiNoteMap`: keyboard key → MIDI note number
+  ```json
+  "midiNoteMap": { "q": 60, "w": 62, "e": 64 }
+  ```
+- Incoming MIDI note looked up in map → matching sequence activated/deactivated
+
+### Pitch Wheel → Scene Changes
+- Pitch wheel value range: 0–127 (center = 64, springs back to center when released)
+- Value > 96 (above 75%) → next scene (triggers once per gesture, dead zone in middle prevents repeat)
+- Value < 32 (below 25%) → previous scene
+- Middle zone (32–96) = no action / reset trigger ready for next gesture
+
+### Knobs → Movement Selection
+- 8 knobs send CC messages, values 0–127 (halfway = 64)
+- Knob 1 past halfway (value ≥ 64) → start performer (same as Enter key)
+- Knobs 2–8 past halfway → select movement 2–8 respectively
+- Highest-numbered knob past halfway takes precedence (e.g. knobs 2 and 3 both up → movement 3)
+- No knobs past halfway → movement 1
+- Knob state evaluated on every CC message received (not edge-triggered)
+- Visual params (dimLevel, litLevel, etc.) are set in config and do not change during performance — knobs not used for these
+
+### HTTPS requirement
+Web MIDI API requires a secure context. Assets served from cloud over HTTPS satisfies this. Hotspot relay uses `ws://` (not `wss://`) which is allowed from an HTTPS page when the relay is on a local/private IP.
 
 ---
 
