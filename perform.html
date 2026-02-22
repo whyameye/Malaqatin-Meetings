@@ -901,7 +901,11 @@ function onMidiMessage(e) {
   const type = status & 0xf0;
 
   if (type === 0x90 && data2 > 0) {
-    // Note On
+    // Note On — any key starts the performance if waiting
+    if (awaitingEnter) {
+      fadeSceneIn();
+      sendEvent({ type: 'fade', action: 'in' });
+    }
     const key = midiNoteMap[data1];
     if (key) {
       activateSequence(key);
