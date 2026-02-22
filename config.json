@@ -1,8 +1,11 @@
 {
   "config": {
     "midiNoteMap": {
-      "q": 48
+      "q": 48,
+      "w": 50
     },
+    "midiFadeKnobCC": 83,
+    "midiKnobCCs": [],
     "dimLevel": 1,
     "litLevel": 1,
     "fadeIn": 0,

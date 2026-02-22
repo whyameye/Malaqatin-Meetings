@@ -958,34 +958,58 @@ function onPitchWheel(value) {
 
 function onMidiCC(cc, value) {
   knobValues[cc] = value;
-  evaluateKnobs();
+  evaluateKnobs(cc);
 }
 
 let lastKnobMovement = -1; // last movement selected by knobs (-1 = none forced)
+let fadeKnobAboveHalf = null; // track threshold crossings for fade knob
 
-function evaluateKnobs() {
-  if (!masterConfig) return;
-  // Find highest knob number (2+) past halfway
-  // We need to know which CC numbers correspond to knobs 1–8
-  // Use config.midiKnobCCs if defined, else assume default Oxygen 8 CCs
-  const knobCCs = (masterConfig.config && masterConfig.config.midiKnobCCs)
+function getKnobCCs() {
+  return (masterConfig && masterConfig.config && masterConfig.config.midiKnobCCs)
     ? masterConfig.config.midiKnobCCs
-    : [74, 71, 91, 93, 73, 72, 5, 84]; // Oxygen 8 default knob CCs
+    : []; // no defaults — must be set in config.json
+}
 
-  // Knob 1: start performer
-  const knob1CC = knobCCs[0];
-  if (knob1CC !== undefined && knobValues[knob1CC] >= 64) {
-    if (awaitingEnter) {
-      fadeSceneIn();
+function getFadeKnobCC() {
+  return (masterConfig && masterConfig.config && masterConfig.config.midiFadeKnobCC != null)
+    ? masterConfig.config.midiFadeKnobCC
+    : 83; // knob 8 on Oxygen 8
+}
+
+function evaluateKnobs(changedCC) {
+  if (!masterConfig) return;
+  const knobCCs = getKnobCCs();
+  const fadeCC  = getFadeKnobCC();
+
+  // Fade knob (CC 83): edge-triggered at halfway
+  if (changedCC === fadeCC) {
+    const val = knobValues[fadeCC];
+    if (val >= 64 && fadeKnobAboveHalf !== true) {
+      fadeKnobAboveHalf = true;
+      if (loadedScenes.length > 0) {
+        fadeSceneIn();
+        sendEvent({ type: 'fade', action: 'in' });
+      }
+    } else if (val < 64 && fadeKnobAboveHalf !== false) {
+      fadeKnobAboveHalf = false;
+      fadeRawOut();
+      fadeSceneOut();
+      sendEvent({ type: 'fade', action: 'out' });
     }
   }
 
-  // Knobs 2–8: movement selection (highest past halfway wins)
+  // Knob 1: start performer (Enter equivalent)
+  const knob1CC = knobCCs[0];
+  if (knob1CC !== undefined && knobValues[knob1CC] >= 64) {
+    if (awaitingEnter) fadeSceneIn();
+  }
+
+  // Knobs 2–7: movement selection (highest past halfway wins; knob 8 reserved for fade)
   let highestMovement = -1;
-  for (let i = 1; i < knobCCs.length; i++) {
+  for (let i = 1; i < Math.min(knobCCs.length, 7); i++) {
     const cc = knobCCs[i];
     if (cc !== undefined && knobValues[cc] >= 64) {
-      highestMovement = i; // movement index = knob index (knob 2 = movement 2, etc.)
+      highestMovement = i;
     }
   }
 
