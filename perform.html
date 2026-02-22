@@ -189,7 +189,10 @@ function mergeConfig(movIdx) {
 // SCENE ASSET LOADING
 // ============================================================
 async function loadSceneAssets(sceneData, label) {
-  loadingEl.textContent = `Loading ${label}...`;
+  if (!initialKnobCheckDone) {
+    loadingEl.textContent = `Loading ${label}...`;
+    loadingEl.style.display = 'block';
+  }
   await new Promise(r => setTimeout(r, 0));
 
   const cb = '?v=' + Date.now();
@@ -271,7 +274,7 @@ async function loadSceneAssets(sceneData, label) {
   }
 
   // Pre-render region images
-  loadingEl.textContent = `Pre-rendering ${label}...`;
+  if (!initialKnobCheckDone) loadingEl.textContent = `Pre-rendering ${label}...`;
   await new Promise(r => setTimeout(r, 0));
 
   const tmpMask = document.createElement('canvas');
