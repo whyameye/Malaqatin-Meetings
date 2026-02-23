@@ -972,7 +972,17 @@ function onMidiMessage(e) {
       sendEvent({ type: 'fade', action: 'in' });
     }
     const key = midiNoteMap[data1];
-    if (key) {
+    if (key === 'scene_next') {
+      if (!isLoading && !xfadeActive && sceneIdx < loadedScenes.length - 1) {
+        startSceneCrossfade(sceneIdx + 1);
+        sendEvent({ type: 'scene', sceneIdx: sceneIdx + 1 });
+      }
+    } else if (key === 'scene_prev') {
+      if (!isLoading && !xfadeActive && sceneIdx > 0) {
+        startSceneCrossfade(sceneIdx - 1);
+        sendEvent({ type: 'scene', sceneIdx: sceneIdx - 1 });
+      }
+    } else if (key) {
       physicallyHeldKeys.add(key);
       activateSequence(key);
       sendEvent({ type: 'activate', key });
