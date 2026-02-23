@@ -121,6 +121,9 @@ let fps = 0;
 let frameCount = 0;
 let fpsTime = performance.now();
 
+// Keys physically held down (keyboard or MIDI) — persists across scene changes
+let physicallyHeldKeys = new Set();
+
 // WebSocket
 let ws = null;
 let wsStatus = WS_URL ? 'connecting' : 'off'; // 'off' | 'connecting' | 'connected' | 'disconnected'
@@ -480,6 +483,11 @@ function _beginCrossfade(newIdx) {
   xfadeStart = performance.now();
 
   activateScene(newIdx);
+
+  // Re-activate any physically held keys in the new scene
+  for (const key of physicallyHeldKeys) {
+    if (seqStates[key]) activateSequence(key);
+  }
 }
 
 // ============================================================
@@ -965,6 +973,7 @@ function onMidiMessage(e) {
     }
     const key = midiNoteMap[data1];
     if (key) {
+      physicallyHeldKeys.add(key);
       activateSequence(key);
       sendEvent({ type: 'activate', key });
     }
@@ -972,6 +981,7 @@ function onMidiMessage(e) {
     // Note Off
     const key = midiNoteMap[data1];
     if (key) {
+      physicallyHeldKeys.delete(key);
       deactivateSequence(key);
       sendEvent({ type: 'deactivate', key });
     }
@@ -1198,6 +1208,7 @@ document.addEventListener('keydown', (e) => {
 
   // Sequence activation
   if (seqStates[keyL]) {
+    physicallyHeldKeys.add(keyL);
     activateSequence(keyL);
     sendEvent({ type: 'activate', key: keyL });
     return;
@@ -1207,6 +1218,7 @@ document.addEventListener('keydown', (e) => {
 document.addEventListener('keyup', (e) => {
   if (!IS_PERFORMER) return;
   const keyL = e.key.toLowerCase();
+  physicallyHeldKeys.delete(keyL);
   if (seqStates[keyL]) {
     deactivateSequence(keyL);
     sendEvent({ type: 'deactivate', key: keyL });
