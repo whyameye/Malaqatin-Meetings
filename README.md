@@ -1,6 +1,6 @@
 # Malaqatin-Meetings — Live Image Performance Tool
 
-A browser-based tool for designing and performing live projection shows. Regions of a photo are grouped, assigned effects, and triggered via keyboard in real time during a musical performance. The image is projected onto a screen.
+A browser-based tool for designing and performing live projection shows. Regions of a photo are grouped, assigned effects, and triggered via keyboard or MIDI in real time during a musical performance. The image is projected onto a screen.
 
 ## Setup
 
@@ -8,7 +8,7 @@ Start the local server:
 ```
 python3 server.py
 ```
-Serves on http://localhost:8080
+Prints HTTP and WebSocket URLs on startup (both localhost and LAN IP).
 
 Open `editor.html` to design scenes, `perform.html` to perform them. Both can run in separate browser tabs simultaneously.
 
@@ -112,45 +112,60 @@ Live performance engine. Loads `config.json` and responds to keyboard and MIDI i
 
 | Key | Description |
 |---|---|
-| 1 / 2 / 3 | Load movement — fades to black, loads all scenes for that movement, plays audio cue when ready |
+| 1 / 2 / 3 | Load movement — crossfades to new movement, plays audio cue when ready |
 | Enter | Fade in from black |
 | Escape | Fade to black |
 | Left / Right arrow | Crossfade to previous / next scene within the current movement (no wrap) |
 | Space | Toggle raw image (full brightness, effects suppressed) |
 | F | Toggle fullscreen |
-| H | Toggle HUD (shown by default; toggle off to hide) |
+| H | Toggle HUD (shown by default on performer; hidden on display) |
 | R | Reload config from `config.json` |
 | *Sequence keys* | Hold to activate effect, release to fade out. Press again (after release) to advance to next step. |
 
 ### MIDI (Oxygen 8)
+
+**Linux firmware requirement**: The Oxygen 8 needs firmware uploaded on connect:
+```bash
+sudo apt install midisport-firmware
+```
+Then unplug and replug the device. Verify with `midi_test.html`.
 
 | Control | Action |
 |---|---|
 | Piano keys | Activate/deactivate sequences (mapped via `midiNoteMap` in config) |
 | Pitch wheel >75% | Next scene |
 | Pitch wheel <25% | Previous scene |
-| Knob 1 past halfway | Fade in (same as Enter) |
-| Knobs 2–8 past halfway | Load movement 2–8 (highest knob past halfway wins; none = movement 1) |
+| Knob 8 above halfway | Fade in |
+| Knob 8 below halfway | Fade out |
+| Knobs 2–7 past halfway | Load movement 2–7 (highest past halfway wins; none past halfway = movement 1) |
+| Knob 1 past halfway | Fade in (same as Enter, for initial startup only) |
 
 MIDI is additive — all keyboard bindings still work alongside MIDI.
 
+### Startup knob check
+
+On first load, if MIDI is connected and knobs are configured, the performer is prompted to set all movement knobs (2–7) below halfway and fade knob (8) above halfway before proceeding. The count of unconfirmed knobs is shown. Once all are confirmed the audio ready tone plays and the performer can begin. This check only happens once — subsequent movement switches skip it.
+
+### Held keys across scene changes
+
+If a key (keyboard or MIDI) is held down during a scene crossfade, it is automatically re-activated in the new scene. The performer does not need to re-press it.
+
 ### HUD
 
-Shown by default on `role=performer`, never on `role=display`. Displays:
-- WebSocket status (`WS: connected / disconnected / off`)
-- MIDI device name or status
+Shown by default on `role=performer`, never on `role=display`. Toggle with H key. Displays:
+- FPS, WebSocket status, MIDI device name, screen wake lock status
 - Current movement and scene
 - Active sequences with effect, step, and opacity
-- FPS
+- Config values (dimLevel, litLevel, etc.)
 
 ### Performance workflow
 
-1. Press **1**, **2**, or **3** (or turn knob 2/3) to load a movement. The display fades to black while all scenes load.
+1. Press **1**, **2**, or **3** (or turn knob 2/3) to load a movement. Crossfades from current scene while loading in background.
 2. A short audio tone plays when loading is complete (audible to operator, not audience).
-3. Press **Enter** (or turn knob 1 past halfway) to fade in when ready.
-4. Use **Left/Right** arrows (or pitch wheel) to crossfade between scenes.
-5. Hold sequence keys or MIDI keys to activate effects; release to fade out.
-6. Press **Escape** to fade to black at any time (e.g. between movements).
+3. On first load: set knobs to correct positions when prompted, then press **Enter** or any piano key to fade in.
+4. Use **Left/Right** arrows or pitch wheel to crossfade between scenes.
+5. Use **Knob 8** to fade in/out between movements.
+6. Hold sequence keys or MIDI keys to activate effects; release to fade out.
 
 ---
 
@@ -164,6 +179,9 @@ Single master config file. Edited by hand for structure; groups and sequences ar
 |---|---|---|
 | dimLevel | 0.15 | Background image opacity when regions are unlit (0–1) |
 | litLevel | 1.00 | Opacity of lit regions (0–1; cannot exceed 1) |
+| litBrightness | 1.0 | CSS brightness() multiplier for lit regions (1.0 = unchanged) |
+| litSaturate | 1.8 | CSS saturate() multiplier for lit regions (1.0 = unchanged) |
+| litContrast | 1.3 | CSS contrast() multiplier for lit regions (1.0 = unchanged) |
 | fadeIn | 200 | Default fade-in duration (ms) when a sequence key is pressed |
 | fadeOut | 500 | Default fade-out duration (ms) when a sequence key is released |
 | sparkleSpeed | 100 | Default sparkle interval (ms) |
@@ -171,10 +189,36 @@ Single master config file. Edited by hand for structure; groups and sequences ar
 | sparkleMaxOn | 80 | Max time a region stays lit during sparkle (ms) |
 | sparkleMinOff | 20 | Min time a region stays dark during sparkle (ms) |
 | sparkleMaxOff | 80 | Max time a region stays dark during sparkle (ms) |
-| litSaturate | 1.8 | Color saturation multiplier for lit regions (1.0 = unchanged) |
-| litContrast | 1.3 | Contrast multiplier for lit regions (1.0 = unchanged) |
 | sceneFadeDuration | 1000 | Fade to/from black duration (ms) |
 | crossfadeDuration | 1500 | Scene crossfade duration (ms) |
+| midiNoteMap | {} | Maps keyboard key → MIDI note number (see below) |
+| midiKnobCCs | [] | CC numbers for knobs 1–7 in order (find with `midi_test.html`) |
+| midiFadeKnobCC | 83 | CC number for fade knob (knob 8 on Oxygen 8) |
+
+### Per-sequence overrides
+
+Any sequence can override these global values. Leave unset (null) to use the global value:
+
+`dimLevel`, `litLevel`, `litBrightness`, `litSaturate`, `litContrast`, `fadeIn`, `fadeOut`, `sparkleSpeed`
+
+Set in the editor UI or directly in `config.json` under a sequence object.
+
+### MIDI note map
+
+Maps keyboard sequence keys and special actions to MIDI note numbers:
+
+```json
+"midiNoteMap": {
+  "q": 48,
+  "w": 50,
+  "scene_next": 60,
+  "scene_prev": 59
+}
+```
+
+Special action values: `scene_next`, `scene_prev` — trigger scene crossfade on Note On.
+
+Use `midi_test.html` to find the note numbers for each key on your MIDI controller.
 
 ### Structure
 
@@ -208,7 +252,7 @@ A movement's `config` block overrides the global `config` where specified. Globa
 
 ### Division of responsibility
 
-- **Edit by hand in JSON**: movement names, scene names, image and region file paths, adding/removing movements or scenes
+- **Edit by hand in JSON**: movement names, scene names, image and region file paths, MIDI mappings, adding/removing movements or scenes
 - **Edit via editor UI**: groups and sequences within a scene
 
 ---
@@ -216,6 +260,10 @@ A movement's `config` block overrides the global `config` where specified. Globa
 ## Generating Region Data
 
 Each scene needs region data generated from an outline image. The outline image must be a PNG with **white areas** as selectable regions and **black lines** as boundaries (not selectable).
+
+### Tuning parameters first
+
+Use `segmentation_tuner.html` to interactively preview segmentation parameters before running `generate_regions.py`. Load an outline PNG, adjust parameters, and see the region count and overlay in real time.
 
 ### Producing the input PNG
 
@@ -305,22 +353,33 @@ Used by the editor's **C** key to select all children of a selected region.
 | File | Description |
 |---|---|
 | `editor.html` | Scene editor |
-| `perform.html` | Live performer |
+| `perform.html` | Live performer (supports `role=performer\|display` and `ws=` URL params) |
 | `server.py` | Combined HTTP server (port 8080) and WebSocket relay (port 8765) |
+| `segmentation_tuner.html` | Interactive UI for tuning region segmentation parameters |
+| `midi_test.html` | MIDI monitor — shows all input from connected MIDI devices |
 | `architecture.md` | System architecture and networking plan |
 | `generate_regions.py` | Region data generator |
 | `config.json` | Master config: global settings, movements, scenes, groups, sequences |
-| `plan-20-Feb-2026.md` | Design plan for the movement/scene architecture |
 | `ceiling1_closeup_21Feb0747.png` | Photo — Movement 1, Scene 1 |
-| `ceiling_20Feb1811.png` | Photo — Movement 1, Scene 2 |
-| `m1s1_region_id_map.png` | Region ID map — Movement 1, Scene 1 |
-| `m1s1_region_meta.json` | Region metadata — Movement 1, Scene 1 |
-| `m1s1_region_overlay.png` | Region overlay — Movement 1, Scene 1 |
-| `m1s1_region_children.json` | Region children — Movement 1, Scene 1 |
-| `m1s2_region_id_map.png` | Region ID map — Movement 1, Scene 2 |
-| `m1s2_region_meta.json` | Region metadata — Movement 1, Scene 2 |
-| `m1s2_region_overlay.png` | Region overlay — Movement 1, Scene 2 |
-| `m1s2_region_children.json` | Region children — Movement 1, Scene 2 |
+| `ceiling1_medium_up.png` | Photo — Movement 1, Scene 2 |
+| `ceiling_zoomOut.png` | Photo — Movement 1, Scene 3 |
+| `ceiling_9by16.png` | Photo — Movement 1, Scene 4 |
+| `m1s1_region_id_map.png` | Region ID map — M1 Scene 1 |
+| `m1s1_region_meta.json` | Region metadata — M1 Scene 1 |
+| `m1s1_region_overlay.png` | Region overlay — M1 Scene 1 |
+| `m1s1_region_children.json` | Region children — M1 Scene 1 |
+| `m1s2_region_id_map.png` | Region ID map — M1 Scene 2 |
+| `m1s2_region_meta.json` | Region metadata — M1 Scene 2 |
+| `m1s2_region_overlay.png` | Region overlay — M1 Scene 2 |
+| `m1s2_region_children.json` | Region children — M1 Scene 2 |
+| `m1s3_region_id_map.png` | Region ID map — M1 Scene 3 |
+| `m1s3_region_meta.json` | Region metadata — M1 Scene 3 |
+| `m1s3_region_overlay.png` | Region overlay — M1 Scene 3 |
+| `m1s3_region_children.json` | Region children — M1 Scene 3 |
+| `m1s4_region_id_map.png` | Region ID map — M1 Scene 4 |
+| `m1s4_region_meta.json` | Region metadata — M1 Scene 4 |
+| `m1s4_region_overlay.png` | Region overlay — M1 Scene 4 |
+| `m1s4_region_children.json` | Region children — M1 Scene 4 |
 | `ceiling1_closeup_with_contours.svg` | Inkscape SVG — outline for M1S1 |
 | `ceiling1_outline.svg` | Inkscape SVG — outline for M1S2 |
 | `outlines_render_m1s1.png` | Rendered outline PNG used to generate M1S1 region data |
