@@ -13,9 +13,8 @@ The system runs entirely in Chrome browser — no native installs required on an
 ### 1. Performer Linux Laptop
 - Runs Chrome with `perform.html?role=performer`
 - Connected to Oxygen 8 USB MIDI controller
-- Runs `server.py` — serves all assets (HTML, images, JSON) to both machines
-- Runs `relay.py` — WebSocket relay, broadcasts events to display machine
-- HUD displayed by default — shows connection status, MIDI status, active sequences, FPS
+- Runs `server.py` — serves all assets (HTML, images, JSON) to both machines AND runs WebSocket relay
+- HUD displayed by default — shows WS status, MIDI status, wake lock status, active sequences, FPS
 - Performer (keyboardist) watches this screen during performance
 
 ### 2. Display Laptop (brought to venue)
@@ -95,6 +94,7 @@ Shown by default on `role=performer`, never on `role=display`. Toggle with H key
 Displays:
 - WebSocket status: `WS: connected` / `WS: disconnected` / `WS: off`
 - MIDI status: `MIDI: Oxygen 8` / `MIDI: not found`
+- Wake lock status: `Wake: active` / `Wake: unavailable`
 - Current movement and scene
 - Active sequences with effect, step, and opacity
 - FPS
@@ -113,9 +113,10 @@ Displays:
 - Note Off → `deactivateSequence()` (equivalent to key up)
 - Mapping defined in `config.json` as `midiNoteMap`: keyboard key → MIDI note number
   ```json
-  "midiNoteMap": { "q": 60, "w": 62, "e": 64 }
+  "midiNoteMap": { "q": 48, "w": 50, "scene_next": 60, "scene_prev": 59 }
   ```
 - Incoming MIDI note looked up in map → matching sequence activated/deactivated
+- Special values `scene_next` and `scene_prev` trigger scene crossfades on Note On
 
 ### Pitch Wheel → Scene Changes
 - Pitch wheel value range: 0–127 (center = 64, springs back to center when released)
@@ -123,14 +124,21 @@ Displays:
 - Value < 32 (below 25%) → previous scene
 - Middle zone (32–96) = no action / resets trigger ready for next gesture
 
-### Knobs → Movement Selection
+### Knobs → Movement Selection and Fade
 - 8 knobs send CC messages, values 0–127 (halfway = 64)
-- Knob 1 past halfway (value ≥ 64) → start performer (same as Enter key)
-- Knobs 2–8 past halfway → select movement 2–8 respectively
+- Knob 1 past halfway (value ≥ 64) → start performer on initial load (same as Enter key)
+- Knobs 2–7 past halfway → select movement 2–7 respectively
 - Highest-numbered knob past halfway takes precedence (e.g. knobs 2 and 3 both up → movement 3)
 - No knobs past halfway → movement 1
-- Knob state evaluated on every CC message received (not edge-triggered)
+- **Knob 8** (CC 83, edge-triggered): above halfway → fade in; below halfway → fade out
+- Knob state evaluated on every CC message received
 - Visual params (dimLevel, litLevel, etc.) are set in config and do not change during performance — knobs not used for these
+
+### Startup Knob Check
+On first load with MIDI connected, performer is prompted to set movement knobs (2–7) below halfway and fade knob (8) above halfway. Each knob must actively report the correct position (by being moved). Count of unconfirmed knobs shown. Once all confirmed, ready tone plays and performance can begin. Subsequent movement switches skip this check.
+
+### Held Keys Across Scene Changes
+If a keyboard or MIDI key is physically held during a scene crossfade, it is automatically re-activated in the new scene — the performer does not need to re-press it.
 
 ### Secure Context for Web MIDI
 Web MIDI API requires a secure context (HTTPS or localhost). Performer opens `http://localhost` which satisfies this. Display machine does not use MIDI so no secure context required there.
@@ -149,7 +157,7 @@ Performer sends minimal JSON events to relay; relay broadcasts to all display cl
 { "type": "fade",       "action": "in" | "out" }
 ```
 
-Relay (`relay.py`) is a simple broadcast server — no state, no logic. Any message received is forwarded to all connected clients.
+The relay built into `server.py` is a simple broadcast server — no state, no logic. Any message received is forwarded to all connected clients.
 
 ---
 
@@ -182,9 +190,9 @@ All scenes within the current movement are loaded when the movement is selected.
 1. `git pull` on performer laptop to sync latest code and assets
 2. Plug in WiFi router, connect both laptops to it
 3. Plug in Oxygen 8 — verify `midisport-firmware` is installed
-4. On performer laptop: start `server.py` and `relay.py`
-5. Performer opens Chrome: `http://localhost/perform.html?role=performer&ws=ws://localhost:8765`
-6. Display opens Chrome: `http://[performer-ip]/perform.html?role=display&ws=ws://[performer-ip]:8765`
+4. On performer laptop: start `server.py`
+5. Performer opens Chrome: `http://localhost:8080/perform.html?role=performer&ws=ws://localhost:8765`
+6. Display opens Chrome: `http://[performer-ip]:8080/perform.html?role=display&ws=ws://[performer-ip]:8765`
 7. Verify HUD shows `WS: connected` and `MIDI: Oxygen 8`
 8. Test: press Oxygen 8 key → verify regions light on display
 9. Disable display laptop screensaver/sleep
@@ -196,8 +204,7 @@ All scenes within the current movement are loaded when the movement is selected.
 
 | Component | Technology |
 |-----------|------------|
-| Asset server | Python (`server.py`) |
-| WebSocket relay | Python (`relay.py`, `websockets` library) |
+| Asset server + WebSocket relay | Python (`server.py`, `websockets` library) |
 | Performer/Display UI | Vanilla HTML/JS/Canvas (`perform.html`) |
 | MIDI | Web MIDI API (Chrome, localhost) |
 | Region processing | Python (`generate_regions.py`) |
