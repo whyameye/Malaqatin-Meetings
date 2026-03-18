@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 """
 Combined server:
   HTTP on port 8080 — serves files, handles PUT saves

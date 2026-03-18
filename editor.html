@@ -184,6 +184,7 @@
     <p><kbd>Scroll</kbd> Zoom</p>
     <p><kbd>Drag</kbd> Pan</p>
     <p><kbd>G</kbd> Quick create group from selection</p>
+    <p><kbd>S</kbd> Add step (active group → active sequence)</p>
     <p><kbd>Space</kbd> Advance to next step (in sequence test mode)</p>
     <p><kbd>?</kbd> Toggle this help</p>
     <br>
@@ -802,6 +803,21 @@ window.addEventListener('keydown', (e) => {
 
   if (e.key === '?' || e.key === '/') {
     document.getElementById('help-overlay').classList.toggle('visible');
+  }
+
+  if (e.key === 's' || e.key === 'S') {
+    if (activeSeqId && activeGroupId) {
+      const effect = document.getElementById('seq-effect-select').value;
+      sequences[activeSeqId].steps.push({ groupId: activeGroupId, effect });
+      renderSequenceList();
+      renderSeqDetail();
+      saveConfig();
+      const activeItem = document.querySelector('.group-item.active');
+      if (activeItem) {
+        activeItem.style.background = '#4a7a4a';
+        setTimeout(() => { activeItem.style.background = ''; }, 300);
+      }
+    }
   }
 
   if (e.key === ' ' && testStepIdx >= 0) {

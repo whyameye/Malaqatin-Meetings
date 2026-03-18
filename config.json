@@ -2,10 +2,16 @@
   "config": {
     "midiNoteMap": {
       "q": 48,
-      "w": 50
+      "w": 50,
+      "scene_next": 60,
+      "scene_prev": 59
     },
     "midiFadeKnobCC": 83,
-    "midiKnobCCs": [],
+    "midiKnobCCs": [
+      16,
+      17,
+      18
+    ],
     "dimLevel": 1,
     "litLevel": 1,
     "fadeIn": 0,
@@ -156,10 +162,6 @@
             }
           },
           "sequences": {
-            "s0": {
-              "key": "a",
-              "steps": []
-            },
             "s1": {
               "key": "q",
               "steps": [
@@ -502,6 +504,300 @@
                 535
               ],
               "color": "#ffcc33"
+            },
+            "g34": {
+              "name": "M4a",
+              "regions": [
+                3
+              ],
+              "color": "#ffcc33"
+            },
+            "g35": {
+              "name": "M4b",
+              "regions": [
+                4
+              ],
+              "color": "#33ccff"
+            },
+            "g36": {
+              "name": "M4c",
+              "regions": [
+                55
+              ],
+              "color": "#ff6633"
+            },
+            "g37": {
+              "name": "M4d",
+              "regions": [
+                104
+              ],
+              "color": "#66ff33"
+            },
+            "g38": {
+              "name": "M4e",
+              "regions": [
+                142
+              ],
+              "color": "#3366ff"
+            },
+            "g39": {
+              "name": "M4f",
+              "regions": [
+                191
+              ],
+              "color": "#ff33cc"
+            },
+            "g40": {
+              "name": "M4g",
+              "regions": [
+                240
+              ],
+              "color": "#33ffcc"
+            },
+            "g41": {
+              "name": "M4h",
+              "regions": [
+                295
+              ],
+              "color": "#cc33ff"
+            },
+            "g42": {
+              "name": "M4i",
+              "regions": [
+                366
+              ],
+              "color": "#ccff33"
+            },
+            "g43": {
+              "name": "M4j",
+              "regions": [
+                481
+              ],
+              "color": "#ff9966"
+            },
+            "g44": {
+              "name": "M4k",
+              "regions": [
+                538
+              ],
+              "color": "#6699ff"
+            },
+            "g45": {
+              "name": "M4l",
+              "regions": [
+                597
+              ],
+              "color": "#99ff66"
+            },
+            "g46": {
+              "name": "M4m",
+              "regions": [
+                688
+              ],
+              "color": "#ff3366"
+            },
+            "g47": {
+              "name": "M4n",
+              "regions": [
+                759
+              ],
+              "color": "#33ff66"
+            },
+            "g48": {
+              "name": "M4o",
+              "regions": [
+                795
+              ],
+              "color": "#6633ff"
+            },
+            "g49": {
+              "name": "M4p",
+              "regions": [
+                849
+              ],
+              "color": "#ffcc33"
+            },
+            "g50": {
+              "name": "M4q",
+              "regions": [
+                897
+              ],
+              "color": "#33ccff"
+            },
+            "g51": {
+              "name": "M4r",
+              "regions": [
+                915
+              ],
+              "color": "#ff6633"
+            },
+            "g52": {
+              "name": "M4s",
+              "regions": [
+                948
+              ],
+              "color": "#66ff33"
+            },
+            "g53": {
+              "name": "M4t",
+              "regions": [
+                974
+              ],
+              "color": "#3366ff"
+            },
+            "g54": {
+              "name": "M3u",
+              "regions": [
+                983
+              ],
+              "color": "#ff33cc"
+            },
+            "g55": {
+              "name": "M3v",
+              "regions": [
+                984
+              ],
+              "color": "#33ffcc"
+            },
+            "g56": {
+              "name": "M4w",
+              "regions": [
+                979
+              ],
+              "color": "#cc33ff"
+            },
+            "g57": {
+              "name": "M4x",
+              "regions": [
+                957
+              ],
+              "color": "#ccff33"
+            },
+            "g58": {
+              "name": "M4y",
+              "regions": [
+                929
+              ],
+              "color": "#ff9966"
+            },
+            "g59": {
+              "name": "M4z",
+              "regions": [
+                909
+              ],
+              "color": "#6699ff"
+            },
+            "g60": {
+              "name": "M4aa",
+              "regions": [
+                876
+              ],
+              "color": "#99ff66"
+            },
+            "g61": {
+              "name": "M4bb",
+              "regions": [
+                809
+              ],
+              "color": "#ff3366"
+            },
+            "g62": {
+              "name": "M4cc",
+              "regions": [
+                771
+              ],
+              "color": "#33ff66"
+            },
+            "g63": {
+              "name": "M4dd",
+              "regions": [
+                701
+              ],
+              "color": "#6633ff"
+            },
+            "g64": {
+              "name": "M4ee",
+              "regions": [
+                607
+              ],
+              "color": "#ffcc33"
+            },
+            "g65": {
+              "name": "M4ff",
+              "regions": [
+                549
+              ],
+              "color": "#33ccff"
+            },
+            "g66": {
+              "name": "M4gg",
+              "regions": [
+                496
+              ],
+              "color": "#ff6633"
+            },
+            "g67": {
+              "name": "M4hh",
+              "regions": [
+                389
+              ],
+              "color": "#66ff33"
+            },
+            "g68": {
+              "name": "M4ii",
+              "regions": [
+                308
+              ],
+              "color": "#3366ff"
+            },
+            "g69": {
+              "name": "M4jj",
+              "regions": [
+                265
+              ],
+              "color": "#ff33cc"
+            },
+            "g70": {
+              "name": "M4kk",
+              "regions": [
+                195
+              ],
+              "color": "#33ffcc"
+            },
+            "g71": {
+              "name": "M4ll",
+              "regions": [
+                157
+              ],
+              "color": "#cc33ff"
+            },
+            "g72": {
+              "name": "M4mm",
+              "regions": [
+                122
+              ],
+              "color": "#ccff33"
+            },
+            "g73": {
+              "name": "M4nn",
+              "regions": [
+                67
+              ],
+              "color": "#ff9966"
+            },
+            "g74": {
+              "name": "M4oo",
+              "regions": [
+                21
+              ],
+              "color": "#6699ff"
+            },
+            "g75": {
+              "name": "M4pp",
+              "regions": [
+                17
+              ],
+              "color": "#99ff66"
             }
           },
           "sequences": {
@@ -651,6 +947,179 @@
                   "effect": "solid"
                 }
               ]
+            },
+            "s3": {
+              "key": "r",
+              "steps": [
+                {
+                  "groupId": "g34",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g35",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g36",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g37",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g38",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g39",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g40",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g41",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g42",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g43",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g44",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g45",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g46",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g47",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g48",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g49",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g50",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g51",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g52",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g53",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g54",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g55",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g56",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g57",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g58",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g59",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g60",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g61",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g62",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g63",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g64",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g65",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g66",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g67",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g68",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g69",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g70",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g71",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g72",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g73",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g74",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g75",
+                  "effect": "solid"
+                }
+              ]
             }
           }
         },
@@ -670,6 +1139,984 @@
                 370
               ],
               "color": "#ff3366"
+            },
+            "g1": {
+              "name": "M2a",
+              "regions": [
+                329
+              ],
+              "color": "#33ff66"
+            },
+            "g2": {
+              "name": "M2b",
+              "regions": [
+                334
+              ],
+              "color": "#6633ff"
+            },
+            "g3": {
+              "name": "M2c",
+              "regions": [
+                337
+              ],
+              "color": "#ffcc33"
+            },
+            "g4": {
+              "name": "M2d",
+              "regions": [
+                352
+              ],
+              "color": "#33ccff"
+            },
+            "g5": {
+              "name": "M2e",
+              "regions": [
+                365
+              ],
+              "color": "#ff6633"
+            },
+            "g6": {
+              "name": "M2f",
+              "regions": [
+                381
+              ],
+              "color": "#66ff33"
+            },
+            "g7": {
+              "name": "M2g",
+              "regions": [
+                389
+              ],
+              "color": "#3366ff"
+            },
+            "g8": {
+              "name": "M2h",
+              "regions": [
+                388
+              ],
+              "color": "#ff33cc"
+            },
+            "g9": {
+              "name": "M2i",
+              "regions": [
+                387
+              ],
+              "color": "#33ffcc"
+            },
+            "g10": {
+              "name": "M2j",
+              "regions": [
+                385
+              ],
+              "color": "#cc33ff"
+            },
+            "g11": {
+              "name": "M2k",
+              "regions": [
+                382
+              ],
+              "color": "#ccff33"
+            },
+            "g12": {
+              "name": "M2l",
+              "regions": [
+                376
+              ],
+              "color": "#ff9966"
+            },
+            "g13": {
+              "name": "M2m",
+              "regions": [
+                364
+              ],
+              "color": "#6699ff"
+            },
+            "g14": {
+              "name": "M2n",
+              "regions": [
+                351
+              ],
+              "color": "#99ff66"
+            },
+            "g15": {
+              "name": "M2o",
+              "regions": [
+                339
+              ],
+              "color": "#ff3366"
+            },
+            "g16": {
+              "name": "M2p",
+              "regions": [
+                331
+              ],
+              "color": "#33ff66"
+            },
+            "g17": {
+              "name": "M3a",
+              "regions": [
+                230
+              ],
+              "color": "#6633ff"
+            },
+            "g18": {
+              "name": "M3b",
+              "regions": [
+                255
+              ],
+              "color": "#ffcc33"
+            },
+            "g19": {
+              "name": "M3c",
+              "regions": [
+                289
+              ],
+              "color": "#33ccff"
+            },
+            "g20": {
+              "name": "M3d",
+              "regions": [
+                317
+              ],
+              "color": "#ff6633"
+            },
+            "g21": {
+              "name": "M3e",
+              "regions": [
+                380
+              ],
+              "color": "#66ff33"
+            },
+            "g22": {
+              "name": "M3f",
+              "regions": [
+                438
+              ],
+              "color": "#3366ff"
+            },
+            "g23": {
+              "name": "M3g",
+              "regions": [
+                480
+              ],
+              "color": "#ff33cc"
+            },
+            "g24": {
+              "name": "M3h",
+              "regions": [
+                501
+              ],
+              "color": "#33ffcc"
+            },
+            "g25": {
+              "name": "M3i",
+              "regions": [
+                502
+              ],
+              "color": "#cc33ff"
+            },
+            "g26": {
+              "name": "M3j",
+              "regions": [
+                484
+              ],
+              "color": "#ccff33"
+            },
+            "g27": {
+              "name": "M3k",
+              "regions": [
+                448
+              ],
+              "color": "#ff9966"
+            },
+            "g28": {
+              "name": "M3l",
+              "regions": [
+                384
+              ],
+              "color": "#6699ff"
+            },
+            "g29": {
+              "name": "M3m",
+              "regions": [
+                326
+              ],
+              "color": "#99ff66"
+            },
+            "g30": {
+              "name": "M3n",
+              "regions": [
+                294
+              ],
+              "color": "#ff3366"
+            },
+            "g31": {
+              "name": "M3o",
+              "regions": [
+                262
+              ],
+              "color": "#33ff66"
+            },
+            "g32": {
+              "name": "M3p",
+              "regions": [
+                232
+              ],
+              "color": "#6633ff"
+            },
+            "g33": {
+              "name": "M4a",
+              "regions": [
+                185
+              ],
+              "color": "#ffcc33"
+            },
+            "g34": {
+              "name": "M4b",
+              "regions": [
+                190
+              ],
+              "color": "#33ccff"
+            },
+            "g35": {
+              "name": "M4c",
+              "regions": [
+                174
+              ],
+              "color": "#ff6633"
+            },
+            "g36": {
+              "name": "M4d",
+              "regions": [
+                193
+              ],
+              "color": "#66ff33"
+            },
+            "g37": {
+              "name": "M4e",
+              "regions": [
+                197
+              ],
+              "color": "#3366ff"
+            },
+            "g38": {
+              "name": "M4f",
+              "regions": [
+                213
+              ],
+              "color": "#ff33cc"
+            },
+            "g39": {
+              "name": "M4g",
+              "regions": [
+                202
+              ],
+              "color": "#33ffcc"
+            },
+            "g40": {
+              "name": "M4h",
+              "regions": [
+                231
+              ],
+              "color": "#cc33ff"
+            },
+            "g41": {
+              "name": "M4i",
+              "regions": [
+                243
+              ],
+              "color": "#ccff33"
+            },
+            "g42": {
+              "name": "M4j",
+              "regions": [
+                268
+              ],
+              "color": "#ff9966"
+            },
+            "g43": {
+              "name": "M4k",
+              "regions": [
+                264
+              ],
+              "color": "#6699ff"
+            },
+            "g44": {
+              "name": "M4l",
+              "regions": [
+                287
+              ],
+              "color": "#99ff66"
+            },
+            "g45": {
+              "name": "M4m",
+              "regions": [
+                300
+              ],
+              "color": "#ff3366"
+            },
+            "g46": {
+              "name": "M4n",
+              "regions": [
+                310
+              ],
+              "color": "#33ff66"
+            },
+            "g47": {
+              "name": "M4o",
+              "regions": [
+                320
+              ],
+              "color": "#6633ff"
+            },
+            "g48": {
+              "name": "M4p",
+              "regions": [
+                342
+              ],
+              "color": "#ffcc33"
+            },
+            "g49": {
+              "name": "M4q",
+              "regions": [
+                371
+              ],
+              "color": "#33ccff"
+            },
+            "g50": {
+              "name": "M4r",
+              "regions": [
+                391
+              ],
+              "color": "#ff6633"
+            },
+            "g51": {
+              "name": "M4s",
+              "regions": [
+                409
+              ],
+              "color": "#66ff33"
+            },
+            "g52": {
+              "name": "M4t",
+              "regions": [
+                429
+              ],
+              "color": "#3366ff"
+            },
+            "g53": {
+              "name": "M4u",
+              "regions": [
+                457
+              ],
+              "color": "#ff33cc"
+            },
+            "g54": {
+              "name": "M4v",
+              "regions": [
+                466
+              ],
+              "color": "#33ffcc"
+            },
+            "g55": {
+              "name": "M4w",
+              "regions": [
+                483
+              ],
+              "color": "#cc33ff"
+            },
+            "g56": {
+              "name": "M4x",
+              "regions": [
+                487
+              ],
+              "color": "#ccff33"
+            },
+            "g57": {
+              "name": "M4y",
+              "regions": [
+                507
+              ],
+              "color": "#ff9966"
+            },
+            "g58": {
+              "name": "M4z",
+              "regions": [
+                512
+              ],
+              "color": "#6699ff"
+            },
+            "g59": {
+              "name": "M4aa",
+              "regions": [
+                539
+              ],
+              "color": "#99ff66"
+            },
+            "g60": {
+              "name": "M4bb",
+              "regions": [
+                537
+              ],
+              "color": "#ff3366"
+            },
+            "g61": {
+              "name": "M4cc",
+              "regions": [
+                548
+              ],
+              "color": "#33ff66"
+            },
+            "g62": {
+              "name": "M4dd",
+              "regions": [
+                549
+              ],
+              "color": "#6633ff"
+            },
+            "g63": {
+              "name": "M4ee",
+              "regions": [
+                568
+              ],
+              "color": "#ffcc33"
+            },
+            "g64": {
+              "name": "M4ff",
+              "regions": [
+                559
+              ],
+              "color": "#33ccff"
+            },
+            "g65": {
+              "name": "M4gg",
+              "regions": [
+                563
+              ],
+              "color": "#ff6633"
+            },
+            "g66": {
+              "name": "M4hh",
+              "regions": [
+                558
+              ],
+              "color": "#66ff33"
+            },
+            "g67": {
+              "name": "M4ii",
+              "regions": [
+                569
+              ],
+              "color": "#3366ff"
+            },
+            "g68": {
+              "name": "M4jj",
+              "regions": [
+                554
+              ],
+              "color": "#ff33cc"
+            },
+            "g69": {
+              "name": "M4kk",
+              "regions": [
+                551
+              ],
+              "color": "#33ffcc"
+            },
+            "g70": {
+              "name": "M4ll",
+              "regions": [
+                543
+              ],
+              "color": "#cc33ff"
+            },
+            "g71": {
+              "name": "M4mm",
+              "regions": [
+                547
+              ],
+              "color": "#ccff33"
+            },
+            "g72": {
+              "name": "M4nn",
+              "regions": [
+                522
+              ],
+              "color": "#ff9966"
+            },
+            "g73": {
+              "name": "M4oo",
+              "regions": [
+                511
+              ],
+              "color": "#6699ff"
+            },
+            "g74": {
+              "name": "M4pp",
+              "regions": [
+                494
+              ],
+              "color": "#99ff66"
+            },
+            "g75": {
+              "name": "M4qq",
+              "regions": [
+                489
+              ],
+              "color": "#ff3366"
+            },
+            "g76": {
+              "name": "M4rr",
+              "regions": [
+                471
+              ],
+              "color": "#33ff66"
+            },
+            "g77": {
+              "name": "M4ss",
+              "regions": [
+                462
+              ],
+              "color": "#6633ff"
+            },
+            "g78": {
+              "name": "M4tt",
+              "regions": [
+                433
+              ],
+              "color": "#ffcc33"
+            },
+            "g79": {
+              "name": "M4uu",
+              "regions": [
+                413
+              ],
+              "color": "#33ccff"
+            },
+            "g80": {
+              "name": "M4vv",
+              "regions": [
+                398
+              ],
+              "color": "#ff6633"
+            },
+            "g81": {
+              "name": "M4ww",
+              "regions": [
+                375
+              ],
+              "color": "#66ff33"
+            },
+            "g82": {
+              "name": "M4xx",
+              "regions": [
+                348
+              ],
+              "color": "#3366ff"
+            },
+            "g83": {
+              "name": "M4yy",
+              "regions": [
+                322
+              ],
+              "color": "#ff33cc"
+            },
+            "g84": {
+              "name": "M4zz",
+              "regions": [
+                313
+              ],
+              "color": "#33ffcc"
+            },
+            "g85": {
+              "name": "M4aaa",
+              "regions": [
+                301
+              ],
+              "color": "#cc33ff"
+            },
+            "g86": {
+              "name": "M4bbb",
+              "regions": [
+                292
+              ],
+              "color": "#ccff33"
+            },
+            "g87": {
+              "name": "M4ccc",
+              "regions": [
+                272
+              ],
+              "color": "#ff9966"
+            },
+            "g88": {
+              "name": "M4ddd",
+              "regions": [
+                271
+              ],
+              "color": "#6699ff"
+            },
+            "g89": {
+              "name": "M4eee",
+              "regions": [
+                250
+              ],
+              "color": "#99ff66"
+            },
+            "g90": {
+              "name": "M4fff",
+              "regions": [
+                235
+              ],
+              "color": "#ff3366"
+            },
+            "g91": {
+              "name": "M4ggg",
+              "regions": [
+                209
+              ],
+              "color": "#33ff66"
+            },
+            "g92": {
+              "name": "M4hhh",
+              "regions": [
+                217
+              ],
+              "color": "#6633ff"
+            },
+            "g93": {
+              "name": "M4iii",
+              "regions": [
+                204
+              ],
+              "color": "#ffcc33"
+            },
+            "g94": {
+              "name": "M4jjj",
+              "regions": [
+                199
+              ],
+              "color": "#33ccff"
+            },
+            "g95": {
+              "name": "M4kkk",
+              "regions": [
+                177
+              ],
+              "color": "#ff6633"
+            },
+            "g96": {
+              "name": "M4lll",
+              "regions": [
+                191
+              ],
+              "color": "#66ff33"
+            },
+            "g97": {
+              "name": "M5a",
+              "regions": [
+                75,
+                54,
+                59,
+                72,
+                83,
+                96,
+                103,
+                102,
+                95,
+                81,
+                69,
+                56
+              ],
+              "color": "#3366ff"
+            },
+            "g98": {
+              "name": "M5b",
+              "regions": [
+                93,
+                89,
+                94,
+                109,
+                124,
+                138,
+                144,
+                150,
+                139,
+                126,
+                111,
+                114
+              ],
+              "color": "#ff33cc"
+            },
+            "g99": {
+              "name": "M5c",
+              "regions": [
+                169,
+                170,
+                182,
+                203,
+                227,
+                244,
+                249,
+                242,
+                224,
+                198,
+                181,
+                194
+              ],
+              "color": "#33ffcc"
+            },
+            "g100": {
+              "name": "M5d",
+              "regions": [
+                283,
+                290,
+                303,
+                319,
+                336,
+                349,
+                347,
+                333,
+                311,
+                299,
+                288,
+                305
+              ],
+              "color": "#cc33ff"
+            },
+            "g101": {
+              "name": "M5e",
+              "regions": [
+                404,
+                424,
+                449,
+                469,
+                482,
+                485,
+                476,
+                464,
+                436,
+                415,
+                402,
+                439
+              ],
+              "color": "#ccff33"
+            },
+            "g102": {
+              "name": "M5f",
+              "regions": [
+                550,
+                514,
+                525,
+                544,
+                567,
+                576,
+                579,
+                578,
+                572,
+                557,
+                533,
+                519
+              ],
+              "color": "#ff9966"
+            },
+            "g103": {
+              "name": "M5g",
+              "regions": [
+                585,
+                589,
+                599,
+                619,
+                644,
+                659,
+                665,
+                650,
+                624,
+                600,
+                590,
+                608
+              ],
+              "color": "#6699ff"
+            },
+            "g104": {
+              "name": "M5h",
+              "regions": [
+                629,
+                631,
+                646,
+                676,
+                700,
+                715,
+                721,
+                712,
+                695,
+                668,
+                640,
+                675
+              ],
+              "color": "#99ff66"
+            },
+            "g105": {
+              "name": "M5i",
+              "regions": [
+                635,
+                643,
+                670,
+                697,
+                714,
+                725,
+                723,
+                705,
+                683,
+                654,
+                636,
+                678
+              ],
+              "color": "#ff3366"
+            },
+            "g106": {
+              "name": "M5j",
+              "regions": [
+                596,
+                607,
+                634,
+                661,
+                673,
+                677,
+                660,
+                630,
+                606,
+                595,
+                592,
+                620
+              ],
+              "color": "#33ff66"
+            },
+            "g107": {
+              "name": "M5k",
+              "regions": [
+                527,
+                530,
+                545,
+                566,
+                575,
+                582,
+                588,
+                580,
+                573,
+                561,
+                538,
+                564
+              ],
+              "color": "#6633ff"
+            },
+            "g108": {
+              "name": "M5l",
+              "regions": [
+                460,
+                416,
+                428,
+                452,
+                468,
+                488,
+                498,
+                495,
+                481,
+                465,
+                434,
+                420
+              ],
+              "color": "#ffcc33"
+            },
+            "g109": {
+              "name": "M5m",
+              "regions": [
+                309,
+                291,
+                293,
+                302,
+                314,
+                338,
+                353,
+                357,
+                350,
+                328,
+                308,
+                296
+              ],
+              "color": "#33ccff"
+            },
+            "g110": {
+              "name": "M5n",
+              "regions": [
+                207,
+                178,
+                176,
+                186,
+                208,
+                228,
+                246,
+                254,
+                251,
+                237,
+                212,
+                189
+              ],
+              "color": "#ff6633"
+            },
+            "g111": {
+              "name": "M5o",
+              "regions": [
+                98,
+                97,
+                99,
+                113,
+                131,
+                143,
+                156,
+                155,
+                141,
+                130,
+                115,
+                119
+              ],
+              "color": "#66ff33"
+            },
+            "g112": {
+              "name": "M5p",
+              "regions": [
+                51,
+                57,
+                68,
+                80,
+                91,
+                101,
+                104,
+                92,
+                79,
+                71,
+                58,
+                74
+              ],
+              "color": "#3366ff"
+            },
+            "g113": {
+              "name": "M5k",
+              "regions": [
+                564,
+                527,
+                530,
+                545,
+                566,
+                575,
+                582,
+                588,
+                580,
+                573,
+                561,
+                538
+              ],
+              "color": "#ff33cc"
             }
           },
           "sequences": {
@@ -678,6 +2125,474 @@
               "steps": [
                 {
                   "groupId": "g0",
+                  "effect": "solid"
+                }
+              ]
+            },
+            "s1": {
+              "key": "w",
+              "steps": [
+                {
+                  "groupId": "g1",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g2",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g3",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g4",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g5",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g6",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g7",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g8",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g9",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g10",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g11",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g12",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g13",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g14",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g15",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g16",
+                  "effect": "solid"
+                }
+              ]
+            },
+            "s2": {
+              "key": "e",
+              "steps": [
+                {
+                  "groupId": "g17",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g18",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g19",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g20",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g21",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g22",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g23",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g24",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g25",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g26",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g27",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g28",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g29",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g30",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g31",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g32",
+                  "effect": "solid"
+                }
+              ]
+            },
+            "s3": {
+              "key": "r",
+              "steps": [
+                {
+                  "groupId": "g33",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g34",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g35",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g36",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g37",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g38",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g39",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g40",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g41",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g42",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g43",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g44",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g45",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g46",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g47",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g48",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g49",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g50",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g51",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g52",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g53",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g54",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g55",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g56",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g57",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g58",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g59",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g60",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g61",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g62",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g63",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g64",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g65",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g66",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g67",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g68",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g69",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g70",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g71",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g72",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g73",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g74",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g75",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g76",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g77",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g78",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g79",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g80",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g81",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g82",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g83",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g84",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g85",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g86",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g87",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g88",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g89",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g90",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g91",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g92",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g93",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g94",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g95",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g96",
+                  "effect": "solid"
+                }
+              ]
+            },
+            "s4": {
+              "key": "a",
+              "steps": [
+                {
+                  "groupId": "g97",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g98",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g99",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g100",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g101",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g102",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g103",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g104",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g105",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g106",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g113",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g108",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g109",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g110",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g111",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g112",
                   "effect": "solid"
                 }
               ]
