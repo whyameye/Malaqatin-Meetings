@@ -97,7 +97,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 ws_clients = set()
 
 async def ws_handler(ws):
-    if not _token_ok(ws.request.path):
+    # websockets <13 exposes path directly; >=13 moved it to ws.request.path
+    ws_path = getattr(ws, 'path', None) or getattr(ws.request, 'path', '/')
+    if not _token_ok(ws_path):
         await ws.close(1008, 'Forbidden')
         return
     ws_clients.add(ws)
