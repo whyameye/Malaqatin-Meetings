@@ -83,6 +83,7 @@ let loadedScenes = [];      // array of scene data objects
 let isLoading = false;
 let awaitingEnter = false;       // after loading, waiting for Enter to fade in
 let autoFullscreenDone = false;  // auto-fullscreen fires once on first keypress
+let pendingSync = null;          // last sync state received from performer (display only)
 let awaitingKnobReset = false;   // waiting for all knobs to confirm positions
 let knobsToConfirm = new Set();  // CCs that must be confirmed
 let knobsConfirmed = new Set();  // CCs that have confirmed
@@ -403,13 +404,13 @@ async function loadMovement(idx) {
         updateKnobResetPrompt();
       } else {
         initialKnobCheckDone = true;
-        loadingEl.textContent = 'Press Enter or any piano key to begin';
-        playReadyTone();
+        loadingEl.textContent = IS_PERFORMER ? 'Press Enter or any piano key to begin' : 'Waiting for performer...';
+        if (IS_PERFORMER) playReadyTone();
         awaitingEnter = true;
       }
     } else if (!initialKnobCheckDone) {
-      loadingEl.textContent = 'Press Enter to begin';
-      playReadyTone();
+      loadingEl.textContent = IS_PERFORMER ? 'Press Enter to begin' : 'Waiting for performer...';
+      if (IS_PERFORMER) playReadyTone();
       awaitingEnter = true;
     } else {
       // Subsequent movement loads — knob 8 controls fade in/out
@@ -420,6 +421,7 @@ async function loadMovement(idx) {
     loadingEl.textContent = `${movement.name} has no scenes.`;
     loadingEl.style.display = 'block';
   }
+  applySyncIfReady();
 }
 
 function activateScene(idx) {
@@ -866,7 +868,7 @@ function connectWebSocket() {
   };
 
   ws.onmessage = (e) => {
-    if (IS_PERFORMER) return; // display only
+    if (IS_PERFORMER) return;
     try {
       const msg = JSON.parse(e.data);
       handleRemoteEvent(msg);
@@ -877,6 +879,30 @@ function connectWebSocket() {
 function sendEvent(msg) {
   if (!IS_PERFORMER || !ws || ws.readyState !== WebSocket.OPEN) return;
   ws.send(JSON.stringify(msg));
+}
+
+// Performer: broadcast state every 2s so late-joining displays can sync
+if (IS_PERFORMER) {
+  setInterval(() => {
+    if (movementIdx >= 0) {
+      sendEvent({ type: 'sync', movementIdx, sceneIdx, faded: !awaitingEnter });
+    }
+  }, 2000);
+}
+
+// Display: apply a pending sync once loading is complete
+function applySyncIfReady() {
+  if (!pendingSync || isLoading) return;
+  const msg = pendingSync;
+  pendingSync = null;
+  if (msg.movementIdx !== movementIdx) {
+    loadMovement(msg.movementIdx);
+    // loadMovement will call applySyncIfReady via the awaitingEnter path — not needed;
+    // next broadcast (within 2s) will re-apply
+    return;
+  }
+  if (msg.sceneIdx !== sceneIdx && !xfadeActive) startSceneCrossfade(msg.sceneIdx);
+  if (msg.faded && awaitingEnter) fadeSceneIn();
 }
 
 function handleRemoteEvent(msg) {
@@ -894,6 +920,10 @@ function handleRemoteEvent(msg) {
     case 'fade':
       if (msg.action === 'in') fadeSceneIn();
       else if (msg.action === 'out') { fadeRawOut(); fadeSceneOut(); }
+      break;
+    case 'sync':
+      pendingSync = msg; // applied after loadMovement completes
+      applySyncIfReady();
       break;
     case 'raw':
       if (msg.action === 'in') fadeRawIn();
