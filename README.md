@@ -283,6 +283,11 @@ Single master config file. Edited by hand for structure; groups and sequences ar
 | sparkleMaxOff | 80 | Max time a region stays dark during sparkle (ms) |
 | sceneFadeDuration | 1000 | Fade to/from black duration (ms) |
 | crossfadeDuration | 1500 | Scene crossfade duration (ms) |
+| spotlightDim | 1.0 | Background dim multiplier when any sequence is active (1.0 = no effect, 0.0 = black) |
+| spotlightInDelay | 0 | Delay before spotlight starts dimming after first key press (ms) |
+| spotlightFadeIn | 300 | Duration of spotlight dim fade-in (ms) |
+| spotlightFadeOut | 800 | Duration of spotlight fade back to normal (ms) |
+| spotlightDelay | 500 | Delay after all keys released before spotlight fades back (ms) |
 | midiNoteMap | {} | Maps keyboard key → MIDI note number (see below) |
 | midiKnobCCs | [] | CC numbers for knobs 1–7 in order (find with `midi_test.html`) |
 | midiFadeKnobCC | 83 | CC number for fade knob (knob 8 on Oxygen 8) |
