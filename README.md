@@ -190,7 +190,7 @@ Live performance engine. Loads `config.json` and responds to keyboard and MIDI i
 | Escape | Fade to black |
 | Left / Right arrow | Crossfade to previous / next scene within the current movement (no wrap) |
 | Space | Toggle raw image (full brightness, effects suppressed) |
-| F | Toggle fullscreen |
+| K | Toggle fullscreen |
 | H | Toggle HUD (shown by default on performer; hidden on display) |
 | L | Reload config from `config.json` |
 | *Sequence keys* | Hold to activate effect, release to fade out. Press again (after release) to advance to next step. |
