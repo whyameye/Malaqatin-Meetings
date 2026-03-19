@@ -26,6 +26,9 @@
 <div id="loading">Loading...</div>
 <canvas id="canvas"></canvas>
 <div id="hud"></div>
+<div id="jump-overlay" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.85); color:#0f0; font:20px monospace; padding:20px 28px; border-radius:6px; z-index:30;">
+  Jump to bar: <input id="jump-input" type="text" inputmode="numeric" style="background:#000; color:#0f0; font:20px monospace; border:1px solid #0f0; width:70px; padding:2px 6px; outline:none;">
+</div>
 
 <script>
 // ============================================================
@@ -580,20 +583,22 @@ function brightenRegions(regionSet, litAlpha, bri, sat, con) {
 // SPOTLIGHT
 // ============================================================
 function spotlightIn() {
-  if (spotlightInDelayTimer) { clearTimeout(spotlightInDelayTimer); spotlightInDelayTimer = null; }
+  // Cancel any pending out-delay — something is active again.
   if (spotlightDelayTimer) { clearTimeout(spotlightDelayTimer); spotlightDelayTimer = null; }
+  // If spotlight is already fading in, fully on, or the in-delay is already
+  // counting down, do nothing — don't restart the timer on every 16th note.
+  if (spotlightDir > 0 || spotlightFactor >= 1 || spotlightInDelayTimer) return;
   const delay = config.spotlightInDelay ?? 0;
   if (delay > 0) {
     spotlightInDelayTimer = setTimeout(() => {
       spotlightInDelayTimer = null;
-      if (!Object.values(seqStates).some(s => s.active)) return;
-      if (spotlightFactor >= 1 && spotlightDir >= 0) return;
+      // Proceed if anything is still visible (opacity > 0 catches mid-phrase gaps).
+      if (!Object.values(seqStates).some(s => s.active || s.opacity > 0)) return;
       spotlightDir = 1;
       spotlightFadeStart = performance.now();
       spotlightFadeFrom = spotlightFactor;
     }, delay);
   } else {
-    if (spotlightFactor >= 1 && spotlightDir >= 0) return;
     spotlightDir = 1;
     spotlightFadeStart = performance.now();
     spotlightFadeFrom = spotlightFactor;
@@ -601,7 +606,9 @@ function spotlightIn() {
 }
 
 function spotlightOut() {
-  if (spotlightInDelayTimer) { clearTimeout(spotlightInDelayTimer); spotlightInDelayTimer = null; }
+  // Do NOT cancel spotlightInDelayTimer — let it run to completion so that
+  // a phrase of 16th notes still triggers the spotlight even though individual
+  // notes are very short.
   const anyActive = Object.values(seqStates).some(s => s.active);
   if (anyActive) return;
   if (spotlightDelayTimer) { clearTimeout(spotlightDelayTimer); spotlightDelayTimer = null; }
@@ -684,25 +691,47 @@ function conductorTap() {
   const bar = conductorMovement.bars[conductorBarIdx];
   if (!bar || !bar.events) return;
 
-  const msps = (60000 / conductorBPM) / 4; // ms per 16th-note subdivision
+  const msps   = (60000 / conductorBPM) / 4; // ms per 16th-note subdivision
+  const tickMs = msps / 3;                    // 1 tick at tpq=12
 
   for (const ev of bar.events) {
     if (ev.beat !== conductorBeat) continue;
     const subdiv = ev.subdiv ?? 0;
 
     if (subdiv === 0) {
-      // On the beat: deactivates and scene_next fire immediately;
-      // activates fire 80ms later to create a visible retrigger pulse.
+      // On the beat: deactivates/scene_next fire immediately;
+      // activates fire 1 tick later so the deactivation is visible.
       if (ev.action === 'deactivate' || ev.action === 'scene_next') {
         conductorFireEvent(ev);
       } else {
-        setTimeout(() => conductorFireEvent(ev), 80);
+        setTimeout(() => conductorFireEvent(ev), tickMs);
       }
     } else {
-      // Subdivisions 1-3: schedule relative to this tap.
-      // These are cancelled if the next tap arrives early.
-      const id = setTimeout(() => conductorFireEvent(ev), subdiv * msps);
+      // Subdivisions 1-3: deactivates fire 1 tick early, activates on time.
+      let offset = subdiv * msps;
+      if (ev.action === 'deactivate') offset = Math.max(5, offset - tickMs);
+      const id = setTimeout(() => conductorFireEvent(ev), offset);
       conductorBeatTimeouts.push(id);
+    }
+  }
+
+  // Look ahead to next beat's subdiv-0 deactivates and schedule them as
+  // deferred timeouts 1 tick before where the next beat would fall.
+  // This ensures regions deactivate even if the next tap never arrives.
+  // If the tap does arrive early, clearTimeout at the top of conductorTap cancels these.
+  {
+    let nextBarIdx = conductorBarIdx, nextBeat = conductorBeat + 1;
+    if (nextBeat > bar.beats) { nextBarIdx++; nextBeat = 1; }
+    const nextBar = conductorMovement.bars[nextBarIdx];
+    if (nextBar && nextBar.events) {
+      const deactivateAt = Math.max(5, 4 * msps - tickMs);
+      for (const ev of nextBar.events) {
+        if (ev.beat !== nextBeat || (ev.subdiv ?? 0) !== 0) continue;
+        if (ev.action === 'deactivate') {
+          const id = setTimeout(() => conductorFireEvent(ev), deactivateAt);
+          conductorBeatTimeouts.push(id);
+        }
+      }
     }
   }
 }
@@ -716,6 +745,58 @@ function conductorReset() {
   tapTimes = [];
   if (conductorMovement) conductorBPM = conductorMovement.defaultBPM || 80;
 }
+
+function conductorSceneForBarIdx(barIdx) {
+  // Count scene_next events in all bars before barIdx to find the correct scene.
+  let scene = 0;
+  for (let i = 0; i < barIdx; i++) {
+    for (const ev of (conductorMovement.bars[i].events || [])) {
+      if (ev.action === 'scene_next') scene++;
+    }
+  }
+  return Math.min(scene, loadedScenes.length - 1);
+}
+
+function conductorJumpToBarIdx(idx) {
+  conductorBeatTimeouts.forEach(id => clearTimeout(id));
+  conductorBeatTimeouts = [];
+  conductorBarIdx = idx;
+  conductorBeat = 1;
+  conductorActive = false;
+  tapTimes = [];
+  const targetScene = conductorSceneForBarIdx(idx);
+  if (targetScene !== sceneIdx) activateScene(targetScene);
+}
+
+function conductorJumpToBar(barNum) {
+  if (!conductorMovement) return;
+  const idx = conductorMovement.bars.findIndex(b => b.bar === barNum);
+  if (idx >= 0) conductorJumpToBarIdx(idx);
+}
+
+const jumpOverlay = document.getElementById('jump-overlay');
+const jumpInput   = document.getElementById('jump-input');
+
+function openJumpDialog() {
+  jumpInput.value = '';
+  jumpOverlay.style.display = 'block';
+  jumpInput.focus();
+}
+
+function closeJumpDialog() {
+  jumpOverlay.style.display = 'none';
+}
+
+jumpInput.addEventListener('keydown', (e) => {
+  e.stopPropagation();
+  if (e.key === 'Enter') {
+    const n = parseInt(jumpInput.value);
+    if (!isNaN(n)) conductorJumpToBar(n);
+    closeJumpDialog();
+  } else if (e.key === 'Escape') {
+    closeJumpDialog();
+  }
+});
 
 // ============================================================
 // SEQUENCE STATE MACHINE
@@ -1464,9 +1545,35 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
-  // Backspace = reset conductor to bar 1 (allows restarting)
+  // Backspace = reset conductor to bar 1
   if (key === 'Backspace') {
     conductorReset();
+    return;
+  }
+
+  // [ = back 1 beat (also corrects scene if crossing a scene boundary)
+  if (key === '[') {
+    if (!conductorMovement) return;
+    conductorBeatTimeouts.forEach(id => clearTimeout(id));
+    conductorBeatTimeouts = [];
+    conductorBeat--;
+    if (conductorBeat < 1) {
+      if (conductorBarIdx > 0) {
+        conductorBarIdx--;
+        conductorBeat = conductorMovement.bars[conductorBarIdx].beats;
+      } else {
+        conductorBeat = 1;
+      }
+    }
+    tapTimes = [];
+    const targetScene = conductorSceneForBarIdx(conductorBarIdx);
+    if (targetScene !== sceneIdx) activateScene(targetScene);
+    return;
+  }
+
+  // ] = jump to measure (opens overlay)
+  if (key === ']') {
+    openJumpDialog();
     return;
   }
 

@@ -208,10 +208,14 @@ Live performance engine. Loads `config.json` and responds to keyboard and MIDI i
 | Enter | Fade in from black |
 | Escape | Fade to black |
 | Left / Right arrow | Crossfade to previous / next scene within the current movement (no wrap) |
-| Space | Toggle raw image (full brightness, effects suppressed) |
+| J | Toggle raw image (full brightness, effects suppressed) |
 | K | Toggle fullscreen |
 | H | Toggle HUD (shown by default on performer; hidden on display) |
 | L | Reload config from `config.json` |
+| Space | Conductor tap — one tap per quarter-note beat (see Conductor Mode) |
+| Backspace | Reset conductor to bar 1 |
+| [ | Conductor: back 1 beat (also switches scene if crossing a scene boundary) |
+| ] | Conductor: open jump-to-bar dialog (type measure number, Enter to jump, Escape to cancel) |
 | *Sequence keys* | Hold to activate effect, release to fade out. Press again (after release) to advance to next step. |
 
 ### MIDI (Oxygen 8)
@@ -258,6 +262,64 @@ Shown by default on `role=performer`, never on `role=display`. Toggle with H key
 4. Use **Left/Right** arrows or pitch wheel to crossfade between scenes.
 5. Use **Knob 8** to fade in/out between movements.
 6. Hold sequence keys or MIDI keys to activate effects; release to fade out.
+
+---
+
+## Conductor Mode
+
+Instead of a pianist triggering regions manually, a tapper taps quarter-note beats on the Space bar. The system reads `score.json` (converted from MusicXML) and fires visual events — region activations, deactivations, and scene changes — at the correct beat positions.
+
+### Setup
+
+1. Run `parse_score.py` to generate `score.json` from the MusicXML EP part:
+   ```bash
+   python3 parse_score.py
+   ```
+   Re-run whenever the score changes. The script reads `score and music/Keyboard_1_Modified_v17 16-March-2026 John edits.musicxml` and writes `score.json` to the project root.
+
+2. Load `perform.html` as normal and press **Enter** to fade in.
+
+3. Start tapping **Space** on every quarter-note beat, beginning from bar 1 beat 1.
+
+### How it works
+
+- Each Space tap = one quarter-note beat
+- **On the tap**: events at beat position subdiv 0 fire immediately (deactivates) or after ~1 tick (~62ms at 80 BPM, activates) to create a visible retrigger gap
+- **Within the beat**: 16th-note subdivision events (subdiv 1–3) are scheduled via `setTimeout` relative to the tap timestamp and cancelled if the next tap arrives early
+- **BPM**: estimated from the average of the last 2–3 tap intervals; used only for intra-beat subdivision timing
+- **Scene changes**: `scene_next` events in the score trigger automatic crossfades
+- **Deactivation**: if the tapper stops, regions deactivate automatically ~1 tick before the next beat would have arrived
+
+### Navigation during rehearsal
+
+| Key | Action |
+|---|---|
+| Space | Tap (advance one beat) |
+| Backspace | Reset to bar 1 |
+| [ | Back 1 beat (corrects scene if crossing a scene boundary) |
+| ] | Jump to measure — type number, press Enter |
+
+### Pitch-to-key mapping (Movement I, EP part P26)
+
+| Note | Key | Motive |
+|---|---|---|
+| C3 | q | M1 — tied whole notes |
+| D3 | w | M2 — repeating quarters |
+| E4 | e | M3 — repeating 8ths |
+| F4 / G4 | r | M4 — repeating 16ths (F4 and G4 share the same region) |
+| G3 | a | M5 — slides |
+| A3 | s | M6 — rhythmic pattern |
+| B4 | d | M7 — tremolo |
+
+`P↑` direction markings in the score become `scene_next` events.
+
+### HUD
+
+In conductor mode the HUD shows an extra line:
+```
+Conductor: Bar 12 | Beat 3/4 | BPM 81
+```
+Before the first tap it shows `ready (Space=tap)`. After the last bar it stops.
 
 ---
 
@@ -458,6 +520,8 @@ Used by the editor's **C** key to select all children of a selected region.
 | `motives and key mappings.md` | Human-readable table of motives, keyboard keys, MIDI keys, and patterns |
 | `generate_regions.py` | Region data generator |
 | `config.json` | Master config: global settings, movements, scenes, groups, sequences |
+| `parse_score.py` | Converts MusicXML EP part to `score.json` for conductor mode. Run after any score change. |
+| `score.json` | Generated score data consumed by conductor mode. Do not edit by hand — re-run `parse_score.py`. |
 | `ceiling1_closeup_21Feb0747.png` | Photo — Movement 1, Scene 1 |
 | `ceiling1_medium_up.png` | Photo — Movement 1, Scene 2 |
 | `ceiling_zoomOut.png` | Photo — Movement 1, Scene 3 |
