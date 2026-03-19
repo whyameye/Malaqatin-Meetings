@@ -22,10 +22,15 @@
     "sparkleMinOff": 20,
     "sparkleMaxOff": 80,
     "litBrightness": 1,
-    "litSaturate": 10,
+    "litSaturate": 1,
     "litContrast": 1,
     "sceneFadeDuration": 1000,
-    "crossfadeDuration": 1000
+    "crossfadeDuration": 1000,
+    "spotlightDim": 0.3,
+    "spotlightInDelay": 0,
+    "spotlightFadeIn": 2000,
+    "spotlightFadeOut": 1000,
+    "spotlightDelay": 500
   },
   "movements": [
     {

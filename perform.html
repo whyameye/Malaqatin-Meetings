@@ -70,7 +70,12 @@ let config = {
   litSaturate: 1.8,
   litContrast: 1.3,
   sceneFadeDuration: 1000,
-  crossfadeDuration: 1500
+  crossfadeDuration: 1500,
+  spotlightDim: 1.0,     // dim multiplier on background when sequences active (1.0 = no effect, 0.0 = black)
+  spotlightInDelay: 0,   // ms delay before spotlight starts dimming after first key press
+  spotlightFadeIn: 300,  // ms to dim when first sequence activates
+  spotlightFadeOut: 800, // ms to brighten back after all sequences release
+  spotlightDelay: 500    // ms delay before brightening back
 };
 
 // ============================================================
@@ -103,6 +108,14 @@ let view = { x: 0, y: 0, w: IMG_W, h: IMG_W / ASPECT };
 
 // Sequence key states: keyChar -> seqState
 let seqStates = {};
+
+// Spotlight state
+let spotlightFactor = 0;      // 0 = normal, 1 = fully dimmed to spotlightDim
+let spotlightDir = 0;         // 1 = fading in, -1 = fading out, 0 = idle
+let spotlightFadeStart = null;
+let spotlightFadeFrom = 0;
+let spotlightInDelayTimer = null;  // delay before dimming starts
+let spotlightDelayTimer = null;    // delay before brightening back
 
 // Crossfade between scenes
 let xfadeActive = false;
@@ -446,6 +459,8 @@ function activateScene(idx) {
   // Reset view to full image
   view = { x: 0, y: 0, w: IMG_W, h: IMG_H };
 
+  spotlightReset();
+
   // Build sequence key states
   seqStates = {};
   for (const [sid, seq] of Object.entries(sequences)) {
@@ -540,6 +555,52 @@ function brightenRegions(regionSet, litAlpha, bri, sat, con) {
 }
 
 // ============================================================
+// SPOTLIGHT
+// ============================================================
+function spotlightIn() {
+  if (spotlightInDelayTimer) { clearTimeout(spotlightInDelayTimer); spotlightInDelayTimer = null; }
+  if (spotlightDelayTimer) { clearTimeout(spotlightDelayTimer); spotlightDelayTimer = null; }
+  const delay = config.spotlightInDelay ?? 0;
+  if (delay > 0) {
+    spotlightInDelayTimer = setTimeout(() => {
+      spotlightInDelayTimer = null;
+      if (!Object.values(seqStates).some(s => s.active)) return;
+      if (spotlightFactor >= 1 && spotlightDir >= 0) return;
+      spotlightDir = 1;
+      spotlightFadeStart = performance.now();
+      spotlightFadeFrom = spotlightFactor;
+    }, delay);
+  } else {
+    if (spotlightFactor >= 1 && spotlightDir >= 0) return;
+    spotlightDir = 1;
+    spotlightFadeStart = performance.now();
+    spotlightFadeFrom = spotlightFactor;
+  }
+}
+
+function spotlightOut() {
+  if (spotlightInDelayTimer) { clearTimeout(spotlightInDelayTimer); spotlightInDelayTimer = null; }
+  const anyActive = Object.values(seqStates).some(s => s.active);
+  if (anyActive) return;
+  if (spotlightDelayTimer) { clearTimeout(spotlightDelayTimer); spotlightDelayTimer = null; }
+  const delay = config.spotlightDelay ?? 500;
+  spotlightDelayTimer = setTimeout(() => {
+    spotlightDelayTimer = null;
+    spotlightDir = -1;
+    spotlightFadeStart = performance.now();
+    spotlightFadeFrom = spotlightFactor;
+  }, delay);
+}
+
+function spotlightReset() {
+  if (spotlightInDelayTimer) { clearTimeout(spotlightInDelayTimer); spotlightInDelayTimer = null; }
+  if (spotlightDelayTimer) { clearTimeout(spotlightDelayTimer); spotlightDelayTimer = null; }
+  spotlightDir = -1;
+  spotlightFadeStart = performance.now();
+  spotlightFadeFrom = spotlightFactor;
+}
+
+// ============================================================
 // SEQUENCE STATE MACHINE
 // ============================================================
 function activateSequence(key) {
@@ -554,6 +615,7 @@ function activateSequence(key) {
   state.fadeDirection = 'in';
   const step = seq.steps[state.stepIndex];
   if (step.effect === 'sparkle') startSparkle(state, step);
+  spotlightIn();
 }
 
 function deactivateSequence(key) {
@@ -563,6 +625,7 @@ function deactivateSequence(key) {
   state.fadeFromOpacity = state.opacity;
   state.fadeStartTime = performance.now();
   state.fadeDirection = 'out';
+  spotlightOut();
 }
 
 function updateSequenceOpacity(state, now) {
@@ -719,6 +782,17 @@ function renderLoop(now) {
     }
   }
 
+  // Update spotlight factor
+  if (spotlightDir !== 0) {
+    const target = spotlightDir > 0 ? 1 : 0;
+    const duration = spotlightDir > 0
+      ? (config.spotlightFadeIn ?? 300)
+      : (config.spotlightFadeOut ?? 800);
+    const t = Math.min(1, (now - spotlightFadeStart) / duration);
+    spotlightFactor = spotlightFadeFrom + (target - spotlightFadeFrom) * easeInOutCubic(t);
+    if (t >= 1) { spotlightFactor = target; spotlightDir = 0; }
+  }
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   if (bgImage) {
@@ -731,6 +805,11 @@ function renderLoop(now) {
         const d = config.dimLevel + (seq.dimLevel - config.dimLevel) * state.opacity;
         effectiveDimLevel = Math.min(effectiveDimLevel, d);
       }
+    }
+    // Spotlight: dim background further when sequences are active
+    const spotlightDim = config.spotlightDim ?? 1.0;
+    if (spotlightDim < 1.0 && spotlightFactor > 0) {
+      effectiveDimLevel *= 1 - spotlightFactor * (1 - spotlightDim);
     }
     const bgAlpha = (effectiveDimLevel + (1 - effectiveDimLevel) * rawFade) * sceneFade;
 
