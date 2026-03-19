@@ -116,7 +116,6 @@ let conductorBarIdx = 0;       // index into conductorMovement.bars
 let conductorBeat = 0;         // current beat (1-indexed); 0 = not started
 let tapTimes = [];             // timestamps of last 3 taps (ms)
 let conductorBPM = 80;         // current tempo estimate
-let conductorTimeouts = [];    // pending setTimeout IDs (cancelled on each tap)
 let conductorActive = false;   // true once first tap received
 
 // Spotlight state
@@ -375,8 +374,6 @@ async function loadMovement(idx) {
   awaitingEnter = false;
 
   // Reset conductor state for new movement
-  conductorTimeouts.forEach(id => clearTimeout(id));
-  conductorTimeouts = [];
   conductorActive = false;
   conductorBarIdx = 0;
   conductorBeat = 0;
@@ -626,6 +623,10 @@ function spotlightReset() {
 
 // ============================================================
 // CONDUCTOR MODE
+// Each Space tap = one quarter-note beat.
+// Events for that beat fire immediately on tap.
+// Deactivates fire at tap time; activates fire 80ms later so the
+// deactivation is visually distinct (creates a pulse on retrigger).
 // ============================================================
 function conductorFireEvent(ev) {
   if (ev.action === 'activate' && ev.key) {
@@ -642,39 +643,6 @@ function conductorFireEvent(ev) {
   }
 }
 
-function conductorSchedule(tapTime) {
-  conductorTimeouts.forEach(id => clearTimeout(id));
-  conductorTimeouts = [];
-  if (!conductorActive || !conductorMovement) return;
-
-  const mspb = 60000 / conductorBPM;  // ms per beat (quarter note)
-  const msps = mspb / 4;              // ms per 16th-note subdivision
-
-  // Schedule events for current bar + next 2 bars
-  for (let bi = conductorBarIdx; bi < Math.min(conductorMovement.bars.length, conductorBarIdx + 3); bi++) {
-    const bar = conductorMovement.bars[bi];
-    if (!bar.events) continue;
-    for (const ev of bar.events) {
-      let offset_ms;
-      if (bi === conductorBarIdx) {
-        // Same bar: offset from this tap
-        offset_ms = (ev.beat - conductorBeat) * mspb + ev.subdiv * msps;
-      } else {
-        // Future bar: beats remaining in current bar + full beats of intermediate bars
-        let beatsFromNow = conductorMovement.bars[conductorBarIdx].beats - conductorBeat;
-        for (let bj = conductorBarIdx + 1; bj < bi; bj++) {
-          beatsFromNow += conductorMovement.bars[bj].beats;
-        }
-        beatsFromNow += ev.beat - 1; // ev.beat is 1-indexed
-        offset_ms = beatsFromNow * mspb + ev.subdiv * msps;
-      }
-      if (offset_ms < -50) continue; // already well past
-      const id = setTimeout(() => conductorFireEvent(ev), Math.max(5, offset_ms));
-      conductorTimeouts.push(id);
-    }
-  }
-}
-
 function conductorTap() {
   if (!conductorMovement) return;
   const now = performance.now();
@@ -683,9 +651,9 @@ function conductorTap() {
 
   // Recalculate BPM from average of last 2–3 intervals
   if (tapTimes.length >= 2) {
-    let totalInterval = 0;
-    for (let i = 1; i < tapTimes.length; i++) totalInterval += tapTimes[i] - tapTimes[i - 1];
-    conductorBPM = 60000 / (totalInterval / (tapTimes.length - 1));
+    let total = 0;
+    for (let i = 1; i < tapTimes.length; i++) total += tapTimes[i] - tapTimes[i - 1];
+    conductorBPM = 60000 / (total / (tapTimes.length - 1));
   }
 
   // Advance beat / bar
@@ -701,19 +669,27 @@ function conductorTap() {
       conductorBeat = 1;
       if (conductorBarIdx >= conductorMovement.bars.length) {
         conductorActive = false;
-        conductorTimeouts.forEach(id => clearTimeout(id));
-        conductorTimeouts = [];
         return;
       }
     }
   }
 
-  conductorSchedule(now);
+  // Fire events for this beat immediately.
+  // Deactivates fire now; activates fire 80ms later so there's a
+  // visible gap when a key is retriggered on consecutive beats.
+  const bar = conductorMovement.bars[conductorBarIdx];
+  if (!bar || !bar.events) return;
+  for (const ev of bar.events) {
+    if (ev.beat !== conductorBeat || (ev.subdiv ?? 0) !== 0) continue;
+    if (ev.action === 'deactivate' || ev.action === 'scene_next') {
+      conductorFireEvent(ev);
+    } else {
+      setTimeout(() => conductorFireEvent(ev), 80);
+    }
+  }
 }
 
 function conductorReset() {
-  conductorTimeouts.forEach(id => clearTimeout(id));
-  conductorTimeouts = [];
   conductorActive = false;
   conductorBarIdx = 0;
   conductorBeat = 0;
