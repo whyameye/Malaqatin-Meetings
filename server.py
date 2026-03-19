@@ -143,7 +143,11 @@ async def main():
     t.start()
 
     # WebSocket in the asyncio loop
-    async with websockets.serve(ws_handler, WS_HOST, WS_PORT):
+    # compression=None disables permessage-deflate (reduces latency for small messages)
+    # TCP_NODELAY disables Nagle's algorithm (prevents ~200ms buffering delay on LAN)
+    async with websockets.serve(ws_handler, WS_HOST, WS_PORT, compression=None) as ws_server:
+        for sock in ws_server.sockets:
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         await asyncio.Future()
 
 asyncio.run(main())

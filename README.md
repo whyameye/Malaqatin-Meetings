@@ -130,6 +130,25 @@ http://localhost:8082/perform.html
 - The display machine never needs a known/static IP — only the performer's IP matters
 - WebSocket URL is derived automatically from the page URL (`ws=` can override if needed)
 - HUD is shown by default on `role=performer`, never on `role=display`
+- The performer broadcasts full state (active sequences + scene + movement) every 500ms — the display self-corrects any missed messages within that window
+
+### Reducing latency on WiFi
+
+Two settings significantly reduce latency between performer and display:
+
+**1. Disable WiFi power saving on both machines** (resets on reboot):
+```bash
+sudo iwconfig wlp3s0 power off   # replace wlp3s0 with your interface (check with: ip link)
+```
+Verify: `iwconfig wlp3s0 | grep Power` should show `Power Management:off`
+
+To make permanent, create `/etc/NetworkManager/conf.d/wifi-powersave-off.conf`:
+```ini
+[connection]
+wifi.powersave = 2
+```
+
+**2. Wired connection for the performer laptop** — plugging the performer into the router with ethernet eliminates one WiFi hop.
 
 ---
 

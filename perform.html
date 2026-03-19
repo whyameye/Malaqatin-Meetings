@@ -881,13 +881,17 @@ function sendEvent(msg) {
   ws.send(JSON.stringify(msg));
 }
 
-// Performer: broadcast state every 2s so late-joining displays can sync
+// Performer: broadcast state every 500ms so displays self-correct missed messages
 if (IS_PERFORMER) {
   setInterval(() => {
     if (movementIdx >= 0) {
-      sendEvent({ type: 'sync', movementIdx, sceneIdx, faded: !awaitingEnter });
+      const heldKeys = {};
+      for (const [key, state] of Object.entries(seqStates)) {
+        if (state.active) heldKeys[key] = state.stepIndex;
+      }
+      sendEvent({ type: 'sync', movementIdx, sceneIdx, faded: !awaitingEnter, heldKeys });
     }
-  }, 2000);
+  }, 500);
 }
 
 // Display: apply a pending sync once loading is complete
@@ -897,12 +901,35 @@ function applySyncIfReady() {
   pendingSync = null;
   if (msg.movementIdx !== movementIdx) {
     loadMovement(msg.movementIdx);
-    // loadMovement will call applySyncIfReady via the awaitingEnter path — not needed;
-    // next broadcast (within 2s) will re-apply
     return;
   }
   if (msg.sceneIdx !== sceneIdx && !xfadeActive) startSceneCrossfade(msg.sceneIdx);
   if (msg.faded && awaitingEnter) fadeSceneIn();
+
+  // Reconcile active sequences
+  if (msg.heldKeys) {
+    for (const [key, state] of Object.entries(seqStates)) {
+      const targetStep = msg.heldKeys[key];
+      if (targetStep !== undefined) {
+        // Should be active — fix step index and activate if needed
+        if (state.stepIndex !== targetStep || !state.active) {
+          state.stepIndex = targetStep;
+          if (!state.active) {
+            state.active = true;
+            state.fadeFromOpacity = state.opacity;
+            state.fadeStartTime = performance.now();
+            state.fadeDirection = 'in';
+            const seq = sequences[state.seqId];
+            const step = seq && seq.steps[state.stepIndex];
+            if (step && step.effect === 'sparkle') startSparkle(state, step);
+          }
+        }
+      } else {
+        // Should not be active
+        if (state.active) deactivateSequence(key);
+      }
+    }
+  }
 }
 
 function handleRemoteEvent(msg) {
