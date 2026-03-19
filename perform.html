@@ -109,6 +109,16 @@ let view = { x: 0, y: 0, w: IMG_W, h: IMG_W / ASPECT };
 // Sequence key states: keyChar -> seqState
 let seqStates = {};
 
+// Conductor mode
+let conductorScore = null;     // loaded score.json
+let conductorMovement = null;  // current movement from score
+let conductorBarIdx = 0;       // index into conductorMovement.bars
+let conductorBeat = 0;         // current beat (1-indexed); 0 = not started
+let tapTimes = [];             // timestamps of last 3 taps (ms)
+let conductorBPM = 80;         // current tempo estimate
+let conductorTimeouts = [];    // pending setTimeout IDs (cancelled on each tap)
+let conductorActive = false;   // true once first tap received
+
 // Spotlight state
 let spotlightFactor = 0;      // 0 = normal, 1 = fully dimmed to spotlightDim
 let spotlightDir = 0;         // 1 = fading in, -1 = fading out, 0 = idle
@@ -364,6 +374,20 @@ async function loadMovement(idx) {
   isLoading = true;
   awaitingEnter = false;
 
+  // Reset conductor state for new movement
+  conductorTimeouts.forEach(id => clearTimeout(id));
+  conductorTimeouts = [];
+  conductorActive = false;
+  conductorBarIdx = 0;
+  conductorBeat = 0;
+  tapTimes = [];
+  if (conductorScore && conductorScore.movements && conductorScore.movements[idx]) {
+    conductorMovement = conductorScore.movements[idx];
+    conductorBPM = conductorMovement.defaultBPM || 80;
+  } else {
+    conductorMovement = null;
+  }
+
   // Stop all sparkle timers and clear sequence state
   for (const state of Object.values(seqStates)) stopSparkle(state);
   seqStates = {};
@@ -598,6 +622,103 @@ function spotlightReset() {
   spotlightDir = -1;
   spotlightFadeStart = performance.now();
   spotlightFadeFrom = spotlightFactor;
+}
+
+// ============================================================
+// CONDUCTOR MODE
+// ============================================================
+function conductorFireEvent(ev) {
+  if (ev.action === 'activate' && ev.key) {
+    activateSequence(ev.key);
+    sendEvent({ type: 'activate', key: ev.key });
+  } else if (ev.action === 'deactivate' && ev.key) {
+    deactivateSequence(ev.key);
+    sendEvent({ type: 'deactivate', key: ev.key });
+  } else if (ev.action === 'scene_next') {
+    if (!isLoading && !xfadeActive && sceneIdx < loadedScenes.length - 1) {
+      startSceneCrossfade(sceneIdx + 1);
+      sendEvent({ type: 'scene', sceneIdx: sceneIdx + 1 });
+    }
+  }
+}
+
+function conductorSchedule(tapTime) {
+  conductorTimeouts.forEach(id => clearTimeout(id));
+  conductorTimeouts = [];
+  if (!conductorActive || !conductorMovement) return;
+
+  const mspb = 60000 / conductorBPM;  // ms per beat (quarter note)
+  const msps = mspb / 4;              // ms per 16th-note subdivision
+
+  // Schedule events for current bar + next 2 bars
+  for (let bi = conductorBarIdx; bi < Math.min(conductorMovement.bars.length, conductorBarIdx + 3); bi++) {
+    const bar = conductorMovement.bars[bi];
+    if (!bar.events) continue;
+    for (const ev of bar.events) {
+      let offset_ms;
+      if (bi === conductorBarIdx) {
+        // Same bar: offset from this tap
+        offset_ms = (ev.beat - conductorBeat) * mspb + ev.subdiv * msps;
+      } else {
+        // Future bar: beats remaining in current bar + full beats of intermediate bars
+        let beatsFromNow = conductorMovement.bars[conductorBarIdx].beats - conductorBeat;
+        for (let bj = conductorBarIdx + 1; bj < bi; bj++) {
+          beatsFromNow += conductorMovement.bars[bj].beats;
+        }
+        beatsFromNow += ev.beat - 1; // ev.beat is 1-indexed
+        offset_ms = beatsFromNow * mspb + ev.subdiv * msps;
+      }
+      if (offset_ms < -50) continue; // already well past
+      const id = setTimeout(() => conductorFireEvent(ev), Math.max(5, offset_ms));
+      conductorTimeouts.push(id);
+    }
+  }
+}
+
+function conductorTap() {
+  if (!conductorMovement) return;
+  const now = performance.now();
+  tapTimes.push(now);
+  if (tapTimes.length > 3) tapTimes.shift();
+
+  // Recalculate BPM from average of last 2–3 intervals
+  if (tapTimes.length >= 2) {
+    let totalInterval = 0;
+    for (let i = 1; i < tapTimes.length; i++) totalInterval += tapTimes[i] - tapTimes[i - 1];
+    conductorBPM = 60000 / (totalInterval / (tapTimes.length - 1));
+  }
+
+  // Advance beat / bar
+  if (!conductorActive) {
+    conductorActive = true;
+    conductorBarIdx = 0;
+    conductorBeat = 1;
+  } else {
+    conductorBeat++;
+    const curBar = conductorMovement.bars[conductorBarIdx];
+    if (conductorBeat > curBar.beats) {
+      conductorBarIdx++;
+      conductorBeat = 1;
+      if (conductorBarIdx >= conductorMovement.bars.length) {
+        conductorActive = false;
+        conductorTimeouts.forEach(id => clearTimeout(id));
+        conductorTimeouts = [];
+        return;
+      }
+    }
+  }
+
+  conductorSchedule(now);
+}
+
+function conductorReset() {
+  conductorTimeouts.forEach(id => clearTimeout(id));
+  conductorTimeouts = [];
+  conductorActive = false;
+  conductorBarIdx = 0;
+  conductorBeat = 0;
+  tapTimes = [];
+  if (conductorMovement) conductorBPM = conductorMovement.defaultBPM || 80;
 }
 
 // ============================================================
@@ -907,6 +1028,13 @@ function renderLoop(now) {
       : 'WS: off';
     const midiLabel = `MIDI: ${midiDeviceName || midiStatus}`;
 
+    const condBar = conductorActive && conductorMovement ? conductorMovement.bars[conductorBarIdx] : null;
+    const condHud = conductorMovement
+      ? conductorActive
+        ? `Conductor: Bar ${condBar ? condBar.bar : '?'} | Beat ${conductorBeat}/${condBar ? condBar.beats : '?'} | BPM ${Math.round(conductorBPM)}`
+        : `Conductor: ready (Space=tap) BPM ${Math.round(conductorBPM)}`
+      : 'Conductor: no score';
+
     hud.style.display = 'block';
     hud.innerHTML = [
       `FPS: ${fps} | ${wsLabel} | ${midiLabel} | Wake: ${wakeLockStatus}`,
@@ -914,6 +1042,7 @@ function renderLoop(now) {
       `Dim: ${config.dimLevel} Lit: ${config.litLevel} Sat: ${config.litSaturate} Con: ${config.litContrast}`,
       `FadeIn: ${config.fadeIn}ms FadeOut: ${config.fadeOut}ms Sparkle: ${config.sparkleSpeed}ms`,
       `SceneFade: ${Math.round(sceneFade * 100)}% Raw: ${Math.round(rawFade * 100)}%`,
+      condHud,
       xfadeActive ? `Crossfade: ${Math.round(xfadeAlpha * 100)}%` : '',
       ...activeKeys
     ].filter(Boolean).join('<br>');
@@ -1339,8 +1468,14 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
-  // Space = toggle raw image
-  if (key === ' ') {
+  // Backspace = reset conductor to bar 1 (allows restarting)
+  if (key === 'Backspace') {
+    conductorReset();
+    return;
+  }
+
+  // J = toggle raw image
+  if (keyL === 'j') {
     if (rawFadeTarget === 0) {
       fadeRawIn();
       sendEvent({ type: 'raw', action: 'in' });
@@ -1348,6 +1483,12 @@ document.addEventListener('keydown', (e) => {
       fadeRawOut();
       sendEvent({ type: 'raw', action: 'out' });
     }
+    return;
+  }
+
+  // Space = conductor tap
+  if (key === ' ') {
+    conductorTap();
     return;
   }
 
@@ -1403,6 +1544,12 @@ async function init() {
     loadingEl.textContent = 'Error: config.json not found.\nCreate it or start server.py first.';
     return;
   }
+
+  // Load score.json for conductor mode (non-fatal if missing)
+  try {
+    const resp = await fetch(tok('score.json?v=' + Date.now()));
+    if (resp.ok) conductorScore = await resp.json();
+  } catch (e) {}
 
   buildMidiNoteMap();
   connectWebSocket();
