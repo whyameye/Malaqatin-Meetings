@@ -24,12 +24,12 @@ Both machines connect to a WiFi router (brought to venue, needs only a power out
 
 **Performer laptop** (static IP `192.168.1.10`, opens in Chrome):
 ```
-http://localhost:8082/perform.html?role=performer&ws=ws://192.168.1.10:8765
+http://localhost:8082/perform.html?role=performer
 ```
 
 **Display laptop** (opens in Chrome, projector connected):
 ```
-http://192.168.1.10:8082/perform.html?role=display&ws=ws://192.168.1.10:8765
+http://192.168.1.10:8082/perform.html?role=display
 ```
 
 ### Fallback — Cloud Server
@@ -106,12 +106,12 @@ If the private router isn't available, both machines connect to a cloud server i
 
 **Performer laptop:**
 ```
-https://your-subdomain.example.com/perform.html?role=performer&ws=wss://your-subdomain.example.com/ws&token=your-secret-token-here
+https://your-subdomain.example.com/perform.html?role=performer&token=your-secret-token-here
 ```
 
 **Display laptop:**
 ```
-https://your-subdomain.example.com/perform.html?role=display&ws=wss://your-subdomain.example.com/ws&token=your-secret-token-here
+https://your-subdomain.example.com/perform.html?role=display&token=your-secret-token-here
 ```
 
 - All requests without the correct `?token=` are rejected with 403
@@ -120,7 +120,7 @@ https://your-subdomain.example.com/perform.html?role=display&ws=wss://your-subdo
 
 ### Development (no display machine)
 
-Run standalone with no WebSocket — no `ws=` parameter needed:
+Run with no display — WebSocket connects but nothing is listening on the other end, which is fine:
 ```
 http://localhost:8082/perform.html
 ```
@@ -128,7 +128,7 @@ http://localhost:8082/perform.html
 ### Notes
 - `server.py` prints the performer laptop's LAN IP on startup — use that IP in the display URL
 - The display machine never needs a known/static IP — only the performer's IP matters
-- WebSocket is optional: if `ws=` is omitted the performer works fully standalone
+- WebSocket URL is derived automatically from the page URL (`ws=` can override if needed)
 - HUD is shown by default on `role=performer`, never on `role=display`
 
 ---
@@ -426,7 +426,7 @@ Used by the editor's **C** key to select all children of a selected region.
 | File | Description |
 |---|---|
 | `editor.html` | Scene editor |
-| `perform.html` | Live performer (supports `role=performer\|display` and `ws=` URL params) |
+| `perform.html` | Live performer (supports `role=performer\|display` and `token=` URL params; WebSocket URL derived automatically from page host) |
 | `server.py` | Combined HTTP server (port 8082) and WebSocket relay (port 8765). Ports and bind address configurable via env vars; supports `SECRET_TOKEN` for token-gated access. |
 | `segmentation_tuner.html` | Interactive UI for tuning region segmentation parameters |
 | `midi_test.html` | MIDI monitor — shows all input from connected MIDI devices |

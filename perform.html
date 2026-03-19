@@ -41,8 +41,16 @@ const loadingEl = document.getElementById('loading');
 
 const urlParams = new URLSearchParams(window.location.search);
 const ROLE = urlParams.get('role') || 'performer'; // 'performer' | 'display'
-const WS_URL = urlParams.get('ws') || null;        // e.g. ws://192.168.x.x:8765
+const WS_URL = urlParams.get('ws') || (            // derive from current host if not specified
+  location.protocol === 'https:'
+    ? `wss://${location.host}/ws`                  // cloud: nginx proxies /ws → port 8765
+    : `ws://${location.hostname}:8765/`             // local: server.py WebSocket port
+);
+const TOKEN = urlParams.get('token') || '';        // secret token for cloud server
 const IS_PERFORMER = ROLE === 'performer';
+
+// Append token to a URL that already has a query string (url contains '?')
+function tok(url) { return TOKEN ? url + (url.includes('?') ? '&' : '?') + 'token=' + TOKEN : url; }
 
 // ============================================================
 // CONFIG (merged from config.json global + movement override)
@@ -178,7 +186,7 @@ function playReadyTone() {
 // CONFIG LOADING
 // ============================================================
 async function loadMasterConfig() {
-  const resp = await fetch('config.json?v=' + Date.now());
+  const resp = await fetch(tok('config.json?v=' + Date.now()));
   if (!resp.ok) throw new Error('config.json not found');
   masterConfig = await resp.json();
 }
@@ -201,9 +209,9 @@ async function loadSceneAssets(sceneData, label) {
   const cb = '?v=' + Date.now();
 
   const [bg, idMap, meta] = await Promise.all([
-    loadImage(sceneData.image + cb),
-    loadImage(sceneData.regionIdMap + cb),
-    fetch(sceneData.regionMeta + cb).then(r => r.json())
+    loadImage(tok(sceneData.image + cb)),
+    loadImage(tok(sceneData.regionIdMap + cb)),
+    fetch(tok(sceneData.regionMeta + cb)).then(r => r.json())
   ]);
 
   // Use this scene's image dimensions throughout — don't rely on global IMG_W/H
@@ -838,7 +846,7 @@ function renderLoop(now) {
 function connectWebSocket() {
   if (!WS_URL) return;
   wsStatus = 'connecting';
-  ws = new WebSocket(WS_URL);
+  ws = new WebSocket(tok(WS_URL));
 
   ws.onopen = () => {
     wsStatus = 'connected';

@@ -200,6 +200,8 @@
 // ============================================================
 let IMG_W = 2731, IMG_H = 2048; // updated per scene from bgImage dimensions
 const ASPECT = 16 / 9;
+const TOKEN = new URLSearchParams(window.location.search).get('token') || '';
+function tok(url) { return TOKEN ? url + (url.includes('?') ? '&' : '?') + 'token=' + TOKEN : url; }
 
 // ============================================================
 // STATE
@@ -259,7 +261,7 @@ function loadImage(src) {
 }
 
 async function loadMasterConfig() {
-  const resp = await fetch('config.json?v=' + Date.now());
+  const resp = await fetch(tok('config.json?v=' + Date.now()));
   if (!resp.ok) throw new Error('config.json not found');
   masterConfig = await resp.json();
 }
@@ -302,11 +304,11 @@ async function loadSceneAssets(sceneData) {
     sceneData.regionIdMap.replace('_id_map', '_overlay');
 
   const [bg, overlay, idMap, meta, children] = await Promise.all([
-    loadImage(sceneData.image + cb),
-    loadImage(overlayUrl + cb).catch(() => null),
-    loadImage(sceneData.regionIdMap + cb),
-    fetch(sceneData.regionMeta + cb).then(r => r.json()),
-    fetch(sceneData.regionChildren + cb).then(r => r.json()).catch(() => ({}))
+    loadImage(tok(sceneData.image + cb)),
+    loadImage(tok(overlayUrl + cb)).catch(() => null),
+    loadImage(tok(sceneData.regionIdMap + cb)),
+    fetch(tok(sceneData.regionMeta + cb)).then(r => r.json()),
+    fetch(tok(sceneData.regionChildren + cb)).then(r => r.json()).catch(() => ({}))
   ]);
 
   bgImage = bg;
@@ -427,7 +429,7 @@ async function saveScene() {
   // Re-fetch config.json to get latest state (in case edited externally)
   let cfg;
   try {
-    const resp = await fetch('config.json?v=' + Date.now());
+    const resp = await fetch(tok('config.json?v=' + Date.now()));
     cfg = await resp.json();
   } catch (e) {
     alert('Could not read config.json: ' + e.message);
@@ -466,7 +468,7 @@ async function saveScene() {
   scene.sequences = seqsOut;
 
   try {
-    const putResp = await fetch('config.json', {
+    const putResp = await fetch(tok('config.json'), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(cfg, null, 2)
