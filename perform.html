@@ -589,31 +589,29 @@ function startSparkle(state, step) {
   stopSparkle(state);
   const group = groups[step.groupId];
   if (!group) return;
+  state.sparkleGen = (state.sparkleGen || 0) + 1;
+  const gen = state.sparkleGen;
   state.sparkleState = {};
-  state.sparkleTimers = {};
   group.regions.forEach(r => {
     const startOn = Math.random() > 0.5;
     state.sparkleState[r] = startOn;
-    scheduleToggle(state, r, startOn);
+    scheduleToggle(state, r, startOn, gen);
   });
 }
 
-function scheduleToggle(state, regionId, currentlyOn) {
+function scheduleToggle(state, regionId, currentlyOn, gen) {
   const delay = currentlyOn
     ? randBetween(config.sparkleMinOn, config.sparkleMaxOn)
     : randBetween(config.sparkleMinOff, config.sparkleMaxOff);
-  state.sparkleTimers[regionId] = setTimeout(() => {
-    if (!state.sparkleTimers[regionId]) return;
+  setTimeout(() => {
+    if (state.sparkleGen !== gen) return;
     state.sparkleState[regionId] = !currentlyOn;
-    scheduleToggle(state, regionId, !currentlyOn);
+    scheduleToggle(state, regionId, !currentlyOn, gen);
   }, delay);
 }
 
 function stopSparkle(state) {
-  if (state.sparkleTimers) {
-    for (const timer of Object.values(state.sparkleTimers)) clearTimeout(timer);
-    state.sparkleTimers = {};
-  }
+  state.sparkleGen = (state.sparkleGen || 0) + 1;
   state.sparkleState = {};
 }
 
