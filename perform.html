@@ -117,6 +117,7 @@ let conductorBeat = 0;         // current beat (1-indexed); 0 = not started
 let tapTimes = [];             // timestamps of last 3 taps (ms)
 let conductorBPM = 80;         // current tempo estimate
 let conductorActive = false;   // true once first tap received
+let conductorBeatTimeouts = []; // setTimeout IDs for subdiv 1-3 events within current beat
 
 // Spotlight state
 let spotlightFactor = 0;      // 0 = normal, 1 = fully dimmed to spotlightDim
@@ -647,6 +648,11 @@ function conductorFireEvent(ev) {
 function conductorTap() {
   if (!conductorMovement) return;
   const now = performance.now();
+
+  // Cancel any pending intra-beat subdiv timeouts from the previous beat
+  conductorBeatTimeouts.forEach(id => clearTimeout(id));
+  conductorBeatTimeouts = [];
+
   tapTimes.push(now);
   if (tapTimes.length > 3) tapTimes.shift();
 
@@ -675,22 +681,35 @@ function conductorTap() {
     }
   }
 
-  // Fire events for this beat immediately.
-  // Deactivates fire now; activates fire 80ms later so there's a
-  // visible gap when a key is retriggered on consecutive beats.
   const bar = conductorMovement.bars[conductorBarIdx];
   if (!bar || !bar.events) return;
+
+  const msps = (60000 / conductorBPM) / 4; // ms per 16th-note subdivision
+
   for (const ev of bar.events) {
-    if (ev.beat !== conductorBeat || (ev.subdiv ?? 0) !== 0) continue;
-    if (ev.action === 'deactivate' || ev.action === 'scene_next') {
-      conductorFireEvent(ev);
+    if (ev.beat !== conductorBeat) continue;
+    const subdiv = ev.subdiv ?? 0;
+
+    if (subdiv === 0) {
+      // On the beat: deactivates and scene_next fire immediately;
+      // activates fire 80ms later to create a visible retrigger pulse.
+      if (ev.action === 'deactivate' || ev.action === 'scene_next') {
+        conductorFireEvent(ev);
+      } else {
+        setTimeout(() => conductorFireEvent(ev), 80);
+      }
     } else {
-      setTimeout(() => conductorFireEvent(ev), 80);
+      // Subdivisions 1-3: schedule relative to this tap.
+      // These are cancelled if the next tap arrives early.
+      const id = setTimeout(() => conductorFireEvent(ev), subdiv * msps);
+      conductorBeatTimeouts.push(id);
     }
   }
 }
 
 function conductorReset() {
+  conductorBeatTimeouts.forEach(id => clearTimeout(id));
+  conductorBeatTimeouts = [];
   conductorActive = false;
   conductorBarIdx = 0;
   conductorBeat = 0;
