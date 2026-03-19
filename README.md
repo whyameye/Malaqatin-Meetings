@@ -24,33 +24,105 @@ Both machines connect to a WiFi router (brought to venue, needs only a power out
 
 **Performer laptop** (static IP `192.168.1.10`, opens in Chrome):
 ```
-http://localhost:8080/perform.html?role=performer&ws=ws://192.168.1.10:8765
+http://localhost:8082/perform.html?role=performer&ws=ws://192.168.1.10:8765
 ```
 
 **Display laptop** (opens in Chrome, projector connected):
 ```
-http://192.168.1.10:8080/perform.html?role=display&ws=ws://192.168.1.10:8765
+http://192.168.1.10:8082/perform.html?role=display&ws=ws://192.168.1.10:8765
 ```
 
 ### Fallback — Cloud Server
 
-If the private router isn't available, both machines connect to a cloud server independently via venue WiFi. Requires HTTPS and WSS (nginx + SSL on cloud server).
+If the private router isn't available, both machines connect to a cloud server independently via venue WiFi. The server runs `server.py` behind nginx with HTTPS/WSS and a secret token for access control.
+
+**Server setup** (Ubuntu, nginx, certbot):
+
+1. Install dependencies:
+   ```bash
+   sudo apt install nginx certbot python3-certbot-nginx
+   sudo pip3 install websockets
+   ```
+
+2. Create a systemd service at `/etc/systemd/system/malaqatin-meetings.service`:
+   ```ini
+   [Unit]
+   Description=Malaqatin Meetings Server
+   After=network.target
+
+   [Service]
+   Type=simple
+   User=youruser
+   WorkingDirectory=/path/to/Malaqatin-Meetings
+   ExecStart=/usr/bin/python3 server.py
+   Restart=always
+   RestartSec=5
+   Environment=HTTP_HOST=127.0.0.1
+   Environment=WS_HOST=127.0.0.1
+   Environment=HTTP_PORT=8082
+   Environment=WS_PORT=8765
+   Environment=SECRET_TOKEN=your-secret-token-here
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+3. Create an nginx site at `/etc/nginx/sites-available/your-subdomain`:
+   ```nginx
+   server {
+       server_name your-subdomain.example.com;
+
+       location /ws {
+           proxy_pass http://127.0.0.1:8765;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+           proxy_set_header Host $host;
+           proxy_read_timeout 86400;
+       }
+
+       location / {
+           limit_except GET HEAD OPTIONS {
+               deny all;
+           }
+           proxy_pass http://127.0.0.1:8082;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+       }
+
+       listen 80;
+   }
+   ```
+
+4. Enable the site, get an SSL cert, and start the service:
+   ```bash
+   sudo ln -s /etc/nginx/sites-available/your-subdomain /etc/nginx/sites-enabled/
+   sudo nginx -t && sudo systemctl reload nginx
+   sudo certbot --nginx -d your-subdomain.example.com
+   sudo systemctl daemon-reload
+   sudo systemctl enable malaqatin-meetings
+   sudo systemctl start malaqatin-meetings
+   ```
 
 **Performer laptop:**
 ```
-https://cloudserver.com/perform.html?role=performer&ws=wss://cloudserver.com:8765
+https://your-subdomain.example.com/perform.html?role=performer&ws=wss://your-subdomain.example.com/ws&token=your-secret-token-here
 ```
 
 **Display laptop:**
 ```
-https://cloudserver.com/perform.html?role=display&ws=wss://cloudserver.com:8765
+https://your-subdomain.example.com/perform.html?role=display&ws=wss://your-subdomain.example.com/ws&token=your-secret-token-here
 ```
+
+- All requests without the correct `?token=` are rejected with 403
+- PUT requests (editor saves) are blocked from the public internet — manage config files via SSH
+- HTTP redirects to HTTPS automatically
 
 ### Development (no display machine)
 
 Run standalone with no WebSocket — no `ws=` parameter needed:
 ```
-http://localhost:8080/perform.html
+http://localhost:8082/perform.html
 ```
 
 ### Notes
@@ -355,7 +427,7 @@ Used by the editor's **C** key to select all children of a selected region.
 |---|---|
 | `editor.html` | Scene editor |
 | `perform.html` | Live performer (supports `role=performer\|display` and `ws=` URL params) |
-| `server.py` | Combined HTTP server (port 8080) and WebSocket relay (port 8765) |
+| `server.py` | Combined HTTP server (port 8082) and WebSocket relay (port 8765). Ports and bind address configurable via env vars; supports `SECRET_TOKEN` for token-gated access. |
 | `segmentation_tuner.html` | Interactive UI for tuning region segmentation parameters |
 | `midi_test.html` | MIDI monitor — shows all input from connected MIDI devices |
 | `architecture.md` | System architecture and networking plan |
