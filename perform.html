@@ -82,6 +82,7 @@ let sceneIdx = 0;           // current scene within movement
 let loadedScenes = [];      // array of scene data objects
 let isLoading = false;
 let awaitingEnter = false;       // after loading, waiting for Enter to fade in
+let autoFullscreenDone = false;  // auto-fullscreen fires once on first keypress
 let awaitingKnobReset = false;   // waiting for all knobs to confirm positions
 let knobsToConfirm = new Set();  // CCs that must be confirmed
 let knobsConfirmed = new Set();  // CCs that have confirmed
@@ -1135,6 +1136,14 @@ function evaluateKnobs(changedCC) {
 // ============================================================
 document.addEventListener('keydown', (e) => {
   if (e.repeat) return;
+
+  // Auto-fullscreen on first keypress (once only)
+  if (!autoFullscreenDone) {
+    autoFullscreenDone = true;
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(resize).catch(() => {});
+    }
+  }
 
   const key = e.key;
   const keyL = key.toLowerCase();
