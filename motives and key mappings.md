@@ -3,31 +3,44 @@
 
 ## Scene 1
 
-| Motive | Pattern            | Visual                    | Computer Key | Music Keyboard Key | Comments |
-|--------|--------------------|---------------------------|--------------|--------------------|----------|
-| M1     | double whole notes | ball in center            | Q            | C3 (note 48)       |          |
-| M2     | quarter notes      | area around ball          | W            | D3 (note 50)       |          |
+| Motive | Pattern                    | Visual                    | Computer Key | Music Keyboard Key | Comments |
+|--------|----------------------------|---------------------------|--------------|--------------------|----------|
+| M1     | double whole notes         | ball in center            | Q            | C3 (note 48)       |          |
+| M2     | quarter notes              | area around ball          | W            | D3 (note 50)       |          |
 
 
 ## Scene 2
 
-| Motive | Pattern            | Visual                    | Computer Key | Music Keyboard Key | Comments |
-|--------|--------------------|---------------------------|--------------|--------------------|----------|
-| M1     | double whole notes | ball in center            | Q            | C3 (note 48)       |          |
-| M2     | quarter notes      | area around ball          | W            | D3 (note 50)       |          |
-| M3     | 8th notes          | blue area                 | E            | *(unmapped)*       |          |
-| M4     | 16th notes         | bubbles outside blue area | R            |                    |          |
+| Motive | Pattern                    | Visual                    | Computer Key | Music Keyboard Key | Comments |
+|--------|----------------------------|---------------------------|--------------|--------------------|----------|
+| M1     | double whole notes         | ball in center            | Q            | C3 (note 48)       |          |
+| M2     | quarter notes              | area around ball          | W            | D3 (note 50)       |          |
+| M3     | 8th notes                  | blue area                 | E            | *(unmapped)*       |          |
+| M4     | 16th notes                 | bubbles outside blue area | R            |                    |          |
 
 
 ## Scene 3
 
-| Motive | Pattern            | Visual                    | Computer Key | Music Keyboard Key | Comments |
-|--------|--------------------|---------------------------|--------------|--------------------|----------|
-| M1     | double whole notes | ball in center            | Q            | C3 (note 48)       |          |
-| M2     | quarter notes      | area around ball          | W            | D3 (note 50)       |          |
-| M3     | 8th notes          | blue area                 | E            | *(unmapped)*       |          |
-| M4     | 16th notes         | bubbles outside blue area | R            |                    |          |
-| M5     | slides             | larger groups of flowers  | A            |                    |          |
+| Motive | Pattern                    | Visual                    | Computer Key | Music Keyboard Key | Comments |
+|--------|----------------------------|---------------------------|--------------|--------------------|----------|
+| M1     | double whole notes         | ball in center            | Q            | C3 (note 48)       |          |
+| M2     | quarter notes              | area around ball          | W            | D3 (note 50)       |          |
+| M3     | 8th notes                  | blue area                 | E            | *(unmapped)*       |          |
+| M4     | 16th notes                 | bubbles outside blue area | R            |                    |          |
+| M5     | slides                     | larger groups of flowers  | A            |                    |          |
+| M6     | 2-16th, 2-8th, goes up     | orange lines              | S            |                    |          |
+
+## Scene 4
+
+| Motive | Pattern                    | Visual                    | Computer Key | Music Keyboard Key | Comments |
+|--------|----------------------------|---------------------------|--------------|--------------------|----------|
+| M1     | double whole notes         | ball in center            | Q            | C3 (note 48)       |          |
+| M2     | quarter notes              | area around ball          | W            | D3 (note 50)       |          |
+| M3     | 8th notes                  | blue area                 | E            | *(unmapped)*       |          |
+| M4     | 16th notes                 | bubbles outside blue area | R            |                    |          |
+| M5     | slides                     | larger groups of flowers  | A            |                    |          |
+| M6     | 2-16th, 2-8th, goes up     | orange lines              | S            |                    |          |
+| M7     | tremelo                    | flicker outlined areas    | D            |                    |          |
 
 
 ## Navigation Controls

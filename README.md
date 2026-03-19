@@ -73,8 +73,8 @@ Design scenes by grouping image regions and assigning keyboard-triggered effect 
 | Shift+Click | Toggle region in selection |
 | Scroll | Zoom |
 | Drag | Pan |
-| Click group name | Activate group (highlights its regions) |
-| Shift+click group name | Multi-select groups |
+| Click group name | Activate group (highlights its regions) and adds it to the multi-selection |
+| Shift+click group name | Toggle group in multi-selection |
 | Double-click group name | Rename group |
 
 ### Keyboard
@@ -83,6 +83,7 @@ Design scenes by grouping image regions and assigning keyboard-triggered effect 
 |---|---|
 | C | Select children of selected regions (press again to restore previous selection) |
 | G | Quick-create group from current selection |
+| S | Add active group as next step to active sequence (flashes group name briefly to confirm) |
 | Escape | Clear selection |
 | Space | Advance to next step (in sequence test mode) |
 | ? | Toggle help overlay |
@@ -119,7 +120,7 @@ Live performance engine. Loads `config.json` and responds to keyboard and MIDI i
 | Space | Toggle raw image (full brightness, effects suppressed) |
 | F | Toggle fullscreen |
 | H | Toggle HUD (shown by default on performer; hidden on display) |
-| R | Reload config from `config.json` |
+| L | Reload config from `config.json` |
 | *Sequence keys* | Hold to activate effect, release to fade out. Press again (after release) to advance to next step. |
 
 ### MIDI (Oxygen 8)
@@ -358,6 +359,7 @@ Used by the editor's **C** key to select all children of a selected region.
 | `segmentation_tuner.html` | Interactive UI for tuning region segmentation parameters |
 | `midi_test.html` | MIDI monitor — shows all input from connected MIDI devices |
 | `architecture.md` | System architecture and networking plan |
+| `motives and key mappings.md` | Human-readable table of motives, keyboard keys, MIDI keys, and patterns |
 | `generate_regions.py` | Region data generator |
 | `config.json` | Master config: global settings, movements, scenes, groups, sequences |
 | `ceiling1_closeup_21Feb0747.png` | Photo — Movement 1, Scene 1 |

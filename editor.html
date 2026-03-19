@@ -811,11 +811,11 @@ window.addEventListener('keydown', (e) => {
       sequences[activeSeqId].steps.push({ groupId: activeGroupId, effect });
       renderSequenceList();
       renderSeqDetail();
-      saveConfig();
+      saveScene();
       const activeItem = document.querySelector('.group-item.active');
       if (activeItem) {
         activeItem.style.background = '#4a7a4a';
-        setTimeout(() => { activeItem.style.background = ''; }, 300);
+        setTimeout(() => { activeItem.style.background = ''; }, 100);
       }
     }
   }
@@ -970,6 +970,7 @@ function renderGroupList() {
         } else {
           selectedGroupIds.clear();
           activeGroupId = (activeGroupId === gid) ? null : gid;
+          if (activeGroupId) selectedGroupIds.add(activeGroupId);
         }
         updateSelectionInfo();
         renderGroupList();

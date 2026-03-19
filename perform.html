@@ -1152,7 +1152,7 @@ document.addEventListener('keydown', (e) => {
   if (!IS_PERFORMER) return; // display role: no further input handling
 
   // Reload config
-  if (keyL === 'r') {
+  if (keyL === 'l') {
     loadMasterConfig().then(() => {
       if (movementIdx >= 0) mergeConfig(movementIdx);
       buildMidiNoteMap();
