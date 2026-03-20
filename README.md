@@ -306,12 +306,13 @@ Instead of a pianist triggering regions manually, a tapper taps quarter-note bea
 | C3 | q | M1 — tied whole notes |
 | D3 | w | M2 — repeating quarters |
 | E4 | e | M3 — repeating 8ths |
-| F4 / G4 | r | M4 — repeating 16ths (F4 and G4 share the same region) |
+| F4 | r | M4 — repeating 16ths |
+| G4 | e + r | M3 + M4 together (treated as E4 + F4 chord) |
 | G3 | a | M5 — slides |
 | A3 | s | M6 — rhythmic pattern |
 | B4 | d | M7 — tremolo |
-
-`P↑` direction markings in the score become `scene_next` events.
+| A4 | f | M8/M9 — cello/violin solos |
+| C5 | — | scene_next (scene change marker) |
 
 ### HUD
 

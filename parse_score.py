@@ -39,11 +39,13 @@ PITCH_TO_KEY = {
     ('C', '3'): 'q',  # M1
     ('D', '3'): 'w',  # M2
     ('E', '4'): 'e',  # M3
-    ('F', '4'): 'r',  # M4
-    ('G', '4'): 'r',  # M4 (shares region with F4)
-    ('G', '3'): 'a',  # M5
-    ('A', '3'): 's',  # M6
-    ('B', '4'): 'd',  # M7
+    ('F', '4'): 'r',        # M4
+    ('G', '4'): ['e', 'r'], # chord: G4 treated as E4+F4 (M3+M4 together)
+    ('G', '3'): 'a',        # M5
+    ('A', '3'): 's',        # M6
+    ('B', '4'): 'd',        # M7
+    ('A', '4'): 'f',        # M8/M9 (cello/violin solos)
+    ('C', '5'): 'scene_next',  # scene change marker
 }
 
 
@@ -106,16 +108,7 @@ def parse_movement(mvmt_cfg):
                 continue
 
             if tag == 'direction':
-                # P↑ fires at current position within the measure
-                dir_pos = pos
-                offset_el = child.find('offset')
-                if offset_el is not None:
-                    dir_pos += int(offset_el.text)
-                for dt in child.findall('direction-type'):
-                    for w in dt.findall('words'):
-                        if w.text and 'P↑' in w.text:
-                            raw_events.append((abs_tick + dir_pos, 'scene_next', None))
-                continue
+                continue  # scene_next now comes from C5 notes, not P↑ text
 
             if tag != 'note':
                 continue
@@ -148,10 +141,16 @@ def parse_movement(mvmt_cfg):
             is_tie_stop  = any(t.get('type') == 'stop'  for t in child.findall('tie'))
             is_tie_start = any(t.get('type') == 'start' for t in child.findall('tie'))
 
-            if not is_tie_stop:
-                raw_events.append((abs_tick + onset,       'activate',   key))
-            if not is_tie_start:
-                raw_events.append((abs_tick + onset + dur, 'deactivate', key))
+            keys = key if isinstance(key, list) else [key]
+            for k in keys:
+                if k == 'scene_next':
+                    if not is_tie_stop:
+                        raw_events.append((abs_tick + onset, 'scene_next', None))
+                else:
+                    if not is_tie_stop:
+                        raw_events.append((abs_tick + onset,       'activate',   k))
+                    if not is_tie_start:
+                        raw_events.append((abs_tick + onset + dur, 'deactivate', k))
 
         abs_tick += beats_per_bar * tpq
 

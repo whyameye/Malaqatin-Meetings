@@ -116,7 +116,7 @@ let seqStates = {};
 let conductorScore = null;     // loaded score.json
 let conductorMovement = null;  // current movement from score
 let conductorBarIdx = 0;       // index into conductorMovement.bars
-let conductorBeat = 0;         // current beat (1-indexed); 0 = not started
+let conductorBeat = 1;         // current beat (1-indexed)
 let tapTimes = [];             // timestamps of last 3 taps (ms)
 let conductorBPM = 80;         // current tempo estimate
 let conductorActive = false;   // true once first tap received
@@ -673,8 +673,7 @@ function conductorTap() {
   // Advance beat / bar
   if (!conductorActive) {
     conductorActive = true;
-    conductorBarIdx = 0;
-    conductorBeat = 1;
+    // Keep whatever bar/beat was set by jump or reset — don't rewind to bar 0
   } else {
     conductorBeat++;
     const curBar = conductorMovement.bars[conductorBarIdx];
@@ -741,7 +740,7 @@ function conductorReset() {
   conductorBeatTimeouts = [];
   conductorActive = false;
   conductorBarIdx = 0;
-  conductorBeat = 0;
+  conductorBeat = 1;
   tapTimes = [];
   if (conductorMovement) conductorBPM = conductorMovement.defaultBPM || 80;
 }
@@ -1573,6 +1572,7 @@ document.addEventListener('keydown', (e) => {
 
   // ] = jump to measure (opens overlay)
   if (key === ']') {
+    e.preventDefault();
     openJumpDialog();
     return;
   }
