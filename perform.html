@@ -151,6 +151,22 @@ let rawFadeTarget = 0;
 let rawFadeStart = null;
 let rawFadeFromVal = 0;
 
+// Display layout — position/scale of output on the display machine
+// Controlled from performer keys 4/5/6/7/8, persisted in localStorage
+let displayLayout = (() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem('displayLayout'));
+    if (saved && typeof saved.x === 'number') return saved;
+  } catch {}
+  return { x: 0, y: 0, scale: 1.0 };
+})();
+
+function applyDisplayLayout() {
+  if (IS_PERFORMER) return;
+  canvas.style.transformOrigin = '0 0';
+  canvas.style.transform = `translate(${displayLayout.x}px, ${displayLayout.y}px) scale(${displayLayout.scale})`;
+}
+
 // HUD
 let showHud = IS_PERFORMER; // shown by default on performer, never on display
 let fps = 0;
@@ -1119,6 +1135,7 @@ function renderLoop(now) {
       `FadeIn: ${config.fadeIn}ms FadeOut: ${config.fadeOut}ms Sparkle: ${config.sparkleSpeed}ms`,
       `SceneFade: ${Math.round(sceneFade * 100)}% Raw: ${Math.round(rawFade * 100)}%`,
       condHud,
+      `Display: x=${Math.round(displayLayout.x)} y=${Math.round(displayLayout.y)} scale=${displayLayout.scale.toFixed(3)}`,
       xfadeActive ? `Crossfade: ${Math.round(xfadeAlpha * 100)}%` : '',
       ...activeKeys
     ].filter(Boolean).join('<br>');
@@ -1173,7 +1190,7 @@ if (IS_PERFORMER) {
       for (const [key, state] of Object.entries(seqStates)) {
         if (state.active) heldKeys[key] = state.stepIndex;
       }
-      sendEvent({ type: 'sync', movementIdx, sceneIdx, faded: !awaitingEnter, heldKeys });
+      sendEvent({ type: 'sync', movementIdx, sceneIdx, faded: !awaitingEnter, heldKeys, displayLayout });
     }
   }, 500);
 }
@@ -1189,6 +1206,11 @@ function applySyncIfReady() {
   }
   if (msg.sceneIdx !== sceneIdx && !xfadeActive) startSceneCrossfade(msg.sceneIdx);
   if (msg.faded && awaitingEnter) fadeSceneIn();
+  if (msg.displayLayout) {
+    displayLayout = msg.displayLayout;
+    localStorage.setItem('displayLayout', JSON.stringify(displayLayout));
+    applyDisplayLayout();
+  }
 
   // Reconcile active sequences
   if (msg.heldKeys) {
@@ -1239,6 +1261,11 @@ function handleRemoteEvent(msg) {
     case 'raw':
       if (msg.action === 'in') fadeRawIn();
       else if (msg.action === 'out') fadeRawOut();
+      break;
+    case 'display_layout':
+      displayLayout = { x: msg.x, y: msg.y, scale: msg.scale };
+      localStorage.setItem('displayLayout', JSON.stringify(displayLayout));
+      applyDisplayLayout();
       break;
   }
 }
@@ -1517,6 +1544,19 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
+  // Display layout: 4=left, 5=right, 6=shrink, 7=enlarge, 8=reset
+  if (key === '4' || key === '5' || key === '6' || key === '7' || key === '8') {
+    const step = e.shiftKey ? 1 : 10;
+    if (key === '4') displayLayout.x -= step;
+    else if (key === '5') displayLayout.x += step;
+    else if (key === '6') displayLayout.scale = Math.max(0.05, displayLayout.scale - step / canvas.width);
+    else if (key === '7') displayLayout.scale = Math.min(2.0, displayLayout.scale + step / canvas.width);
+    else if (key === '8') displayLayout = { x: 0, y: 0, scale: 1.0 };
+    localStorage.setItem('displayLayout', JSON.stringify(displayLayout));
+    sendEvent({ type: 'display_layout', ...displayLayout });
+    return;
+  }
+
   // Movement switching: 1, 2, 3
   if (key === '1' || key === '2' || key === '3') {
     const idx = parseInt(key) - 1;
@@ -1658,6 +1698,7 @@ async function init() {
   connectWebSocket();
   initMidi();
   requestWakeLock();
+  applyDisplayLayout();
 
   requestAnimationFrame(renderLoop);
   await loadMovement(0);
