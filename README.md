@@ -326,6 +326,8 @@ Conductor: Bar 12 | Beat 3/4 | BPM 81
 ```
 Before the first tap it shows `ready (Space=tap)`. After the last bar it stops.
 
+On every tap (Space or `[`), a large bar and beat number flashes on screen for the performer's reference. It holds at full opacity for 2 seconds then fades over 0.5 seconds. Only visible when the HUD is active (H key).
+
 ---
 
 ## Configuration (`config.json`)
