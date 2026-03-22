@@ -215,8 +215,9 @@ Live performance engine. Loads `config.json` and responds to keyboard and MIDI i
 | Space | Conductor tap — one tap per quarter-note beat (see Conductor Mode) |
 | Backspace | Reset conductor to bar 1 |
 | 4 / 5 | Move display image left / right (10px; Shift = 1px) |
-| 6 / 7 | Shrink / enlarge display image (10px; Shift = 1px) — scales from top-left |
-| 8 | Reset display image to full screen |
+| 6 / 7 | Move display image up / down (10px; Shift = 1px) |
+| 8 / 9 | Shrink / enlarge display image (10px; Shift = 1px) — scales from top-left |
+| 0 | Reset display image to full screen |
 | [ | Conductor: back 1 beat (also switches scene if crossing a scene boundary) |
 | ] | Conductor: open jump-to-bar dialog (type measure number, Enter to jump, Escape to cancel) |
 | *Sequence keys* | Hold to activate effect, release to fade out. Press again (after release) to advance to next step. |

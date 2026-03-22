@@ -1544,14 +1544,16 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
-  // Display layout: 4=left, 5=right, 6=shrink, 7=enlarge, 8=reset
-  if (key === '4' || key === '5' || key === '6' || key === '7' || key === '8') {
+  // Display layout: 4=left, 5=right, 6=up, 7=down, 8=shrink, 9=enlarge, 0=reset
+  if (key === '4' || key === '5' || key === '6' || key === '7' || key === '8' || key === '9' || key === '0') {
     const step = e.shiftKey ? 1 : 10;
     if (key === '4') displayLayout.x -= step;
     else if (key === '5') displayLayout.x += step;
-    else if (key === '6') displayLayout.scale = Math.max(0.05, displayLayout.scale - step / canvas.width);
-    else if (key === '7') displayLayout.scale = Math.min(2.0, displayLayout.scale + step / canvas.width);
-    else if (key === '8') displayLayout = { x: 0, y: 0, scale: 1.0 };
+    else if (key === '6') displayLayout.y -= step;
+    else if (key === '7') displayLayout.y += step;
+    else if (key === '8') displayLayout.scale = Math.max(0.05, displayLayout.scale - step / canvas.width);
+    else if (key === '9') displayLayout.scale = Math.min(2.0, displayLayout.scale + step / canvas.width);
+    else if (key === '0') displayLayout = { x: 0, y: 0, scale: 1.0 };
     localStorage.setItem('displayLayout', JSON.stringify(displayLayout));
     sendEvent({ type: 'display_layout', ...displayLayout });
     return;
