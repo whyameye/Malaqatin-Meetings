@@ -152,7 +152,9 @@ let rawFadeStart = null;
 let rawFadeFromVal = 0;
 
 // Display layout — position/scale of output on the display machine
-// Controlled from performer keys 4/5/6/7/8, persisted in localStorage
+// Controlled from performer keys 4/5/6/7/8/9/0, persisted in localStorage
+let _layoutRepeatDelay = null;
+let _layoutRepeatInterval = null;
 let displayLayout = (() => {
   try {
     const saved = JSON.parse(localStorage.getItem('displayLayout'));
@@ -1546,21 +1548,31 @@ document.addEventListener('keydown', (e) => {
 
   // Display layout: 4=left, 5=right, 6=up, 7=down, 8=shrink, 9=enlarge, 0=reset
   // Shift variants ($=%^&*() map to fine step of 1px instead of 10px
-  const _layoutShiftMap = { '$': '4', '%': '5', '^': '6', '&': '7', '*': '8', '(': '9', ')': '0' };
-  const _layoutBase = _layoutShiftMap[key] || key;
-  const _layoutFine = key in _layoutShiftMap;
-  if (_layoutBase === '4' || _layoutBase === '5' || _layoutBase === '6' || _layoutBase === '7' || _layoutBase === '8' || _layoutBase === '9' || _layoutBase === '0') {
-    const step = _layoutFine ? 1 : 10;
-    if (_layoutBase === '4') displayLayout.x -= step;
-    else if (_layoutBase === '5') displayLayout.x += step;
-    else if (_layoutBase === '6') displayLayout.y -= step;
-    else if (_layoutBase === '7') displayLayout.y += step;
-    else if (_layoutBase === '8') displayLayout.scale = Math.max(0.05, displayLayout.scale - step / canvas.width);
-    else if (_layoutBase === '9') displayLayout.scale = Math.min(2.0, displayLayout.scale + step / canvas.width);
-    else if (_layoutBase === '0') displayLayout = { x: 0, y: 0, scale: 1.0 };
-    localStorage.setItem('displayLayout', JSON.stringify(displayLayout));
-    sendEvent({ type: 'display_layout', ...displayLayout });
-    return;
+  {
+    const _layoutShiftMap = { '$': '4', '%': '5', '^': '6', '&': '7', '*': '8', '(': '9', ')': '0' };
+    const _layoutBase = _layoutShiftMap[key] || key;
+    const _layoutFine = key in _layoutShiftMap;
+    if (_layoutBase === '4' || _layoutBase === '5' || _layoutBase === '6' || _layoutBase === '7' || _layoutBase === '8' || _layoutBase === '9' || _layoutBase === '0') {
+      const applyLayoutKey = () => {
+        const step = _layoutFine ? 1 : 10;
+        if (_layoutBase === '4') displayLayout.x = Math.max(0, displayLayout.x - step);
+        else if (_layoutBase === '5') displayLayout.x += step;
+        else if (_layoutBase === '6') displayLayout.y = Math.max(0, displayLayout.y - step);
+        else if (_layoutBase === '7') displayLayout.y += step;
+        else if (_layoutBase === '8') displayLayout.scale = Math.max(0.05, displayLayout.scale - step / canvas.width);
+        else if (_layoutBase === '9') displayLayout.scale = Math.min(1.0, displayLayout.scale + step / canvas.width);
+        else if (_layoutBase === '0') displayLayout = { x: 0, y: 0, scale: 1.0 };
+        localStorage.setItem('displayLayout', JSON.stringify(displayLayout));
+        sendEvent({ type: 'display_layout', ...displayLayout });
+      };
+      applyLayoutKey();
+      clearTimeout(_layoutRepeatDelay);
+      clearInterval(_layoutRepeatInterval);
+      _layoutRepeatDelay = setTimeout(() => {
+        _layoutRepeatInterval = setInterval(applyLayoutKey, 50);
+      }, 500);
+      return;
+    }
   }
 
   // Movement switching: 1, 2, 3
@@ -1668,6 +1680,13 @@ document.addEventListener('keydown', (e) => {
 
 document.addEventListener('keyup', (e) => {
   if (!IS_PERFORMER) return;
+  // Cancel layout key repeat
+  const _layoutShiftMap = { '$': '4', '%': '5', '^': '6', '&': '7', '*': '8', '(': '9', ')': '0' };
+  const _layoutBase = _layoutShiftMap[e.key] || e.key;
+  if ('4567890'.includes(_layoutBase)) {
+    clearTimeout(_layoutRepeatDelay);
+    clearInterval(_layoutRepeatInterval);
+  }
   const keyL = e.key.toLowerCase();
   physicallyHeldKeys.delete(keyL);
   if (seqStates[keyL]) {
