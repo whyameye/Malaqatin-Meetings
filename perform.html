@@ -1545,15 +1545,19 @@ document.addEventListener('keydown', (e) => {
   }
 
   // Display layout: 4=left, 5=right, 6=up, 7=down, 8=shrink, 9=enlarge, 0=reset
-  if (key === '4' || key === '5' || key === '6' || key === '7' || key === '8' || key === '9' || key === '0') {
-    const step = e.shiftKey ? 1 : 10;
-    if (key === '4') displayLayout.x -= step;
-    else if (key === '5') displayLayout.x += step;
-    else if (key === '6') displayLayout.y -= step;
-    else if (key === '7') displayLayout.y += step;
-    else if (key === '8') displayLayout.scale = Math.max(0.05, displayLayout.scale - step / canvas.width);
-    else if (key === '9') displayLayout.scale = Math.min(2.0, displayLayout.scale + step / canvas.width);
-    else if (key === '0') displayLayout = { x: 0, y: 0, scale: 1.0 };
+  // Shift variants ($=%^&*() map to fine step of 1px instead of 10px
+  const _layoutShiftMap = { '$': '4', '%': '5', '^': '6', '&': '7', '*': '8', '(': '9', ')': '0' };
+  const _layoutBase = _layoutShiftMap[key] || key;
+  const _layoutFine = key in _layoutShiftMap;
+  if (_layoutBase === '4' || _layoutBase === '5' || _layoutBase === '6' || _layoutBase === '7' || _layoutBase === '8' || _layoutBase === '9' || _layoutBase === '0') {
+    const step = _layoutFine ? 1 : 10;
+    if (_layoutBase === '4') displayLayout.x -= step;
+    else if (_layoutBase === '5') displayLayout.x += step;
+    else if (_layoutBase === '6') displayLayout.y -= step;
+    else if (_layoutBase === '7') displayLayout.y += step;
+    else if (_layoutBase === '8') displayLayout.scale = Math.max(0.05, displayLayout.scale - step / canvas.width);
+    else if (_layoutBase === '9') displayLayout.scale = Math.min(2.0, displayLayout.scale + step / canvas.width);
+    else if (_layoutBase === '0') displayLayout = { x: 0, y: 0, scale: 1.0 };
     localStorage.setItem('displayLayout', JSON.stringify(displayLayout));
     sendEvent({ type: 'display_layout', ...displayLayout });
     return;
