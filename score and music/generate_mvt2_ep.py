@@ -52,15 +52,17 @@ MOTIVE_PITCH = {
     'M1': ('C', 3), 'M2': ('D', 3),
     'M3': ('E', 4), 'M4': ('F', 4),
     'M5': ('G', 3), 'M6': ('A', 3),
+    'M7': ('B', 4), 'M8': ('A', 4), 'M9': ('G', 4),
 }
 # Voice and staff for each motive in P26
 MOTIVE_VOICE_STAFF = {
     'M3': ('1', '1'), 'M4': ('2', '1'),
-    'M1': ('3', '2'), 'M2': ('4', '2'),
-    'M5': ('5', '2'), 'M6': ('6', '2'),
+    'M7': ('3', '1'), 'M8': ('4', '1'), 'M9': ('5', '1'),
+    'M1': ('6', '2'), 'M2': ('7', '2'),
+    'M5': ('8', '2'), 'M6': ('9', '2'),
 }
 # Order for writing voices in each measure
-VOICE_ORDER = ['M3', 'M4', 'M1', 'M2', 'M5', 'M6']
+VOICE_ORDER = ['M3', 'M4', 'M7', 'M8', 'M9', 'M1', 'M2', 'M5', 'M6']
 
 # Note values in COMMON_DIV ticks (greedy decomposition, largest first)
 NOTE_VALUES = [
@@ -288,6 +290,24 @@ def find_hold_end(notes_full, seq, from_idx):
 
 # ─── Motive detectors ─────────────────────────────────────────────────────────
 
+def detect_m7(measure_info):
+    """B4 treble: solo cello section, m30 start to end of m42."""
+    start = measure_info[30]['start']
+    end   = measure_info[42]['start'] + measure_info[42]['dur']
+    return [(start, end, 'M7', 'P20')]  # Solo Violoncello
+
+def detect_m8(measure_info):
+    """A4 treble: solo sax section, beat 4.5 of m43 to beginning of beat 3 of m52."""
+    start = measure_info[43]['start'] + int(3.5 * COMMON_DIV)
+    end   = measure_info[52]['start'] + 2 * COMMON_DIV
+    return [(start, end, 'M8', 'P18')]  # Solo Soprano Saxophone
+
+def detect_m9(measure_info):
+    """G4 treble: solo violin section, beat 0.5 of m54 to end of m69."""
+    start = measure_info[54]['start'] + int(0.5 * COMMON_DIV)
+    end   = measure_info[69]['start'] + measure_info[69]['dur']
+    return [(start, end, 'M9', 'P19')]  # Solo Violin
+
 def detect_m1(notes_by_part):
     """C3: 2+ consecutive half notes with no rest between."""
     events = []
@@ -325,11 +345,16 @@ def detect_m2(notes_by_part, part_busy=None):
     solo_measures = set().union(*SOLO_IGNORE.values())
     # Additional per-part measure exclusions for M2
     M2_PART_IGNORE = {
-        'P20': {16},        # SoloVc. m16: false positive, extends event into m17
-        'P18': {95},        # S.Sax m95: false positive inside M4 section
+        'P19': {19},             # m19 false-start; replaced by manual event at m18b3.25
+        'P20': {16},             # SoloVc. m16: false positive, extends event into m17
+        'P18': {90, 91, 95},    # m90/91 moved to m95 last 16th; m95 handled by manual event
     }
     part_busy = part_busy or {}
-    events = []
+    # Manual events with corrected start times
+    events = [
+        (285, 352, 'M2', 'P19'),    # m18 beat4 2nd 16th -> m23 (was m19b0)
+        (1503, 1568, 'M2', None),   # m95 last 16th -> m100 (was m90b0)
+    ]
     for pid, notes in notes_by_part.items():
         busy = part_busy.get(pid, [])
         m2_ignore = M2_PART_IGNORE.get(pid, set())
@@ -372,6 +397,9 @@ def detect_m3(notes_by_part):
             if ((pid == 'P21' and 30 <= n['measure'] <= 41)
                     or (pid == 'P22' and 52 <= n['measure'] <= 69)):
                 events.append((n['abs_tick'], n['abs_tick'] + n['duration'], 'M3', pid))
+            # String section pizz backup m95-98: every note triggers M3
+            elif (pid in {'P21', 'P22', 'P23', 'P24', 'P25'} and 95 <= n['measure'] <= 98):
+                events.append((n['abs_tick'], n['abs_tick'] + n['duration'], 'M3', pid))
             elif (n['note_type'] in ('eighth', '16th')
                     and n['abs_tick'] in ticks_with_chord):
                 events.append((n['abs_tick'], n['abs_tick'] + n['duration'], 'M3', pid))
@@ -381,7 +409,8 @@ def detect_m4(notes_by_part):
     """F4: 5+ slurred 16th notes; hold to rest after slur ends.
     Manual event for Solo Violin m71-74."""
     events = [
-        (1112, 1176, 'M4', None),  # SoloVln m71 beat 0 -> m75 beat 0
+        (242, 264, 'M4', 'P20'),   # SoloVc. m16 beat1& (and of beat 1) -> m17b2
+        (1112, 1176, 'M4', 'P19'), # SoloVln m71 beat 0 -> m75 beat 0
     ]
     for pid, notes in notes_by_part.items():
         # Keep tie_stop notes that also have slur_start — these start a new slur on a tied note
@@ -732,8 +761,8 @@ def apply_to_xml(root, measure_info, events_by_motive):
         for motive in VOICE_ORDER:
             voice, staff = MOTIVE_VOICE_STAFF[motive]
             step, octave = MOTIVE_PITCH[motive]
-            evs = [(s, e, m) for s, e, m in events_by_motive.get(motive, [])
-                   if s < mstart + mdur and e > mstart]
+            evs = [(ev[0], ev[1], ev[2]) for ev in events_by_motive.get(motive, [])
+                   if ev[0] < mstart + mdur and ev[1] > mstart]
 
             if not first_voice:
                 m_el.append(make_backup_el(mdur))
@@ -765,8 +794,8 @@ def shorten_name(name):
         ('Solo Soprano Saxophone', 'Sop Sax'),
         ('Solo Violin',            'Solo Vln'),
         ('Solo Violoncello',       'Solo Vc.'),
-        ('Violin I',               'Vln I'),
         ('Violin II',              'Vln II'),
+        ('Violin I',               'Vln I'),
         ('Viola',                  'Vla.'),
         ('Violoncello',            'Vc.'),
         ('Contrabass',             'Cb.'),
@@ -859,6 +888,14 @@ def main():
     raw_non_m2.extend(raw_m2)
     all_events.extend(m2_evs)
 
+    # Solo-section motives — independent, do not affect part_busy or any other motive
+    for detect, label in [
+        (detect_m7, 'M7'), (detect_m8, 'M8'), (detect_m9, 'M9'),
+    ]:
+        evs = detect(measure_info)
+        print(f'  {label}: {len(evs)} events')
+        all_events.extend(evs)
+
     # Group by motive for XML generation
     events_by_motive = defaultdict(list)
     for ev in all_events:
@@ -869,7 +906,7 @@ def main():
     apply_to_xml(root, measure_info, events_by_motive)
 
     # Write CSV — deduplicated events for rows, raw events for instrument lookup
-    write_csv(all_events, measure_info, part_names, raw_events=raw_non_m2)
+    write_csv(all_events, measure_info, part_names, raw_events=all_events)
 
     # Write output XML (preserve declaration)
     tree.write(OUTPUT, encoding='unicode', xml_declaration=False)

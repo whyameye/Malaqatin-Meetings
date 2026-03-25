@@ -330,6 +330,41 @@ On every tap (Space or `[`), a large bar and beat number flashes on screen for t
 
 ---
 
+## Movement II — EP Motive Generator
+
+`generate_mvt2_ep.py` scans all non-EP parts of the Movement II MusicXML and writes
+motive indicator notes into the Electric Piano part (P26), producing an annotated score
+and a CSV of all motive events.
+
+### Running
+
+```bash
+python3 "score and music/generate_mvt2_ep.py"
+```
+
+Re-run whenever the source score changes. Input and output files live in `score and music/`.
+
+| File | Description |
+|---|---|
+| `Edited 2 Malaqatin Meetings - Full score - 01 Movement II Final.musicxml` | Source score (do not edit by hand) |
+| `Edited 2 Malaqatin Meetings - Full score - 01 Movement II Final - John.musicxml` | Annotated output score with EP motive notes |
+| `movement2_motives.csv` | One row per motive event: measure_start, beat_start, measure_end, beat_end, motive, instruments |
+
+### Motives detected
+
+| Motive | Pitch | Description |
+|---|---|---|
+| M1 | C3 | 2+ consecutive half notes |
+| M2 | D3 | Two 16th notes (different pitches) → longer note |
+| M3 | E4 | Pizz chords; Vln I every note m30–41; Vln II every note m52–69 |
+| M4 | F4 | 5+ slurred 16th notes (Solo Violin) |
+| M5 | G3 | Slide gesture: slurred 8th → longer note, or step-down after rest |
+| M6 | A3 | Repeated/alternating slurred 16ths (1–2 pitches) or tremolo |
+
+See `score and music/NOTES_FOR_CLAUDE.md` for full rule details, manual events, part exclusions, and known issues.
+
+---
+
 ## Configuration (`config.json`)
 
 Single master config file. Edited by hand for structure; groups and sequences are written by the editor UI.
@@ -529,6 +564,9 @@ Used by the editor's **C** key to select all children of a selected region.
 | `config.json` | Master config: global settings, movements, scenes, groups, sequences |
 | `parse_score.py` | Converts MusicXML EP part to `score.json` for conductor mode. Run after any score change. |
 | `score.json` | Generated score data consumed by conductor mode. Do not edit by hand — re-run `parse_score.py`. |
+| `score and music/generate_mvt2_ep.py` | Movement II motive detector — writes annotated score and CSV |
+| `score and music/movement2_motives.csv` | Generated motive event table for Movement II |
+| `score and music/NOTES_FOR_CLAUDE.md` | Developer notes: motive rules, part IDs, architecture, known issues |
 | `ceiling1_closeup_21Feb0747.png` | Photo — Movement 1, Scene 1 |
 | `ceiling1_medium_up.png` | Photo — Movement 1, Scene 2 |
 | `ceiling_zoomOut.png` | Photo — Movement 1, Scene 3 |
