@@ -389,8 +389,8 @@ Single master config file. Edited by hand for structure; groups and sequences ar
 | litBrightness | 1.0 | CSS brightness() multiplier for lit regions (1.0 = unchanged) |
 | litSaturate | 1.8 | CSS saturate() multiplier for lit regions (1.0 = unchanged) |
 | litContrast | 1.3 | CSS contrast() multiplier for lit regions (1.0 = unchanged) |
-| fadeIn | 20 | Default fade-in duration (ms) when a sequence key is pressed |
-| fadeOut | 250 | Default fade-out duration (ms) when a sequence key is released |
+| fadeIn | 200 | Default fade-in duration (ms) when a sequence key is pressed |
+| fadeOut | 500 | Default fade-out duration (ms) when a sequence key is released |
 | stepCrossfade | true | When true, the previous sequence step fades out while the new one fades in; set false for instant switch |
 | sparkleSpeed | 100 | Default sparkle interval (ms) |
 | sparkleMinOn | 20 | Min time a region stays lit during sparkle (ms) |
