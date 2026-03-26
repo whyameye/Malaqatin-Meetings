@@ -206,7 +206,7 @@ Live performance engine. Loads `config.json` and responds to keyboard and MIDI i
 |---|---|
 | 1 / 2 / 3 | Load movement — crossfades to new movement, plays audio cue when ready |
 | Enter | Fade in from black |
-| Escape | Fade to black |
+| X | Fade to black |
 | Left / Right arrow | Crossfade to previous / next scene within the current movement (no wrap) |
 | J | Toggle raw image (full brightness, effects suppressed) |
 | K | Toggle fullscreen |
@@ -266,6 +266,17 @@ Shown by default on `role=performer`, never on `role=display`. Toggle with H key
 4. Use **Left/Right** arrows or pitch wheel to crossfade between scenes.
 5. Use **Knob 8** to fade in/out between movements.
 6. Hold sequence keys or MIDI keys to activate effects; release to fade out.
+
+### End-of-movement flow
+
+After the last beat of a movement, the next **Space** tap shows the full image with no activated regions. A prompt appears at the bottom of the screen:
+
+1. **Press X** to fade to black.
+2. A prompt then shows:
+   - After Movement 1: *"Press 2 to begin Movement 2"*
+   - After Movement 2: *"Press 3 to begin Movement 3"*
+   - After Movement 3: *"The piece is complete."*
+3. Press **2** or **3** to load the next movement — it fades in automatically, no Enter required.
 
 ---
 

@@ -26,6 +26,7 @@
 <div id="loading">Loading...</div>
 <canvas id="canvas"></canvas>
 <div id="hud"></div>
+<div id="end-prompt" style="display:none; position:fixed; bottom:40px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.85); color:#0f0; font:20px monospace; padding:16px 28px; border-radius:6px; z-index:25; text-align:center;"></div>
 <div id="jump-overlay" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.85); color:#0f0; font:20px monospace; padding:20px 28px; border-radius:6px; z-index:30;">
   Jump to bar: <input id="jump-input" type="text" inputmode="numeric" style="background:#000; color:#0f0; font:20px monospace; border:1px solid #0f0; width:70px; padding:2px 6px; outline:none;">
 </div>
@@ -74,6 +75,7 @@ let config = {
   litContrast: 1.3,
   sceneFadeDuration: 1000,
   crossfadeDuration: 1500,
+  stepCrossfade: true,  // crossfade between sequence steps globally (override per-sequence with seq.stepCrossfade)
   spotlightDim: 1.0,     // dim multiplier on background when sequences active (1.0 = no effect, 0.0 = black)
   spotlightInDelay: 0,   // ms delay before spotlight starts dimming after first key press
   spotlightFadeIn: 300,  // ms to dim when first sequence activates
@@ -183,6 +185,16 @@ let showHud = IS_PERFORMER; // shown by default on performer, never on display
 let fps = 0;
 let frameCount = 0;
 let fpsTime = performance.now();
+
+// End-of-movement state: 0=normal, 1=at-end(raw shown), 2=faded-to-black
+let movementEndState = 0;
+const endPromptEl = document.getElementById('end-prompt');
+function showEndPrompt(text) { endPromptEl.textContent = text; endPromptEl.style.display = 'block'; }
+function hideEndPrompt() { endPromptEl.style.display = 'none'; }
+
+// Sync backward-movement guard: require 2 consecutive syncs at a lower movementIdx
+// before following them, to filter out single stale syncs.
+let pendingBackwardMovement = -1;
 
 // Keys physically held down (keyboard or MIDI) — persists across scene changes
 let physicallyHeldKeys = new Set();
@@ -403,11 +415,14 @@ async function loadMovement(idx) {
   if (isLoading) return;
   isLoading = true;
   awaitingEnter = false;
+  // Capture fade state NOW before any async operations so that spurious
+  // fade events arriving during loading don't corrupt the crossfade decision.
+  const prevSceneFadeTarget = sceneFadeTarget;
 
   // Reset conductor state for new movement
   conductorActive = false;
   conductorBarIdx = 0;
-  conductorBeat = 0;
+  conductorBeat = 1;
   tapTimes = [];
   if (conductorScore && conductorScore.movements && conductorScore.movements[idx]) {
     conductorMovement = conductorScore.movements[idx];
@@ -444,8 +459,10 @@ async function loadMovement(idx) {
   pendingCrossfadeIdx = -1;
 
   if (loadedScenes.length > 0) {
-    // Crossfade from previous scene if one was showing
-    if (prevBgImage) {
+    // Crossfade from previous scene if one was visible.
+    // Use prevSceneFadeTarget (captured before any awaits) so that spurious
+    // fade events received during loading don't corrupt this decision.
+    if (prevBgImage && prevSceneFadeTarget > 0) {
       xfadeFromBg = prevBgImage;
       xfadeFromImgW = prevImgW;
       xfadeFromImgH = prevImgH;
@@ -454,8 +471,11 @@ async function loadMovement(idx) {
       xfadeAlpha = 0;
       xfadeStart = performance.now();
     } else {
+      // Was already faded to black — snap to ensure a clean start.
       xfadeActive = false;
       xfadeFromBg = null;
+      sceneFade = 0;
+      sceneFadeStart = null;
     }
     activateScene(0);
     isLoading = false;
@@ -478,8 +498,11 @@ async function loadMovement(idx) {
       if (IS_PERFORMER) playReadyTone();
       awaitingEnter = true;
     } else {
-      // Subsequent movement loads — knob 8 controls fade in/out
+      // Subsequent movement loads — auto fade in.
+      // sceneFade was already snapped to 0 above if no crossfade is running.
       loadingEl.style.display = 'none';
+      fadeSceneIn();
+      sendEvent({ type: 'fade', action: 'in' });
     }
   } else {
     isLoading = false;
@@ -527,7 +550,11 @@ function activateScene(idx) {
       fadeDirection: null,
       fadeFromOpacity: 0,
       sparkleState: {},
-      sparkleTimers: {}
+      sparkleTimers: {},
+      prevStepIndex: -1,
+      prevOpacity: 0,
+      prevStartOpacity: 0,
+      prevFadeStart: null
     };
   }
 }
@@ -709,6 +736,9 @@ function conductorTap() {
       conductorBeat = 1;
       if (conductorBarIdx >= conductorMovement.bars.length) {
         conductorActive = false;
+        movementEndState = 1;
+        if (rawFadeTarget < 1) { fadeRawIn(); sendEvent({ type: 'raw', action: 'in' }); }
+        showEndPrompt('Press X to fade to black');
         return;
       }
     }
@@ -842,9 +872,16 @@ function activateSequence(key) {
   if (!state || state.active) return;
   const seq = sequences[state.seqId];
   if (!seq || seq.steps.length === 0) return;
+  const useCrossfade = seq.stepCrossfade ?? config.stepCrossfade;
+  if (useCrossfade && state.stepIndex >= 0 && state.opacity > 0.01) {
+    state.prevStepIndex = state.stepIndex;
+    state.prevStartOpacity = state.opacity;
+    state.prevOpacity = state.opacity;
+    state.prevFadeStart = performance.now();
+  }
   state.stepIndex = (state.stepIndex + 1) % seq.steps.length;
   state.active = true;
-  state.fadeFromOpacity = state.opacity;
+  state.fadeFromOpacity = useCrossfade ? 0 : state.opacity;
   state.fadeStartTime = performance.now();
   state.fadeDirection = 'in';
   const step = seq.steps[state.stepIndex];
@@ -863,6 +900,14 @@ function deactivateSequence(key) {
 }
 
 function updateSequenceOpacity(state, now) {
+  if (state.prevStepIndex >= 0 && state.prevFadeStart !== null) {
+    const seq = sequences[state.seqId];
+    const dur = seq.fadeOut ?? config.fadeOut;
+    const elapsed = now - state.prevFadeStart;
+    const t = Math.min(1, elapsed / dur);
+    state.prevOpacity = state.prevStartOpacity * (1 - easeInOutCubic(t));
+    if (t >= 1) { state.prevOpacity = 0; state.prevStepIndex = -1; state.prevFadeStart = null; }
+  }
   if (state.fadeDirection === null) return;
   const seq = sequences[state.seqId];
   const step = seq.steps[state.stepIndex];
@@ -937,13 +982,14 @@ function fadeSceneIn() {
   sceneFadeFromVal = sceneFade;
   sceneFadeStart = performance.now();
   awaitingEnter = false;
+  initialKnobCheckDone = true;
   loadingEl.style.display = 'none';
 }
 
 function updateSceneFade(now) {
   if (sceneFadeStart === null) return;
   const elapsed = now - sceneFadeStart;
-  const t = Math.min(1, elapsed / config.sceneFadeDuration);
+  const t = Math.max(0, Math.min(1, elapsed / config.sceneFadeDuration));
   const e = easeInOutCubic(t);
   sceneFade = sceneFadeFromVal + (sceneFadeTarget - sceneFadeFromVal) * e;
   if (t >= 1) {
@@ -967,7 +1013,7 @@ function fadeRawOut() {
 function updateRawFade(now) {
   if (rawFadeStart === null) return;
   const elapsed = now - rawFadeStart;
-  const t = Math.min(1, elapsed / config.sceneFadeDuration);
+  const t = Math.max(0, Math.min(1, elapsed / config.sceneFadeDuration));
   const e = easeInOutCubic(t);
   rawFade = rawFadeFromVal + (rawFadeTarget - rawFadeFromVal) * e;
   if (t >= 1) {
@@ -1083,16 +1129,25 @@ function renderLoop(now) {
       // Brighten active sequence regions
       if (rawFade < 1) {
         for (const [key, state] of Object.entries(seqStates)) {
-          if (state.opacity <= 0 || state.stepIndex < 0) continue;
           const seq = sequences[state.seqId];
+          const bri = seq.litBrightness ?? config.litBrightness ?? 1;
+          const sat = seq.litSaturate ?? config.litSaturate ?? 1;
+          const con = seq.litContrast ?? config.litContrast ?? 1;
+          // Crossfade: render previous step fading out (must check before opacity guard)
+          if (state.prevStepIndex >= 0 && state.prevOpacity > 0.01) {
+            const prevStep = seq.steps[state.prevStepIndex];
+            const prevGroup = groups[prevStep.groupId];
+            if (prevGroup) {
+              const prevLitAlpha = Math.min(1, (seq.litLevel ?? config.litLevel) * state.prevOpacity * sceneFade);
+              if (prevLitAlpha > 0.01) brightenRegions(new Set(prevGroup.regions), prevLitAlpha, bri, sat, con);
+            }
+          }
+          if (state.opacity <= 0 || state.stepIndex < 0) continue;
           const step = seq.steps[state.stepIndex];
           const group = groups[step.groupId];
           if (!group) continue;
           const litAlpha = Math.min(1, (seq.litLevel ?? config.litLevel) * state.opacity * sceneFade);
           if (litAlpha <= 0.01) continue;
-          const bri = seq.litBrightness ?? config.litBrightness ?? 1;
-          const sat = seq.litSaturate ?? config.litSaturate ?? 1;
-          const con = seq.litContrast ?? config.litContrast ?? 1;
           if (step.effect === 'sparkle' && Object.keys(state.sparkleState).length > 0) {
             const onRegions = new Set();
             for (const [rid, on] of Object.entries(state.sparkleState)) {
@@ -1250,9 +1305,22 @@ function applySyncIfReady() {
   const msg = pendingSync;
   pendingSync = null;
   if (msg.movementIdx !== movementIdx) {
+    if (msg.movementIdx < movementIdx) {
+      // Backward sync: require 2 consecutive syncs at the same lower index before
+      // following, to filter single stale syncs from the performer's earlier state.
+      if (pendingBackwardMovement === msg.movementIdx) {
+        pendingBackwardMovement = -1;
+        loadMovement(msg.movementIdx);
+      } else {
+        pendingBackwardMovement = msg.movementIdx;
+      }
+      return;
+    }
+    pendingBackwardMovement = -1;
     loadMovement(msg.movementIdx);
     return;
   }
+  pendingBackwardMovement = -1;
   if (msg.sceneIdx !== sceneIdx && !xfadeActive) startSceneCrossfade(msg.sceneIdx);
   if (msg.faded && awaitingEnter) fadeSceneIn();
   if (msg.displayLayout) {
@@ -1297,10 +1365,11 @@ function handleRemoteEvent(msg) {
       }
       break;
     case 'movement':
+      pendingBackwardMovement = -1;
       if (msg.movementIdx !== movementIdx) loadMovement(msg.movementIdx);
       break;
     case 'fade':
-      if (msg.action === 'in') fadeSceneIn();
+      if (msg.action === 'in') { if (!isLoading) fadeSceneIn(); }
       else if (msg.action === 'out') { fadeRawOut(); fadeSceneOut(); }
       break;
     case 'sync':
@@ -1626,7 +1695,18 @@ document.addEventListener('keydown', (e) => {
   if (key === '1' || key === '2' || key === '3') {
     const idx = parseInt(key) - 1;
     if (!masterConfig || idx >= masterConfig.movements.length) return;
-    if (idx === movementIdx && !isLoading) return;
+    if (idx === movementIdx && !isLoading) {
+      // Same movement already loaded — just fade back in if currently faded out
+      if (sceneFadeTarget < 1) {
+        movementEndState = 0;
+        hideEndPrompt();
+        fadeSceneIn();
+        sendEvent({ type: 'fade', action: 'in' });
+      }
+      return;
+    }
+    movementEndState = 0;
+    hideEndPrompt();
     loadMovement(idx);
     sendEvent({ type: 'movement', movementIdx: idx });
     return;
@@ -1641,11 +1721,17 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
-  // Escape = fade to black
-  if (key === 'Escape') {
+  // Q = fade to black
+  if (keyL === 'x') {
     fadeRawOut();
     fadeSceneOut();
     sendEvent({ type: 'fade', action: 'out' });
+    if (movementEndState === 1) {
+      movementEndState = 2;
+      if (movementIdx === 0)      showEndPrompt('Press 2 to begin Movement 2');
+      else if (movementIdx === 1) showEndPrompt('Press 3 to begin Movement 3');
+      else                        showEndPrompt('The piece is complete.');
+    }
     return;
   }
 

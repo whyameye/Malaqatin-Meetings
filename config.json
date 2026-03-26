@@ -14,8 +14,8 @@
     ],
     "dimLevel": 1,
     "litLevel": 1,
-    "fadeIn": 0,
-    "fadeOut": 2000,
+    "fadeIn": 20,
+    "fadeOut": 250,
     "sparkleSpeed": 100,
     "sparkleMinOn": 20,
     "sparkleMaxOn": 80,
@@ -30,7 +30,8 @@
     "spotlightInDelay": 0,
     "spotlightFadeIn": 1000,
     "spotlightFadeOut": 1000,
-    "spotlightDelay": 500
+    "spotlightDelay": 500,
+    "stepCrossfade": true
   },
   "movements": [
     {
