@@ -65,6 +65,9 @@ MOTIVE_VOICE_STAFF = {
 
 NUM_MEASURES = 99
 
+# Measures where a scene_next note (C5, whole note, voice 8, staff 1) should appear
+SCENE_NEXT_MEASURES = {15, 48, 80}
+
 
 def build_csv_rows():
     rows = []
@@ -149,6 +152,10 @@ def write_ep_part(ep_part, num_measures):
                 tie_stop=not is_first,
             )
             m.append(note)
+
+        if mn in SCENE_NEXT_MEASURES:
+            scene_note = make_note_xml('C', '5', whole_dur, '8', '1')
+            m.append(scene_note)
 
 
 def main():

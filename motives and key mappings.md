@@ -63,11 +63,11 @@
 
 ## Mvt 3
 
-### Scene 1
+### Scene 4
 
 | Motive | Pattern                    | Visual                    | Computer Key | Music Keyboard Key         | Comments |
 |--------|----------------------------|---------------------------|--------------|----------------------------|----------|
-| M1     | drum 8th notes             |            | C3 (note 48)               |          |
+| M1     | drum 8th notes             |                           | Q            | C3 (note 48)               |          |
 | M2     | conga/cello 16,16th,8th    |                           | W            | D3 (note 50)               |          |
 | M3     | castanets/vln1 16th        |                           | E            | E4 (note 64)               |          |
 | M4     | sop sax/vln slurred runs   |                           | R            | F4 (note 65)               |          |
@@ -76,9 +76,9 @@
 | M7     | pizz 8th notes             |                           | D            | G4 (note 67)               |          |
 | M8     | trem                       |                           | F            | A4 (note 69)               |          |
 | M9     | pizz repeated 4ers         |                           | G            | B4 (note 71)               |          |
-| M10    | solo sax                   |                           | Y            | B4 (note 71)               |          |
-| M11    | solo cello                 |                           | U            | B4 (note 71)               |          |
-| M12    | solo vln                   |                           | I            | B4 (note 71)               |          |
+| M10    | solo sax                   |                           | Y            | C4 (note 71)               |          |
+| M11    | solo cello                 |                           | U            | D4 (note 71)               |          |
+| M12    | solo vln                   |                           | I            | E5 (note 71)               |          |
 
 
 ## Navigation Controls
