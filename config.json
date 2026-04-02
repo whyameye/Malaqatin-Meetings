@@ -5871,7 +5871,11 @@
     },
     {
       "name": "Movement 3",
-      "config": {},
+      "config": {
+        "fadeIn": 1000,
+        "fadeOut": 2000,
+        "spotlightFadeOut": 2500
+      },
       "scenes": [
         {
           "name": "Scene 1",
@@ -5881,93 +5885,88 @@
           "regionChildren": "images/mvt3/m3s1_region_children.json",
           "regionOverlay": "images/mvt3/m3s1_region_overlay.png",
           "groups": {
-            "g0": {
+            "g7": {
               "name": "M1",
               "regions": [
-                62
+                16
               ],
               "color": "#ff3366"
             },
-            "g1": {
+            "g8": {
               "name": "M2",
-              "regions": [
-                29,
-                33,
-                38,
-                49,
-                56
-              ],
-              "color": "#33ff66"
-            },
-            "g2": {
-              "name": "M3",
-              "regions": [
-                15,
-                12
-              ],
-              "color": "#6633ff"
-            },
-            "g3": {
-              "name": "M4",
-              "regions": [
-                10,
-                19,
-                9,
-                18
-              ],
-              "color": "#ffcc33"
-            },
-            "g4": {
-              "name": "M5",
               "regions": [
                 13,
                 14
+              ],
+              "color": "#33ff66"
+            },
+            "g9": {
+              "name": "M3",
+              "regions": [
+                11,
+                8
+              ],
+              "color": "#6633ff"
+            },
+            "g10": {
+              "name": "M4",
+              "regions": [
+                6,
+                5
+              ],
+              "color": "#ffcc33"
+            },
+            "g11": {
+              "name": "M5",
+              "regions": [
+                10,
+                9
               ],
               "color": "#33ccff"
             }
           },
           "sequences": {
-            "s0": {
+            "s6": {
               "key": "q",
               "steps": [
                 {
-                  "groupId": "g0",
+                  "groupId": "g7",
                   "effect": "solid"
                 }
               ]
             },
-            "s1": {
+            "s7": {
               "key": "w",
               "steps": [
                 {
-                  "groupId": "g1",
+                  "groupId": "g8",
                   "effect": "solid"
                 }
               ]
             },
-            "s2": {
+            "s8": {
               "key": "e",
               "steps": [
                 {
-                  "groupId": "g2",
+                  "groupId": "g9",
                   "effect": "solid"
                 }
               ]
             },
-            "s3": {
+            "s9": {
               "key": "r",
               "steps": [
                 {
-                  "groupId": "g3",
+                  "groupId": "g10",
                   "effect": "solid"
                 }
               ]
             },
-            "s4": {
+            "s10": {
               "key": "a",
               "steps": [
                 {
-                  "groupId": "g4",
+                  "groupId": "g11",
                   "effect": "solid"
                 }
               ]
@@ -5982,14 +5981,6 @@
           "regionChildren": "images/mvt3/m3s2_region_children.json",
           "regionOverlay": "images/mvt3/m3s2_region_overlay.png",
           "groups": {
-            "g0": {
-              "name": "M1",
-              "regions": [
-                35,
-                95
-              ],
-              "color": "#ff3366"
-            },
             "g1": {
               "name": "M2",
               "regions": [
@@ -6073,6 +6064,29 @@
                 24
               ],
               "color": "#66ff33"
+            },
+            "g9": {
+              "name": "M1",
+              "regions": [
+                35,
+                95,
+                104,
+                103,
+                102,
+                101,
+                100,
+                99,
+                98,
+                97,
+                96,
+                92,
+                90,
+                78,
+                75,
+                73,
+                72
+              ],
+              "color": "#ff33cc"
             }
           },
           "sequences": {
@@ -6080,7 +6094,7 @@
               "key": "q",
               "steps": [
                 {
-                  "groupId": "g0",
+                  "groupId": "g9",
                   "effect": "solid"
                 }
               ]

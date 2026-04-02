@@ -138,6 +138,7 @@
 <div id="sidebar">
   <div id="info-bar">Loading...</div>
   <div id="selection-info">No selection</div>
+  <button id="btn-toggle-black" title="Toggle selecting black regions">Black regions: OFF</button>
 
   <h2>Groups</h2>
   <div id="group-controls">
@@ -221,6 +222,7 @@ let view = (() => {
 })();
 
 let selectedRegions = new Set();
+let selectBlackRegions = false;
 let preChildrenSelection = null;
 let hoveredRegion = -1;
 
@@ -689,8 +691,8 @@ function hitTest(ix, iy) {
   const marker = idMapData[offset + 2];
   if (marker < 250) return -1;
   const id = r | (g << 8);
-  // Black regions are outline boundaries — not selectable
-  if (regionMeta && regionMeta[id] && regionMeta[id].type === 'black') return -1;
+  // Black regions are outline boundaries — not selectable unless toggled on
+  if (!selectBlackRegions && regionMeta && regionMeta[id] && regionMeta[id].type === 'black') return -1;
   return id;
 }
 
@@ -982,6 +984,12 @@ function renderGroupList() {
     list.appendChild(div);
   }
 }
+
+document.getElementById('btn-toggle-black').addEventListener('click', () => {
+  selectBlackRegions = !selectBlackRegions;
+  document.getElementById('btn-toggle-black').textContent = `Black regions: ${selectBlackRegions ? 'ON' : 'OFF'}`;
+  document.getElementById('btn-toggle-black').style.background = selectBlackRegions ? '#5a3a5a' : '';
+});
 
 document.getElementById('btn-create-group').addEventListener('click', () => {
   if (selectedRegions.size === 0) return;
