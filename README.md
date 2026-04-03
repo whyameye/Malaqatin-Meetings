@@ -304,7 +304,7 @@ Instead of a pianist triggering regions manually, a tapper taps quarter-note bea
 ### How it works
 
 - Each Space tap = one quarter-note beat
-- **On the tap**: events at beat position subdiv 0 fire immediately (deactivates) or after ~1 tick (~62ms at 80 BPM, activates) to create a visible retrigger gap
+- **On the tap**: all events at beat position subdiv 0 fire immediately
 - **Within the beat**: 16th-note subdivision events (subdiv 1–3) are scheduled via `setTimeout` relative to the tap timestamp and cancelled if the next tap arrives early
 - **BPM**: estimated from the average of the last 2–3 tap intervals; used only for intra-beat subdivision timing
 - **Scene changes**: `scene_next` events in the score trigger automatic crossfades
