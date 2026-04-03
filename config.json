@@ -248,8 +248,8 @@
                   "effect": "solid"
                 }
               ],
-              "litBrightness": 1.3,
-              "litContrast": 0.7
+              "litBrightness": 1.5,
+              "litContrast": 0.5
             }
           }
         },
@@ -1336,8 +1336,8 @@
                   "effect": "solid"
                 }
               ],
-              "litBrightness": 1.3,
-              "litContrast": 0.7
+              "litBrightness": 1.5,
+              "litContrast": 0.5
             },
             "s2": {
               "key": "e",
@@ -3385,8 +3385,8 @@
                   "effect": "solid"
                 }
               ],
-              "litBrightness": 1.3,
-              "litContrast": 0.7
+              "litBrightness": 1.5,
+              "litContrast": 0.5
             },
             "s2": {
               "key": "e",

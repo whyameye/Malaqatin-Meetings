@@ -692,7 +692,7 @@ function spotlightReset() {
 // ============================================================
 function conductorFireEvent(ev) {
   if (ev.action === 'activate' && ev.key) {
-    if (pendingCrossfadeIdx >= 0 || xfadeActive) return; // scene transition in progress
+    if (pendingCrossfadeIdx >= 0) return; // scene transition pending (sequences still fading out)
     activateSequence(ev.key);
     sendEvent({ type: 'activate', key: ev.key });
   } else if (ev.action === 'deactivate' && ev.key) {
