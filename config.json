@@ -248,7 +248,8 @@
                   "effect": "solid"
                 }
               ],
-              "litBrightness": 1.3
+              "litBrightness": 1.3,
+              "litContrast": 0.7
             }
           }
         },
@@ -1335,7 +1336,8 @@
                   "effect": "solid"
                 }
               ],
-              "litBrightness": 1.3
+              "litBrightness": 1.3,
+              "litContrast": 0.7
             },
             "s2": {
               "key": "e",
@@ -1667,7 +1669,8 @@
                   "effect": "solid"
                 }
               ],
-              "fadeIn": 0
+              "fadeIn": 0,
+              "fadeOut": 50
             },
             "s4": {
               "key": "a",
@@ -3382,7 +3385,8 @@
                   "effect": "solid"
                 }
               ],
-              "litBrightness": 1.3
+              "litBrightness": 1.3,
+              "litContrast": 0.7
             },
             "s2": {
               "key": "e",
@@ -3714,7 +3718,8 @@
                   "effect": "solid"
                 }
               ],
-              "fadeIn": 0
+              "fadeIn": 0,
+              "fadeOut": 50
             },
             "s4": {
               "key": "a",

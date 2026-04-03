@@ -1141,12 +1141,6 @@
             },
             {
               "beat": 3,
-              "subdiv": 2,
-              "action": "activate",
-              "key": "s"
-            },
-            {
-              "beat": 3,
               "subdiv": 3,
               "action": "deactivate",
               "key": "e"
@@ -1258,12 +1252,6 @@
               "subdiv": 0,
               "action": "deactivate",
               "key": "r"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "deactivate",
-              "key": "s"
             },
             {
               "beat": 1,
