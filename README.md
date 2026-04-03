@@ -291,11 +291,7 @@ Instead of a pianist triggering regions manually, a tapper taps quarter-note bea
 
 ### Setup
 
-1. Run `parse_score.py` to generate `score.json` from the MusicXML EP part:
-   ```bash
-   python3 parse_score.py
-   ```
-   Re-run whenever the score changes. The script reads `score and music/Keyboard_1_Modified_v17 16-March-2026 John edits.musicxml` and writes `score.json` to the project root.
+1. `score.json` is already generated and hand-edited — do not re-run `parse_score.py` as it will overwrite manual fixes. Edit `score.json` directly for any score corrections.
 
 2. Load `perform.html` as normal and press **Enter** to fade in.
 
@@ -433,8 +429,8 @@ Single master config file. Edited by hand for structure; groups and sequences ar
 | litBrightness | 1.0 | CSS brightness() multiplier for lit regions (1.0 = unchanged) |
 | litSaturate | 1.8 | CSS saturate() multiplier for lit regions (1.0 = unchanged) |
 | litContrast | 1.3 | CSS contrast() multiplier for lit regions (1.0 = unchanged) |
-| fadeIn | 200 | Default fade-in duration (ms) when a sequence key is pressed |
-| fadeOut | 500 | Default fade-out duration (ms) when a sequence key is released |
+| fadeIn | 20 | Default fade-in duration (ms) when a sequence key is pressed |
+| fadeOut | 250 | Default fade-out duration (ms) when a sequence key is released |
 | stepCrossfade | true | When true, the previous sequence step fades out while the new one fades in; set false for instant switch |
 | sparkleSpeed | 100 | Default sparkle interval (ms) |
 | sparkleMinOn | 20 | Min time a region stays lit during sparkle (ms) |
@@ -442,7 +438,7 @@ Single master config file. Edited by hand for structure; groups and sequences ar
 | sparkleMinOff | 20 | Min time a region stays dark during sparkle (ms) |
 | sparkleMaxOff | 80 | Max time a region stays dark during sparkle (ms) |
 | sceneFadeDuration | 1000 | Fade to/from black duration (ms) |
-| crossfadeDuration | 1500 | Scene crossfade duration (ms) |
+| crossfadeDuration | 5000 | Scene crossfade duration (ms) |
 | spotlightDim | 1.0 | Background dim multiplier when any sequence is active (1.0 = no effect, 0.0 = black) |
 | spotlightInDelay | 0 | Delay before spotlight starts dimming after first key press (ms) |
 | spotlightFadeIn | 300 | Duration of spotlight dim fade-in (ms) |
@@ -623,7 +619,7 @@ Used by the editor's **C** key to select all children of a selected region.
 | `generate_regions.py` | Region data generator |
 | `config.json` | Master config: global settings, movements, scenes, groups, sequences |
 | `parse_score.py` | Converts MusicXML EP part to `score.json` for conductor mode. Run after any score change. |
-| `score.json` | Generated score data consumed by conductor mode. Do not edit by hand — re-run `parse_score.py`. |
+| `score.json` | Score data consumed by conductor mode. **Movement I is hand-edited** (sustained blocks, scene changes, 2/4 bars) — do not re-run `parse_score.py` for Mvt I or it will overwrite manual fixes. Mvt II and III were generated then hand-edited. |
 | `score and music/generate_mvt2_ep.py` | Movement II motive detector — writes annotated score and CSV |
 | `score and music/movement2_motives.csv` | Generated motive event table for Movement II |
 | `score and music/NOTES_FOR_CLAUDE.md` | Developer notes: motive rules, part IDs, architecture, known issues |
