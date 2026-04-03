@@ -570,16 +570,10 @@ function startSceneCrossfade(newIdx) {
 }
 
 function _beginCrossfade(newIdx) {
-  // Save old scene state so we can keep rendering its motives during the crossfade
+  // Save old scene state — keep as-is so motives stay at their current opacity
+  // and fade naturally with the old scene as (1-xfadeAlpha) pulls them away
   for (const state of Object.values(seqStates)) {
     stopSparkle(state);
-    // Force-deactivate so they naturally fade out during the crossfade
-    if (state.active) {
-      state.active = false;
-      state.fadeFromOpacity = state.opacity;
-      state.fadeStartTime = performance.now();
-      state.fadeDirection = 'out';
-    }
   }
   xfadeFromSeqStates = seqStates;
   xfadeFromGroups = groups;
@@ -654,9 +648,11 @@ function brightenRegions(regionSet, litAlpha, bri, sat, con, overrides) {
 function spotlightIn() {
   // Cancel any pending out-delay — something is active again.
   if (spotlightDelayTimer) { clearTimeout(spotlightDelayTimer); spotlightDelayTimer = null; }
-  // If spotlight is already fading in, fully on, or the in-delay is already
+  // If spotlight is already fading in, fully on and stable, or the in-delay is already
   // counting down, do nothing — don't restart the timer on every 16th note.
-  if (spotlightDir > 0 || spotlightFactor >= 1 || spotlightInDelayTimer) return;
+  // Exception: if spotlight is fading OUT (dir=-1, e.g. due to scene change reset),
+  // override it and fade back in.
+  if (spotlightDir > 0 || (spotlightFactor >= 1 && spotlightDir === 0) || spotlightInDelayTimer) return;
   const delay = config.spotlightInDelay ?? 0;
   if (delay > 0) {
     spotlightInDelayTimer = setTimeout(() => {
