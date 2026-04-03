@@ -81,11 +81,6 @@
             {
               "beat": 1,
               "subdiv": 0,
-              "action": "scene_next"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
               "action": "activate",
               "key": "e"
             },
@@ -221,6 +216,11 @@
           "bar": 5,
           "beats": 4,
           "events": [
+            {
+              "beat": 1,
+              "subdiv": 0,
+              "action": "scene_next"
+            },
             {
               "beat": 1,
               "subdiv": 0,
@@ -1256,11 +1256,6 @@
             {
               "beat": 1,
               "subdiv": 0,
-              "action": "scene_next"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
               "action": "deactivate",
               "key": "r"
             },
@@ -1609,6 +1604,11 @@
             {
               "beat": 1,
               "subdiv": 0,
+              "action": "scene_next"
+            },
+            {
+              "beat": 1,
+              "subdiv": 0,
               "action": "deactivate",
               "key": "r"
             },
@@ -1953,11 +1953,6 @@
               "subdiv": 0,
               "action": "deactivate",
               "key": "a"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "scene_next"
             },
             {
               "beat": 1,
