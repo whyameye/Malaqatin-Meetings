@@ -760,6 +760,14 @@ function conductorTap() {
   const msps   = (60000 / conductorBPM) / 4; // ms per 16th-note subdivision
   const tickMs = msps / 3;                    // 1 tick at tpq=12
 
+  // Keys with both deactivate+activate at subdiv 0 on this beat AND only 1 step — skip the deactivate (sustained note, no step to advance)
+  const sustainedNow = new Set(
+    bar.events
+      .filter(e => e.beat === conductorBeat && (e.subdiv ?? 0) === 0 && e.action === 'activate' && e.key)
+      .filter(e => { const seq = sequences[seqStates[e.key]?.seqId]; return seq && seq.steps.length === 1; })
+      .map(e => e.key)
+  );
+
   for (const ev of bar.events) {
     if (ev.beat !== conductorBeat) continue;
     const subdiv = ev.subdiv ?? 0;
@@ -768,6 +776,7 @@ function conductorTap() {
       // On the beat: deactivates/scene_next fire immediately;
       // activates fire 1 tick later so the deactivation is visible.
       if (ev.action === 'deactivate' || ev.action === 'scene_next') {
+        if (ev.action === 'deactivate' && sustainedNow.has(ev.key)) continue;
         conductorFireEvent(ev);
       } else {
         setTimeout(() => conductorFireEvent(ev), tickMs);
@@ -791,9 +800,16 @@ function conductorTap() {
     const nextBar = conductorMovement.bars[nextBarIdx];
     if (nextBar && nextBar.events) {
       const deactivateAt = Math.max(5, 4 * msps - tickMs);
+      // Keys with both deactivate+activate at next beat AND only 1 step — skip look-ahead deactivate
+      const sustainedKeys = new Set(
+        nextBar.events
+          .filter(e => e.beat === nextBeat && (e.subdiv ?? 0) === 0 && e.action === 'activate' && e.key)
+          .filter(e => { const seq = sequences[seqStates[e.key]?.seqId]; return seq && seq.steps.length === 1; })
+          .map(e => e.key)
+      );
       for (const ev of nextBar.events) {
         if (ev.beat !== nextBeat || (ev.subdiv ?? 0) !== 0) continue;
-        if (ev.action === 'deactivate') {
+        if (ev.action === 'deactivate' && !sustainedKeys.has(ev.key)) {
           const id = setTimeout(() => conductorFireEvent(ev), deactivateAt);
           conductorBeatTimeouts.push(id);
         }
@@ -1635,6 +1651,12 @@ document.addEventListener('keydown', (e) => {
   const keyL = key.toLowerCase();
 
   // HUD toggle (performer only)
+  if (key === '`') {
+    cursorVisible = !cursorVisible;
+    document.body.style.cursor = cursorVisible ? 'default' : 'none';
+    return;
+  }
+
   if (keyL === 'h' && IS_PERFORMER) {
     showHud = !showHud;
     return;
@@ -1833,7 +1855,8 @@ document.addEventListener('keyup', (e) => {
 });
 
 document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('mousemove', () => { document.body.style.cursor = 'none'; });
+let cursorVisible = false;
+document.addEventListener('mousemove', () => { if (!cursorVisible) document.body.style.cursor = 'none'; });
 
 // ============================================================
 // START

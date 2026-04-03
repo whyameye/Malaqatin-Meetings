@@ -1256,6 +1256,11 @@
             {
               "beat": 1,
               "subdiv": 0,
+              "action": "scene_next"
+            },
+            {
+              "beat": 1,
+              "subdiv": 0,
               "action": "deactivate",
               "key": "r"
             },
@@ -1816,11 +1821,6 @@
               "subdiv": 0,
               "action": "deactivate",
               "key": "r"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "scene_next"
             },
             {
               "beat": 1,
@@ -3889,12 +3889,6 @@
               "beat": 4,
               "subdiv": 0,
               "action": "deactivate",
-              "key": "s"
-            },
-            {
-              "beat": 4,
-              "subdiv": 0,
-              "action": "deactivate",
               "key": "w"
             },
             {
@@ -3932,12 +3926,6 @@
               "subdiv": 0,
               "action": "activate",
               "key": "w"
-            },
-            {
-              "beat": 1,
-              "subdiv": 2,
-              "action": "activate",
-              "key": "s"
             },
             {
               "beat": 2,
@@ -4213,12 +4201,6 @@
               "beat": 2,
               "subdiv": 0,
               "action": "deactivate",
-              "key": "s"
-            },
-            {
-              "beat": 2,
-              "subdiv": 0,
-              "action": "deactivate",
               "key": "w"
             },
             {
@@ -4232,12 +4214,6 @@
               "subdiv": 0,
               "action": "deactivate",
               "key": "w"
-            },
-            {
-              "beat": 3,
-              "subdiv": 0,
-              "action": "activate",
-              "key": "s"
             },
             {
               "beat": 3,
@@ -4591,12 +4567,6 @@
               "beat": 2,
               "subdiv": 0,
               "action": "deactivate",
-              "key": "s"
-            },
-            {
-              "beat": 2,
-              "subdiv": 0,
-              "action": "deactivate",
               "key": "w"
             },
             {
@@ -4664,12 +4634,6 @@
               "subdiv": 0,
               "action": "activate",
               "key": "r"
-            },
-            {
-              "beat": 3,
-              "subdiv": 0,
-              "action": "activate",
-              "key": "s"
             },
             {
               "beat": 3,
@@ -4718,12 +4682,6 @@
               "subdiv": 0,
               "action": "deactivate",
               "key": "r"
-            },
-            {
-              "beat": 4,
-              "subdiv": 0,
-              "action": "deactivate",
-              "key": "s"
             },
             {
               "beat": 4,
@@ -4807,12 +4765,6 @@
               "beat": 1,
               "subdiv": 0,
               "action": "activate",
-              "key": "s"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "activate",
               "key": "w"
             },
             {
@@ -4856,12 +4808,6 @@
               "subdiv": 0,
               "action": "deactivate",
               "key": "r"
-            },
-            {
-              "beat": 2,
-              "subdiv": 0,
-              "action": "deactivate",
-              "key": "s"
             },
             {
               "beat": 2,
@@ -4934,12 +4880,6 @@
               "subdiv": 0,
               "action": "activate",
               "key": "r"
-            },
-            {
-              "beat": 3,
-              "subdiv": 0,
-              "action": "activate",
-              "key": "s"
             },
             {
               "beat": 3,
@@ -8367,12 +8307,6 @@
               "beat": 1,
               "subdiv": 0,
               "action": "deactivate",
-              "key": "f"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "deactivate",
               "key": "w"
             },
             {
@@ -8410,12 +8344,6 @@
               "subdiv": 0,
               "action": "deactivate",
               "key": "w"
-            },
-            {
-              "beat": 2,
-              "subdiv": 0,
-              "action": "activate",
-              "key": "f"
             },
             {
               "beat": 2,
@@ -8493,19 +8421,7 @@
               "beat": 1,
               "subdiv": 0,
               "action": "deactivate",
-              "key": "f"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "deactivate",
               "key": "w"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "activate",
-              "key": "f"
             },
             {
               "beat": 1,
@@ -8595,12 +8511,6 @@
               "beat": 1,
               "subdiv": 0,
               "action": "deactivate",
-              "key": "f"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "deactivate",
               "key": "w"
             },
             {
@@ -8638,12 +8548,6 @@
               "subdiv": 0,
               "action": "deactivate",
               "key": "w"
-            },
-            {
-              "beat": 2,
-              "subdiv": 0,
-              "action": "activate",
-              "key": "f"
             },
             {
               "beat": 2,
@@ -8721,19 +8625,7 @@
               "beat": 1,
               "subdiv": 0,
               "action": "deactivate",
-              "key": "f"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "deactivate",
               "key": "w"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "activate",
-              "key": "f"
             },
             {
               "beat": 1,
@@ -8823,12 +8715,6 @@
               "beat": 1,
               "subdiv": 0,
               "action": "deactivate",
-              "key": "f"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "deactivate",
               "key": "w"
             },
             {
@@ -8866,12 +8752,6 @@
               "subdiv": 0,
               "action": "deactivate",
               "key": "w"
-            },
-            {
-              "beat": 2,
-              "subdiv": 0,
-              "action": "activate",
-              "key": "f"
             },
             {
               "beat": 2,
@@ -8949,19 +8829,7 @@
               "beat": 1,
               "subdiv": 0,
               "action": "deactivate",
-              "key": "f"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "deactivate",
               "key": "w"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "activate",
-              "key": "f"
             },
             {
               "beat": 1,

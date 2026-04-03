@@ -179,6 +179,10 @@ Design scenes by grouping image regions and assigning keyboard-triggered effect 
 | Space | Advance to next step (in sequence test mode) |
 | ? | Toggle help overlay |
 
+### Black region toggle
+
+By default only white regions (gaps between outlines) are selectable. Click the **"Black regions: OFF"** button (below the selection info) to also enable selecting black regions (filled/carved pattern areas). Button turns purple when active.
+
 ### Workflow
 
 1. Select **Movement** and **Scene** from the dropdowns in the bottom bar
@@ -211,7 +215,8 @@ Live performance engine. Loads `config.json` and responds to keyboard and MIDI i
 | J | Toggle raw image (full brightness, effects suppressed) |
 | K | Toggle fullscreen |
 | H | Toggle HUD (shown by default on performer; hidden on display) |
-| L | Reload config from `config.json` |
+| L | Reload config from `config.json` (reloads global and movement-level settings only; does not reload scene assets — navigate away and back to pick up group/sequence changes) |
+| ` (backtick) | Toggle mouse cursor on/off |
 | Space | Conductor tap — one tap per quarter-note beat (see Conductor Mode) |
 | Backspace | Reset conductor to bar 1 |
 | 4 / 5 | Move display image left / right (10px; Shift = 1px) |
@@ -303,7 +308,7 @@ Instead of a pianist triggering regions manually, a tapper taps quarter-note bea
 - **Within the beat**: 16th-note subdivision events (subdiv 1–3) are scheduled via `setTimeout` relative to the tap timestamp and cancelled if the next tap arrives early
 - **BPM**: estimated from the average of the last 2–3 tap intervals; used only for intra-beat subdivision timing
 - **Scene changes**: `scene_next` events in the score trigger automatic crossfades
-- **Deactivation**: if the tapper stops, regions deactivate automatically ~1 tick before the next beat would have arrived
+- **Deactivation**: if the tapper stops, regions deactivate automatically ~1 tick before the next beat would have arrived. Exception: if the next beat has both a deactivate and activate for the same key (sustained note), the look-ahead deactivate is suppressed so the region stays on until the beat is actually tapped
 
 ### Navigation during rehearsal
 
@@ -376,6 +381,45 @@ See `score and music/NOTES_FOR_CLAUDE.md` for full rule details, manual events, 
 
 ---
 
+## Movement III — EP Motive Generator
+
+`generate_mvt3_ep.py` uses hand-curated block ranges (derived from score label positions) to write motive indicator notes into the Electric Piano part, producing an annotated score and CSV.
+
+### Running
+
+```bash
+python3 "score and music/generate_mvt3_ep.py"
+```
+
+| File | Description |
+|---|---|
+| `Edited 3 Malaqatin Meetings - Full score - 01 Movement III Final.musicxml` | Source score |
+| `Edited 3 Malaqatin Meetings - Full score - 01 Movement III Final - John.musicxml` | Annotated output with EP motive notes and scene transition markers (C5) |
+| `movement3_motives.csv` | One row per motive block: measure_start, beat_start, measure_end, beat_end, motive |
+
+### Motives (block-level triggers)
+
+| Motive | Key | Pattern | Parts |
+|---|---|---|---|
+| M1 | Q | Drum set steady eighth notes | P13 Drum Set |
+| M2 | W | 16th+16th+8th rhythmic cell | P14 Conga, P24 Vc |
+| M3 | E | Steady 16th notes | P15 Castanets, P21 Vln I |
+| M4 | R | Slurred melodic solo run → whole note | P18 Solo Sop Sax, P19 Solo Vln |
+| M5 | A | Slurred pickup gesture → held note | P1 Fl, P7 Tpt |
+| M6 | S | Unslurred 8ths/quarters, rhythmic punctuation | P1 Fl, P21–22 Vln |
+| M7 | D | Pizzicato eighth notes in strings | P24 Vc, P25 Db |
+| M8 | F | Whole note pairs with tremolo | P16 Vibraphone |
+| M9 | G | Pizzicato repeated quarters, one pitch | P24 Vc |
+| M10 | Y | Improvised solo (m36) | P17 Solo Alto Sax |
+| M11 | U | Improvised solo (m44) | P17 Solo Alto Sax |
+| M12 | I | Solo violin passage (m80–96) | P19 Solo Vln |
+
+Scene transitions (C5 whole note) appear in the EP part at m15, m48, m80.
+
+See `motives and key mappings mvt 3.md` for the full motive table.
+
+---
+
 ## Configuration (`config.json`)
 
 Single master config file. Edited by hand for structure; groups and sequences are written by the editor UI.
@@ -408,9 +452,13 @@ Single master config file. Edited by hand for structure; groups and sequences ar
 | midiKnobCCs | [] | CC numbers for knobs 1–7 in order (find with `midi_test.html`) |
 | midiFadeKnobCC | 83 | CC number for fade knob (knob 8 on Oxygen 8) |
 
+### Per-movement config overrides
+
+A movement's `config` block overrides global settings for that movement only. Example: Movement 2 has `"litBrightness": 1.3`; Movement 3 has `"fadeIn": 1000, "fadeOut": 2000, "spotlightFadeOut": 2500`.
+
 ### Per-sequence overrides
 
-Any sequence can override these global values. Leave unset (null) to use the global value:
+Any sequence can override these global values. Leave unset to use the global value:
 
 `dimLevel`, `litLevel`, `litBrightness`, `litSaturate`, `litContrast`, `fadeIn`, `fadeOut`, `sparkleSpeed`, `stepCrossfade`
 
@@ -461,7 +509,7 @@ Use `midi_test.html` to find the note numbers for each key on your MIDI controll
 
 ### Config merging
 
-A movement's `config` block overrides the global `config` where specified. Global values fill everything else. Config is per-movement — there is no per-scene config.
+Movement-level `config` overrides global `config` where specified. Global values fill everything else. There is no per-scene config.
 
 ### Division of responsibility
 
