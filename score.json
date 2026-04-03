@@ -14926,32 +14926,31 @@
         },
         {
           "bar": 13,
-          "beats": 4,
-          "events": [
-            {
-              "beat": 3,
-              "subdiv": 0,
-              "action": "deactivate",
-              "key": "w"
-            },
-            {
-              "beat": 3,
-              "subdiv": 0,
-              "action": "deactivate",
-              "key": "r"
-            },
-            {
-              "beat": 3,
-              "subdiv": 0,
-              "action": "deactivate",
-              "key": "a"
-            }
-          ]
+          "beats": 2,
+          "events": []
         },
         {
           "bar": 14,
           "beats": 4,
           "events": [
+            {
+              "beat": 1,
+              "subdiv": 0,
+              "action": "deactivate",
+              "key": "w"
+            },
+            {
+              "beat": 1,
+              "subdiv": 0,
+              "action": "deactivate",
+              "key": "r"
+            },
+            {
+              "beat": 1,
+              "subdiv": 0,
+              "action": "deactivate",
+              "key": "a"
+            },
             {
               "beat": 1,
               "subdiv": 0,
@@ -21518,6 +21517,12 @@
               "subdiv": 0,
               "action": "activate",
               "key": "f"
+            },
+            {
+              "beat": 1,
+              "subdiv": 0,
+              "action": "activate",
+              "key": "u"
             }
           ]
         },

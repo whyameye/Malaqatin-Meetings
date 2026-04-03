@@ -25,7 +25,7 @@
     "litSaturate": 1,
     "litContrast": 1,
     "sceneFadeDuration": 1000,
-    "crossfadeDuration": 1000,
+    "crossfadeDuration": 5000,
     "spotlightDim": 0.5,
     "spotlightInDelay": 0,
     "spotlightFadeIn": 1000,
@@ -36,9 +36,7 @@
   "movements": [
     {
       "name": "Movement 1",
-      "config": {
-        "crossfadeDuration": 200
-      },
+      "config": {},
       "scenes": [
         {
           "name": "Scene 1",
@@ -4882,6 +4880,8 @@
             },
             "s2": {
               "key": "e",
+              "fadeIn": 0,
+              "fadeOut": 100,
               "steps": [
                 {
                   "groupId": "g66",

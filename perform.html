@@ -139,7 +139,11 @@ let xfadeFromImgW = 2731, xfadeFromImgH = 2048; // dimensions of the from-scene 
 let xfadeFromView = null;   // view of the "from" scene
 let xfadeAlpha = 0;         // 0 = from scene, 1 = to scene
 let xfadeStart = null;
-let pendingCrossfadeIdx = -1; // waiting for sequences to fade out before starting
+let xfadeFromSeqStates = {};      // old scene's sequence states, rendered during crossfade
+let xfadeFromGroups = {};         // old scene's groups
+let xfadeFromSequences = {};      // old scene's sequences
+let xfadeFromRegionRuns = {};     // old scene's region runs
+let xfadeFromIdMapH = 0;          // old scene's idMapH
 
 // Global scene fade (0 = black, 1 = visible)
 let sceneFade = 0;
@@ -562,9 +566,14 @@ function activateScene(idx) {
 function startSceneCrossfade(newIdx) {
   if (newIdx < 0 || newIdx >= loadedScenes.length) return;
   if (newIdx === sceneIdx || xfadeActive) return;
+  _beginCrossfade(newIdx);
+}
 
-  // Force-deactivate any active sequences so they fade out first
+function _beginCrossfade(newIdx) {
+  // Save old scene state so we can keep rendering its motives during the crossfade
   for (const state of Object.values(seqStates)) {
+    stopSparkle(state);
+    // Force-deactivate so they naturally fade out during the crossfade
     if (state.active) {
       state.active = false;
       state.fadeFromOpacity = state.opacity;
@@ -572,11 +581,12 @@ function startSceneCrossfade(newIdx) {
       state.fadeDirection = 'out';
     }
   }
-  pendingCrossfadeIdx = newIdx;
-}
+  xfadeFromSeqStates = seqStates;
+  xfadeFromGroups = groups;
+  xfadeFromSequences = sequences;
+  xfadeFromRegionRuns = regionRuns;
+  xfadeFromIdMapH = idMapH;
 
-function _beginCrossfade(newIdx) {
-  for (const state of Object.values(seqStates)) stopSparkle(state);
   seqStates = {};
 
   xfadeFromBg = bgImage;
@@ -612,12 +622,17 @@ function getCanvasTransform(v) {
   return { scale, offsetX, offsetY };
 }
 
-function brightenRegions(regionSet, litAlpha, bri, sat, con) {
-  const stepY = IMG_H / idMapH;
+function brightenRegions(regionSet, litAlpha, bri, sat, con, overrides) {
+  const _regionRuns = (overrides && overrides.regionRuns) || regionRuns;
+  const _bgImage    = (overrides && overrides.bgImage)    || bgImage;
+  const _IMG_W      = (overrides && overrides.IMG_W)      || IMG_W;
+  const _IMG_H      = (overrides && overrides.IMG_H)      || IMG_H;
+  const _idMapH     = (overrides && overrides.idMapH)     || idMapH;
+  const stepY = _IMG_H / _idMapH;
   ctx.save();
   ctx.beginPath();
   regionSet.forEach(regionId => {
-    const runs = regionRuns[regionId];
+    const runs = _regionRuns[regionId];
     if (!runs) return;
     for (let i = 0; i < runs.length; i += 3) {
       ctx.rect(runs[i + 1], runs[i], runs[i + 2], stepY);
@@ -628,7 +643,7 @@ function brightenRegions(regionSet, litAlpha, bri, sat, con) {
   if (bri !== 1 || sat !== 1 || con !== 1) {
     ctx.filter = `brightness(${bri}) saturate(${sat}) contrast(${con})`;
   }
-  ctx.drawImage(bgImage, 0, 0, IMG_W, IMG_H);
+  ctx.drawImage(_bgImage, 0, 0, _IMG_W, _IMG_H);
   ctx.filter = 'none';
   ctx.restore();
 }
@@ -692,7 +707,6 @@ function spotlightReset() {
 // ============================================================
 function conductorFireEvent(ev) {
   if (ev.action === 'activate' && ev.key) {
-    if (pendingCrossfadeIdx >= 0) return; // scene transition pending (sequences still fading out)
     activateSequence(ev.key);
     sendEvent({ type: 'activate', key: ev.key });
   } else if (ev.action === 'deactivate' && ev.key) {
@@ -909,9 +923,10 @@ function deactivateSequence(key) {
   spotlightOut();
 }
 
-function updateSequenceOpacity(state, now) {
+function updateSequenceOpacity(state, now, seqsRef) {
+  seqsRef = seqsRef || sequences;
   if (state.prevStepIndex >= 0 && state.prevFadeStart !== null) {
-    const seq = sequences[state.seqId];
+    const seq = seqsRef[state.seqId];
     const dur = seq.fadeOut ?? config.fadeOut;
     const elapsed = now - state.prevFadeStart;
     const t = Math.min(1, elapsed / dur);
@@ -919,7 +934,7 @@ function updateSequenceOpacity(state, now) {
     if (t >= 1) { state.prevOpacity = 0; state.prevStepIndex = -1; state.prevFadeStart = null; }
   }
   if (state.fadeDirection === null) return;
-  const seq = sequences[state.seqId];
+  const seq = seqsRef[state.seqId];
   const step = seq.steps[state.stepIndex];
   const duration = state.fadeDirection === 'in'
     ? (seq.fadeIn ?? config.fadeIn)
@@ -1057,18 +1072,17 @@ function renderLoop(now) {
       xfadeActive = false;
       xfadeFromBg = null;
       xfadeAlpha = 1;
+      xfadeFromSeqStates = {};
     }
   }
 
-  // Update sequence opacities (only when not crossfading)
-  if (!xfadeActive) {
-    for (const state of Object.values(seqStates)) {
-      updateSequenceOpacity(state, now);
-    }
-    // Start pending crossfade once all sequences have faded out
-    if (pendingCrossfadeIdx >= 0 && Object.values(seqStates).every(s => s.opacity <= 0.01)) {
-      _beginCrossfade(pendingCrossfadeIdx);
-      pendingCrossfadeIdx = -1;
+  // Update sequence opacities for both new scene and (during crossfade) old scene
+  for (const state of Object.values(seqStates)) {
+    updateSequenceOpacity(state, now);
+  }
+  if (xfadeActive) {
+    for (const state of Object.values(xfadeFromSeqStates)) {
+      updateSequenceOpacity(state, now, xfadeFromSequences);
     }
   }
 
@@ -1106,6 +1120,13 @@ function renderLoop(now) {
     if (xfadeActive && xfadeFromBg) {
       // Crossfade: each scene uses its own transform so neither changes
       // apparent size during the transition
+      const fromOverrides = {
+        regionRuns: xfadeFromRegionRuns,
+        bgImage: xfadeFromBg,
+        IMG_W: xfadeFromImgW,
+        IMG_H: xfadeFromImgH,
+        idMapH: xfadeFromIdMapH
+      };
       const ft = getCanvasTransform(xfadeFromView);
       ctx.save();
       ctx.translate(ft.offsetX, ft.offsetY);
@@ -1113,6 +1134,20 @@ function renderLoop(now) {
       ctx.translate(-xfadeFromView.x, -xfadeFromView.y);
       ctx.globalAlpha = (1 - xfadeAlpha) * bgAlpha;
       ctx.drawImage(xfadeFromBg, 0, 0, xfadeFromImgW, xfadeFromImgH);
+      // Render old scene's active regions, fading with (1-xfadeAlpha)
+      for (const state of Object.values(xfadeFromSeqStates)) {
+        if (state.opacity <= 0.01 || state.stepIndex < 0) continue;
+        const seq = xfadeFromSequences[state.seqId];
+        if (!seq) continue;
+        const step = seq.steps[state.stepIndex];
+        const group = xfadeFromGroups[step.groupId];
+        if (!group) continue;
+        const bri = seq.litBrightness ?? config.litBrightness ?? 1;
+        const sat = seq.litSaturate ?? config.litSaturate ?? 1;
+        const con = seq.litContrast ?? config.litContrast ?? 1;
+        const litAlpha = Math.min(1, (seq.litLevel ?? config.litLevel) * state.opacity * (1 - xfadeAlpha));
+        if (litAlpha > 0.01) brightenRegions(new Set(group.regions), litAlpha, bri, sat, con, fromOverrides);
+      }
       ctx.restore();
 
       const tt = getCanvasTransform(view);
@@ -1122,6 +1157,20 @@ function renderLoop(now) {
       ctx.translate(-view.x, -view.y);
       ctx.globalAlpha = xfadeAlpha * bgAlpha;
       ctx.drawImage(bgImage, 0, 0, IMG_W, IMG_H);
+      // Render new scene's active regions, fading in with xfadeAlpha
+      for (const [key, state] of Object.entries(seqStates)) {
+        if (state.opacity <= 0.01 || state.stepIndex < 0) continue;
+        const seq = sequences[state.seqId];
+        if (!seq) continue;
+        const step = seq.steps[state.stepIndex];
+        const group = groups[step.groupId];
+        if (!group) continue;
+        const bri = seq.litBrightness ?? config.litBrightness ?? 1;
+        const sat = seq.litSaturate ?? config.litSaturate ?? 1;
+        const con = seq.litContrast ?? config.litContrast ?? 1;
+        const litAlpha = Math.min(1, (seq.litLevel ?? config.litLevel) * state.opacity * xfadeAlpha);
+        if (litAlpha > 0.01) brightenRegions(new Set(group.regions), litAlpha, bri, sat, con);
+      }
       ctx.restore();
       // No explicit letterbox bars during crossfade — clearRect leaves
       // uncovered areas transparent, showing the black body background.
