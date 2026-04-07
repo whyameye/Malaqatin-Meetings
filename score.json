@@ -219,11 +219,6 @@
             {
               "beat": 1,
               "subdiv": 0,
-              "action": "scene_next"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
               "action": "deactivate",
               "key": "e"
             },
@@ -1589,11 +1584,6 @@
           "bar": 9,
           "beats": 4,
           "events": [
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "scene_next"
-            },
             {
               "beat": 1,
               "subdiv": 0,
