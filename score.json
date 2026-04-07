@@ -15583,12 +15583,6 @@
             },
             {
               "beat": 1,
-              "subdiv": 0,
-              "action": "activate",
-              "key": "d"
-            },
-            {
-              "beat": 1,
               "subdiv": 2,
               "action": "activate",
               "key": "e"
@@ -16042,6 +16036,12 @@
               "subdiv": 0,
               "action": "activate",
               "key": "q"
+            },
+            {
+              "beat": 1,
+              "subdiv": 0,
+              "action": "activate",
+              "key": "d"
             },
             {
               "beat": 1,
