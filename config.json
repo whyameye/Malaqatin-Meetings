@@ -2008,6 +2008,18 @@
               "key": "a",
               "steps": [
                 {
+                  "groupId": "g114",
+                  "effect": "solid"
+                }
+              ],
+              "stepCrossfade": false,
+              "fadeIn": 500,
+              "fadeOut": 1000
+            },
+            "s5": {
+              "key": "s",
+              "steps": [
+                {
                   "groupId": "g98",
                   "effect": "solid"
                 },
@@ -2072,18 +2084,6 @@
                   "effect": "solid"
                 }
               ]
-            },
-            "s5": {
-              "key": "s",
-              "steps": [
-                {
-                  "groupId": "g114",
-                  "effect": "solid"
-                }
-              ],
-              "stepCrossfade": false,
-              "fadeIn": 500,
-              "fadeOut": 1000
             },
             "s6": {
               "key": "d",
@@ -3741,6 +3741,18 @@
               "key": "a",
               "steps": [
                 {
+                  "groupId": "g114",
+                  "effect": "solid"
+                }
+              ],
+              "stepCrossfade": false,
+              "fadeIn": 500,
+              "fadeOut": 1000
+            },
+            "s5": {
+              "key": "s",
+              "steps": [
+                {
                   "groupId": "g97",
                   "effect": "solid"
                 },
@@ -3805,18 +3817,6 @@
                   "effect": "solid"
                 }
               ]
-            },
-            "s5": {
-              "key": "s",
-              "steps": [
-                {
-                  "groupId": "g114",
-                  "effect": "solid"
-                }
-              ],
-              "stepCrossfade": false,
-              "fadeIn": 500,
-              "fadeOut": 1000
             }
           }
         }
