@@ -159,6 +159,7 @@
         <option value="solid">Solid</option>
         <option value="sparkle">Sparkle</option>
         <option value="fade">Fade</option>
+        <option value="sweep">Sweep</option>
       </select>
     </div>
     <div id="sequence-list"></div>
@@ -459,6 +460,10 @@ async function saveScene() {
       ...(s.fadeIn != null ? { fadeIn: s.fadeIn } : {}),
       ...(s.fadeOut != null ? { fadeOut: s.fadeOut } : {}),
       ...(s.sparkleSpeed != null ? { sparkleSpeed: s.sparkleSpeed } : {}),
+      ...(s.sweepPath != null ? { sweepPath: s.sweepPath } : {}),
+      ...(s.sweepSpeed != null ? { sweepSpeed: s.sweepSpeed } : {}),
+      ...(s.sweepEaseIn != null ? { sweepEaseIn: s.sweepEaseIn } : {}),
+      ...(s.sweepEaseOut != null ? { sweepEaseOut: s.sweepEaseOut } : {}),
       ...(s.dimLevel != null ? { dimLevel: s.dimLevel } : {}),
       ...(s.litLevel != null ? { litLevel: s.litLevel } : {}),
       ...(s.litBrightness != null ? { litBrightness: s.litBrightness } : {}),
@@ -1044,6 +1049,10 @@ function createSequence(key) {
     fadeIn: null,
     fadeOut: null,
     sparkleSpeed: null,
+    sweepPath: null,
+    sweepSpeed: null,
+    sweepEaseIn: null,
+    sweepEaseOut: null,
     dimLevel: null,
     litLevel: null,
     litBrightness: null,
@@ -1110,6 +1119,16 @@ function renderSeqDetail() {
   <div style="${rowStyle}">
     <label>Sparkle <input class="seq-sparkle" type="number" value="${seq.sparkleSpeed ?? ''}" placeholder="—" style="${inStyle}">ms</label>
   </div>
+  <div style="${rowStyle}">
+    <label>Sweep speed <input class="seq-sweepspeed" type="number" value="${seq.sweepSpeed ?? ''}" placeholder="150" style="${inStyle}">px/s</label>
+  </div>
+  <div style="${rowStyle}">
+    <label>Sweep ease-in <input class="seq-sweepeasein" type="number" value="${seq.sweepEaseIn ?? ''}" placeholder="—" style="${inStyle}">ms</label>
+    <label>ease-out <input class="seq-sweepeaseout" type="number" value="${seq.sweepEaseOut ?? ''}" placeholder="—" style="${inStyle}">ms</label>
+  </div>
+  <div style="${rowStyle}">
+    <label>Sweep path <input class="seq-sweeppath" type="text" value="${seq.sweepPath ?? ''}" placeholder="e.g. m1s4_g114_sweep_path.json" style="width:220px;font-family:monospace;font-size:11px;padding:1px 4px;background:#333;color:#ddd;border:1px solid #555;border-radius:2px"></label>
+  </div>
   <div style="${rowStyle};color:#666;margin-bottom:3px">
     <span>override:</span>
     <label>Dim <input class="seq-dimlevel" type="number" step="0.01" value="${seq.dimLevel ?? ''}" placeholder="—" style="${visStyle}"></label>
@@ -1135,6 +1154,7 @@ function renderSeqDetail() {
         <option value="solid" ${step.effect === 'solid' ? 'selected' : ''}>solid</option>
         <option value="sparkle" ${step.effect === 'sparkle' ? 'selected' : ''}>sparkle</option>
         <option value="fade" ${step.effect === 'fade' ? 'selected' : ''}>fade</option>
+        <option value="sweep" ${step.effect === 'sweep' ? 'selected' : ''}>sweep</option>
       </select>
       <span class="seq-step-move" data-idx="${i}" data-dir="up" style="cursor:pointer;color:#888;padding:0 2px" title="Move up">\u25B2</span>
       <span class="seq-step-move" data-idx="${i}" data-dir="down" style="cursor:pointer;color:#888;padding:0 2px" title="Move down">\u25BC</span>
@@ -1178,6 +1198,10 @@ function renderSeqDetail() {
   el.querySelector('.seq-fadein').addEventListener('change', e => { const v = e.target.value.trim(); seq.fadeIn = v === '' ? null : parseInt(v); });
   el.querySelector('.seq-fadeout').addEventListener('change', e => { const v = e.target.value.trim(); seq.fadeOut = v === '' ? null : parseInt(v); });
   el.querySelector('.seq-sparkle').addEventListener('change', e => { const v = e.target.value.trim(); seq.sparkleSpeed = v === '' ? null : parseInt(v); });
+  el.querySelector('.seq-sweepspeed').addEventListener('change', e => { const v = e.target.value.trim(); seq.sweepSpeed = v === '' ? null : parseFloat(v); });
+  el.querySelector('.seq-sweepeasein').addEventListener('change', e => { const v = e.target.value.trim(); seq.sweepEaseIn = v === '' ? null : parseInt(v); });
+  el.querySelector('.seq-sweepeaseout').addEventListener('change', e => { const v = e.target.value.trim(); seq.sweepEaseOut = v === '' ? null : parseInt(v); });
+  el.querySelector('.seq-sweeppath').addEventListener('change', e => { const v = e.target.value.trim(); seq.sweepPath = v === '' ? null : v; });
   el.querySelector('.seq-dimlevel').addEventListener('change', e => { const v = e.target.value.trim(); seq.dimLevel = v === '' ? null : parseFloat(v); });
   el.querySelector('.seq-litlevel').addEventListener('change', e => { const v = e.target.value.trim(); seq.litLevel = v === '' ? null : parseFloat(v); });
   el.querySelector('.seq-litbri').addEventListener('change', e => { const v = e.target.value.trim(); seq.litBrightness = v === '' ? null : parseFloat(v); });

@@ -145,6 +145,10 @@ let xfadeFromSequences = {};      // old scene's sequences
 let xfadeFromRegionRuns = {};     // old scene's region runs
 let xfadeFromIdMapH = 0;          // old scene's idMapH
 
+// Sweep effect
+let sweepPaths = {};    // seqId → loaded path data for current scene
+let lastFrameTime = 0;  // for delta-time in render loop
+
 // Global scene fade (0 = black, 1 = visible)
 let sceneFade = 0;
 let sceneFadeTarget = 0;
@@ -397,6 +401,18 @@ async function loadSceneAssets(sceneData, label) {
     regImages[regionId] = { canvas: regionCanvas, x: bx, y: by, w: bw, h: bh };
   }
 
+  // Load sweep path JSONs for any sequences that declare one
+  const sceneSweepPaths = {};
+  for (const [sid, seq] of Object.entries(sceneData.sequences || {})) {
+    if (seq.sweepPath) {
+      try {
+        sceneSweepPaths[sid] = await fetch(tok(seq.sweepPath + cb)).then(r => r.json());
+      } catch (e) {
+        console.warn(`sweep path load failed for seq ${sid}:`, e);
+      }
+    }
+  }
+
   return {
     bgImage: bg,
     imgW,
@@ -408,7 +424,8 @@ async function loadSceneAssets(sceneData, label) {
     regionRuns: runs,
     regionImages: regImages,
     groups: sceneGroups,
-    sequences: sceneData.sequences || {}
+    sequences: sceneData.sequences || {},
+    sweepPaths: sceneSweepPaths
   };
 }
 
@@ -534,6 +551,7 @@ function activateScene(idx) {
   regionRuns = sd.regionRuns;
   groups = sd.groups;
   sequences = sd.sequences;
+  sweepPaths = sd.sweepPaths || {};
 
   // Reset view to full image
   view = { x: 0, y: 0, w: IMG_W, h: IMG_H };
@@ -906,6 +924,10 @@ function activateSequence(key) {
   state.fadeDirection = 'in';
   const step = seq.steps[state.stepIndex];
   if (step.effect === 'sparkle') startSparkle(state, step);
+  if (step.effect === 'sweep') {
+    if (!state.sweep) initSweep(state, seq);
+    else state.sweep.activateTime = performance.now();
+  }
   spotlightIn();
 }
 
@@ -1044,16 +1066,194 @@ function updateRawFade(now) {
 }
 
 // ============================================================
+// SWEEP ENGINE
+// ============================================================
+function buildSweepAdj(path) {
+  const adj = {};
+  for (const node of path.nodes) adj[node.id] = [];
+  for (const edge of path.edges) {
+    adj[edge.from].push({ edgeId: edge.id, otherNodeId: edge.to });
+    adj[edge.to].push({ edgeId: edge.id, otherNodeId: edge.from });
+  }
+  return adj;
+}
+
+function initSweep(state, seq) {
+  const path = sweepPaths[state.seqId];
+  if (!path || !path.edges.length) return;
+  if (!state.sweepAdj) state.sweepAdj = buildSweepAdj(path);
+
+  // Pick a random endpoint to start from
+  const endpoints = path.nodes.filter(n => n.type === 'endpoint');
+  const startNode = endpoints.length > 0
+    ? endpoints[Math.floor(Math.random() * endpoints.length)]
+    : path.nodes[Math.floor(Math.random() * path.nodes.length)];
+
+  const adj = state.sweepAdj[startNode.id] || [];
+  if (!adj.length) return;
+  const firstEdge = adj[Math.floor(Math.random() * adj.length)];
+  const edge = path.edges[firstEdge.edgeId];
+
+  state.sweep = {
+    edgeId: firstEdge.edgeId,
+    t: edge.from === startNode.id ? 0 : 1,
+    dir: edge.from === startNode.id ? 1 : -1,
+    fromNodeId: startNode.id,
+    activateTime: performance.now()
+  };
+}
+
+function advanceSweep(state, seq, deltaMs) {
+  if (!state.sweep) return;
+  const path = sweepPaths[state.seqId];
+  if (!path) return;
+  const sw = state.sweep;
+  const edge = path.edges[sw.edgeId];
+  if (!edge || edge.length < 1) return;
+
+  const sweepSpeed = seq.sweepSpeed ?? 150;
+  const easeInMs  = seq.sweepEaseIn  ?? 500;
+  const easeOutMs = seq.sweepEaseOut ?? 500;
+
+  // Ease-in from activation
+  const sinceActivate = performance.now() - sw.activateTime;
+  let speedFactor = sinceActivate < easeInMs ? easeInOutCubic(sinceActivate / easeInMs) : 1;
+
+  // Ease-out while fading out
+  if (!state.active && state.fadeStartTime) {
+    const fadeOut = seq.fadeOut ?? config.fadeOut;
+    const easeOutT = Math.min(1, (performance.now() - state.fadeStartTime) / Math.min(easeOutMs, fadeOut));
+    speedFactor *= 1 - easeInOutCubic(easeOutT);
+  }
+
+  sw.t += sw.dir * (sweepSpeed * speedFactor * deltaMs / 1000) / edge.length;
+
+  // Reached the 'to' end of edge
+  if (sw.t >= 1) {
+    sw.t = 1;
+    const endNodeId = edge.to;
+    const node = path.nodes.find(n => n.id === endNodeId);
+    const choices = (state.sweepAdj[endNodeId] || []).filter(a => a.edgeId !== sw.edgeId);
+    if (!choices.length || node?.type === 'endpoint') {
+      sw.dir = -1;  // bounce at true endpoint
+    } else {
+      // Compute arrival direction from last two waypoints of current edge
+      const pts = edge.points;
+      const p0 = pts[pts.length - 2] || pts[0];
+      const p1 = pts[pts.length - 1];
+      const arrDx = p1[0] - p0[0], arrDy = p1[1] - p0[1];
+      // Filter to forward-going edges (dot product > 0), fall back to all if none qualify
+      const forward = choices.filter(a => {
+        const ne = path.edges[a.edgeId];
+        const dep = ne.from === endNodeId ? ne.points : [...ne.points].reverse();
+        if (dep.length < 2) return true;
+        const dx = dep[1][0] - dep[0][0], dy = dep[1][1] - dep[0][1];
+        return (arrDx * dx + arrDy * dy) >= 0;
+      });
+      const pool = forward.length ? forward : choices;
+      const next = pool[Math.floor(Math.random() * pool.length)];
+      const nextEdge = path.edges[next.edgeId];
+      sw.edgeId = next.edgeId;
+      sw.fromNodeId = endNodeId;
+      sw.t = nextEdge.from === endNodeId ? 0 : 1;
+      sw.dir = nextEdge.from === endNodeId ? 1 : -1;
+    }
+  }
+
+  // Reached the 'from' end of edge
+  else if (sw.t <= 0) {
+    sw.t = 0;
+    const startNodeId = edge.from;
+    const node = path.nodes.find(n => n.id === startNodeId);
+    const choices = (state.sweepAdj[startNodeId] || []).filter(a => a.edgeId !== sw.edgeId);
+    if (!choices.length || node?.type === 'endpoint') {
+      sw.dir = 1;  // bounce at true endpoint
+    } else {
+      // Compute arrival direction (traveling backward, so reversed)
+      const pts = edge.points;
+      const p0 = pts[1] || pts[0];
+      const p1 = pts[0];
+      const arrDx = p1[0] - p0[0], arrDy = p1[1] - p0[1];
+      const forward = choices.filter(a => {
+        const ne = path.edges[a.edgeId];
+        const dep = ne.from === startNodeId ? ne.points : [...ne.points].reverse();
+        if (dep.length < 2) return true;
+        const dx = dep[1][0] - dep[0][0], dy = dep[1][1] - dep[0][1];
+        return (arrDx * dx + arrDy * dy) >= 0;
+      });
+      const pool = forward.length ? forward : choices;
+      const next = pool[Math.floor(Math.random() * pool.length)];
+      const nextEdge = path.edges[next.edgeId];
+      sw.edgeId = next.edgeId;
+      sw.fromNodeId = startNodeId;
+      sw.t = nextEdge.from === startNodeId ? 0 : 1;
+      sw.dir = nextEdge.from === startNodeId ? 1 : -1;
+    }
+  }
+}
+
+function renderSweep(state, seq, opacity) {
+  if (!state.sweep || opacity <= 0.01) return;
+  const path = sweepPaths[state.seqId];
+  if (!path) return;
+  const sw = state.sweep;
+  const edge = path.edges[sw.edgeId];
+  if (!edge || !edge.points.length) return;
+
+  // Interpolate position along edge at t
+  const pts = edge.points;
+  const tIdx = sw.t * (pts.length - 1);
+  const i0 = Math.floor(tIdx);
+  const i1 = Math.min(i0 + 1, pts.length - 1);
+  const frac = tIdx - i0;
+  const [x0, y0, r0] = pts[i0];
+  const [x1, y1, r1] = pts[i1];
+  const mapX = x0 + (x1 - x0) * frac;
+  const mapY = y0 + (y1 - y0) * frac;
+  const mapR = r0 + (r1 - r0) * frac;
+
+  // Convert map coords to image coords (within current canvas transform block)
+  const imgX = mapX * IMG_W / path.mapW;
+  const imgY = mapY * IMG_H / path.mapH;
+  const imgR = mapR * (IMG_W / path.mapW) * 1.2;  // slight oversize for glow
+  if (imgR < 0.5) return;
+
+  const grad = ctx.createRadialGradient(imgX, imgY, 0, imgX, imgY, imgR);
+  grad.addColorStop(0,   `rgba(255, 240, 180, ${opacity})`);
+  grad.addColorStop(0.5, `rgba(255, 200,  80, ${(opacity * 0.6).toFixed(3)})`);
+  grad.addColorStop(1,   'rgba(255, 150, 0, 0)');
+
+  ctx.save();
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'screen';
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(imgX, imgY, imgR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+// ============================================================
 // MAIN RENDER LOOP
 // ============================================================
 function renderLoop(now) {
   requestAnimationFrame(renderLoop);
+
+  const deltaMs = lastFrameTime ? Math.min(now - lastFrameTime, 50) : 0;
+  lastFrameTime = now;
 
   frameCount++;
   if (now - fpsTime >= 1000) {
     fps = frameCount;
     frameCount = 0;
     fpsTime = now;
+  }
+
+  // Advance sweep animations
+  for (const state of Object.values(seqStates)) {
+    if (!state.sweep) continue;
+    const seq = sequences[state.seqId];
+    if (seq) advanceSweep(state, seq, deltaMs);
   }
 
   updateSceneFade(now);
@@ -1209,10 +1409,18 @@ function renderLoop(now) {
               if (on) onRegions.add(parseInt(rid));
             }
             brightenRegions(onRegions, litAlpha, bri, sat, con);
-          } else {
+          } else if (step.effect !== 'sweep') {
             brightenRegions(new Set(group.regions), litAlpha, bri, sat, con);
           }
         }
+      }
+
+      // Render sweep circles (drawn in image coordinate space, within current transform)
+      for (const [key, state] of Object.entries(seqStates)) {
+        if (state.opacity <= 0.01 || state.stepIndex < 0 || !state.sweep) continue;
+        const seq = sequences[state.seqId];
+        if (!seq) continue;
+        renderSweep(state, seq, state.opacity * sceneFade);
       }
 
       ctx.restore();

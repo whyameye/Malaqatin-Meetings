@@ -2009,12 +2009,16 @@
               "steps": [
                 {
                   "groupId": "g114",
-                  "effect": "solid"
+                  "effect": "sweep"
                 }
               ],
               "stepCrossfade": false,
               "fadeIn": 500,
-              "fadeOut": 1000
+              "fadeOut": 1000,
+              "sweepPath": "m1s4_g114_sweep_path.json",
+              "sweepSpeed": 900,
+              "sweepEaseIn": 5000,
+              "sweepEaseOut": 600
             },
             "s5": {
               "key": "s",
