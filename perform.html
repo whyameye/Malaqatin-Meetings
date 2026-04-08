@@ -1099,7 +1099,8 @@ function initSweep(state, seq) {
     t: edge.from === startNode.id ? 0 : 1,
     dir: edge.from === startNode.id ? 1 : -1,
     fromNodeId: startNode.id,
-    activateTime: performance.now()
+    activateTime: performance.now(),
+    history: []   // [{x, y, r, time}] recent positions in map coords
   };
 }
 
@@ -1190,6 +1191,25 @@ function advanceSweep(state, seq, deltaMs) {
       sw.dir = nextEdge.from === startNodeId ? 1 : -1;
     }
   }
+
+  // Record current position in history
+  const curEdge = path.edges[sw.edgeId];
+  if (curEdge && curEdge.points.length) {
+    const hPts = curEdge.points;
+    const hIdx = sw.t * (hPts.length - 1);
+    const hi0 = Math.floor(hIdx), hi1 = Math.min(hi0 + 1, hPts.length - 1);
+    const hf = hIdx - hi0;
+    sw.history.push({
+      x: hPts[hi0][0] + (hPts[hi1][0] - hPts[hi0][0]) * hf,
+      y: hPts[hi0][1] + (hPts[hi1][1] - hPts[hi0][1]) * hf,
+      r: hPts[hi0][2] + (hPts[hi1][2] - hPts[hi0][2]) * hf,
+      time: performance.now()
+    });
+    // Trim history older than wormLength ms
+    const wormMs = seq.sweepWormLength ?? 300;
+    const cutoff = performance.now() - wormMs;
+    while (sw.history.length > 1 && sw.history[0].time < cutoff) sw.history.shift();
+  }
 }
 
 function renderSweep(state, seq, opacity) {
@@ -1197,39 +1217,41 @@ function renderSweep(state, seq, opacity) {
   const path = sweepPaths[state.seqId];
   if (!path) return;
   const sw = state.sweep;
-  const edge = path.edges[sw.edgeId];
-  if (!edge || !edge.points.length) return;
+  if (!sw.history || sw.history.length === 0) return;
 
-  // Interpolate position along edge at t
-  const pts = edge.points;
-  const tIdx = sw.t * (pts.length - 1);
-  const i0 = Math.floor(tIdx);
-  const i1 = Math.min(i0 + 1, pts.length - 1);
-  const frac = tIdx - i0;
-  const [x0, y0, r0] = pts[i0];
-  const [x1, y1, r1] = pts[i1];
-  const mapX = x0 + (x1 - x0) * frac;
-  const mapY = y0 + (y1 - y0) * frac;
-  const mapR = r0 + (r1 - r0) * frac;
-
-  // Convert map coords to image coords (within current canvas transform block)
-  const imgX = mapX * IMG_W / path.mapW;
-  const imgY = mapY * IMG_H / path.mapH;
-  const imgR = mapR * (IMG_W / path.mapW) * 1.2;  // slight oversize for glow
-  if (imgR < 0.5) return;
-
-  const grad = ctx.createRadialGradient(imgX, imgY, 0, imgX, imgY, imgR);
-  grad.addColorStop(0,   `rgba(255, 240, 180, ${opacity})`);
-  grad.addColorStop(0.5, `rgba(255, 200,  80, ${(opacity * 0.6).toFixed(3)})`);
-  grad.addColorStop(1,   'rgba(255, 150, 0, 0)');
+  const scaleX = IMG_W / path.mapW;
+  const scaleY = IMG_H / path.mapH;
+  const wormMs = seq.sweepWormLength ?? 300;
+  const now = performance.now();
 
   ctx.save();
   ctx.globalAlpha = 1;
   ctx.globalCompositeOperation = 'screen';
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.arc(imgX, imgY, imgR, 0, Math.PI * 2);
-  ctx.fill();
+
+  // Draw from tail to head so head renders on top
+  for (let i = 0; i < sw.history.length; i++) {
+    const h = sw.history[i];
+    // 0 = tail (oldest), 1 = head (newest)
+    const taper = (h.time - (now - wormMs)) / wormMs;
+    if (taper <= 0) continue;
+
+    const imgX = h.x * scaleX;
+    const imgY = h.y * scaleY;
+    const imgR = h.r * scaleX * 1.1;
+    if (imgR < 0.5) continue;
+
+    const alpha = opacity * taper;
+    const grad = ctx.createRadialGradient(imgX, imgY, 0, imgX, imgY, imgR);
+    grad.addColorStop(0,   `rgba(255, 240, 180, ${alpha.toFixed(3)})`);
+    grad.addColorStop(0.6, `rgba(255, 200,  80, ${(alpha * 0.5).toFixed(3)})`);
+    grad.addColorStop(1,   'rgba(255, 150, 0, 0)');
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(imgX, imgY, imgR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   ctx.restore();
 }
 

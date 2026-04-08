@@ -464,6 +464,7 @@ async function saveScene() {
       ...(s.sweepSpeed != null ? { sweepSpeed: s.sweepSpeed } : {}),
       ...(s.sweepEaseIn != null ? { sweepEaseIn: s.sweepEaseIn } : {}),
       ...(s.sweepEaseOut != null ? { sweepEaseOut: s.sweepEaseOut } : {}),
+      ...(s.sweepWormLength != null ? { sweepWormLength: s.sweepWormLength } : {}),
       ...(s.dimLevel != null ? { dimLevel: s.dimLevel } : {}),
       ...(s.litLevel != null ? { litLevel: s.litLevel } : {}),
       ...(s.litBrightness != null ? { litBrightness: s.litBrightness } : {}),
@@ -1053,6 +1054,7 @@ function createSequence(key) {
     sweepSpeed: null,
     sweepEaseIn: null,
     sweepEaseOut: null,
+    sweepWormLength: null,
     dimLevel: null,
     litLevel: null,
     litBrightness: null,
@@ -1125,6 +1127,7 @@ function renderSeqDetail() {
   <div style="${rowStyle}">
     <label>Sweep ease-in <input class="seq-sweepeasein" type="number" value="${seq.sweepEaseIn ?? ''}" placeholder="—" style="${inStyle}">ms</label>
     <label>ease-out <input class="seq-sweepeaseout" type="number" value="${seq.sweepEaseOut ?? ''}" placeholder="—" style="${inStyle}">ms</label>
+    <label>worm length <input class="seq-sweepworm" type="number" value="${seq.sweepWormLength ?? ''}" placeholder="300" style="${inStyle}">ms</label>
   </div>
   <div style="${rowStyle}">
     <label>Sweep path <input class="seq-sweeppath" type="text" value="${seq.sweepPath ?? ''}" placeholder="e.g. m1s4_g114_sweep_path.json" style="width:220px;font-family:monospace;font-size:11px;padding:1px 4px;background:#333;color:#ddd;border:1px solid #555;border-radius:2px"></label>
@@ -1201,6 +1204,7 @@ function renderSeqDetail() {
   el.querySelector('.seq-sweepspeed').addEventListener('change', e => { const v = e.target.value.trim(); seq.sweepSpeed = v === '' ? null : parseFloat(v); });
   el.querySelector('.seq-sweepeasein').addEventListener('change', e => { const v = e.target.value.trim(); seq.sweepEaseIn = v === '' ? null : parseInt(v); });
   el.querySelector('.seq-sweepeaseout').addEventListener('change', e => { const v = e.target.value.trim(); seq.sweepEaseOut = v === '' ? null : parseInt(v); });
+  el.querySelector('.seq-sweepworm').addEventListener('change', e => { const v = e.target.value.trim(); seq.sweepWormLength = v === '' ? null : parseInt(v); });
   el.querySelector('.seq-sweeppath').addEventListener('change', e => { const v = e.target.value.trim(); seq.sweepPath = v === '' ? null : v; });
   el.querySelector('.seq-dimlevel').addEventListener('change', e => { const v = e.target.value.trim(); seq.dimLevel = v === '' ? null : parseFloat(v); });
   el.querySelector('.seq-litlevel').addEventListener('change', e => { const v = e.target.value.trim(); seq.litLevel = v === '' ? null : parseFloat(v); });
