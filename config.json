@@ -2017,7 +2017,7 @@
               "fadeOut": 1000,
               "sweepPath": "m1s4_g114_sweep_path.json",
               "sweepSpeed": 900,
-              "sweepEaseIn": 1000,
+              "sweepEaseIn": 750,
               "sweepEaseOut": 600
             },
             "s5": {
