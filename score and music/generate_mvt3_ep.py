@@ -1,25 +1,30 @@
 #!/usr/bin/env python3
 """
 Movement III EP motive generator.
-Reads the Movement III MusicXML, writes motive blocks to CSV and
-annotated EP part to output MusicXML.
+Reads the Movement III MusicXML, writes motive blocks to CSV,
+annotated EP part to output MusicXML, and conductor events to score.json.
 
-Each motive block = one activate at start, one deactivate at end.
-Boundaries derived from score label positions and consecutive note activity.
+Each motive block is either:
+  sustained  – one activate at block start, one deactivate at block end
+  retrigger  – short pulse (activate beat 1, deactivate beat 1+) on every bar in block
+
+RETRIGGER_MOTIVES controls which motives retrigger.
+RETRIGGER_END_BAR controls a per-bar hybrid: bars before RETRIGGER_END_BAR retrigger,
+bars from RETRIGGER_END_BAR onward sustain.  Set to None for all-retrigger.
 """
 
 import csv
+import json
+import pathlib
 import xml.etree.ElementTree as ET
 
-INPUT   = 'Edited 3 Malaqatin Meetings - Full score - 01 Movement III Final.musicxml'
-OUTPUT  = 'Edited 3 Malaqatin Meetings - Full score - 01 Movement III Final - John.musicxml'
-CSV_OUT = 'movement3_motives.csv'
+SCRIPT_DIR = pathlib.Path(__file__).parent
+INPUT   = str(SCRIPT_DIR / 'Edited 3 Malaqatin Meetings - Full score - 01 Movement III Final.musicxml')
+OUTPUT  = str(SCRIPT_DIR / 'Edited 3 Malaqatin Meetings - Full score - 01 Movement III Final - John.musicxml')
+CSV_OUT = str(SCRIPT_DIR / 'movement3_motives.csv')
+SCORE_JSON = str(SCRIPT_DIR.parent / 'score.json')
 
 # ── Motive blocks (measure ranges, inclusive, score-derived) ─────────────────
-# M7 kept separate from M1 (distinct visual sequence)
-# M8 m84-95 included (same vibraphone tremolo pattern, no label but clear continuation)
-# M12 = Solo Violin solo m80-96 (new motive)
-
 BLOCKS = {
     'M1':  [(1,17),(24,25),(64,74),(92,96)],
     'M2':  [(5,17),(56,57),(64,69),(92,96)],
@@ -34,6 +39,22 @@ BLOCKS = {
     'M11': [(44,60),(88,96)],
     'M12': [(80,96)],
 }
+
+# Conductor key for each motive
+MOTIVE_KEY = {
+    'M1': 'q', 'M2': 'w', 'M3': 'e', 'M4': 'r',
+    'M5': 'a', 'M6': 's', 'M7': 'd', 'M8': 'f',
+    'M9': 'g', 'M10': 'y', 'M11': 'u', 'M12': 'i',
+}
+
+# ── Retrigger config ──────────────────────────────────────────────────────────
+# Motives in this set pulse once per bar (activate beat 1, deactivate beat 1+)
+# instead of sustaining for the full block duration.
+RETRIGGER_MOTIVES = {'M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M8', 'M9'}
+
+# Set to a bar number to use hybrid mode: retrigger for bars < RETRIGGER_END_BAR,
+# sustained from RETRIGGER_END_BAR onward.  None = retrigger throughout.
+RETRIGGER_END_BAR = None   # e.g. 11 → retrigger bars 1-10, sustained bar 11+
 
 # EP pitch for each motive (step, octave)
 MOTIVE_PITCH = {
@@ -52,8 +73,6 @@ MOTIVE_PITCH = {
 }
 
 # Voice and staff for each motive in EP part
-# Staff 1 (treble): M3, M4, M8, M9, M10, M11, M12
-# Staff 2 (bass):   M1, M2, M5, M6, M7
 MOTIVE_VOICE_STAFF = {
     'M1':  ('3', '2'), 'M2':  ('4', '2'),
     'M3':  ('1', '1'), 'M4':  ('2', '1'),
@@ -65,7 +84,8 @@ MOTIVE_VOICE_STAFF = {
 
 NUM_MEASURES = 99
 
-# Measures where a scene_next note (C5, whole note, voice 8, staff 1) should appear
+# Measures where a scene_next note should appear (kept for MusicXML annotation
+# even though score.json no longer uses scene_next events)
 SCENE_NEXT_MEASURES = {15, 48, 80}
 
 
@@ -90,6 +110,93 @@ def build_csv_rows():
     return rows
 
 
+def build_score_events():
+    """
+    Return {bar_num: [event_dict, ...]} for all motive conductor events.
+
+    Sustained block (start_m, end_m inclusive):
+      activate  at bar start_m, beat 1, subdiv 0
+      deactivate at bar end_m+1, beat 1, subdiv 0
+      (special: last bar of movement deactivates at bar end_m, beat 4, subdiv 0)
+
+    Retrigger block: one pulse per bar in the retrigger range —
+      activate  at bar m, beat 1, subdiv 0
+      deactivate at bar m, beat 1, subdiv 2   (beat "1+", half beat later)
+
+    Hybrid (RETRIGGER_END_BAR = N):
+      bars start_m .. N-1  → retrigger
+      bars N .. end_m      → one sustained activate at N, deactivate at end
+    """
+    events = {}
+
+    def add(bar, beat, subdiv, action, key):
+        events.setdefault(bar, []).append(
+            {'beat': beat, 'subdiv': subdiv, 'action': action, 'key': key}
+        )
+
+    for motive, blocks in BLOCKS.items():
+        key = MOTIVE_KEY[motive]
+        retrigger = motive in RETRIGGER_MOTIVES
+
+        for start_m, end_m in blocks:
+            at_last = (end_m >= NUM_MEASURES)
+            deact_bar  = end_m     if at_last else end_m + 1
+            deact_beat = 4         if at_last else 1
+
+            if not retrigger:
+                add(start_m, 1, 0, 'activate', key)
+                add(deact_bar, deact_beat, 0, 'deactivate', key)
+                continue
+
+            # Retrigger (possibly hybrid)
+            split = RETRIGGER_END_BAR  # None or bar number where sustained begins
+
+            retrig_last = end_m if split is None else min(end_m, split - 1)
+            for m in range(start_m, retrig_last + 1):
+                add(m, 1, 0, 'activate', key)
+                add(m, 1, 2, 'deactivate', key)
+
+            # Sustained tail (only when RETRIGGER_END_BAR is set and falls within block)
+            if split is not None and split <= end_m:
+                sust_start = max(start_m, split)
+                add(sust_start, 1, 0, 'activate', key)
+                add(deact_bar, deact_beat, 0, 'deactivate', key)
+
+    return events
+
+
+def write_score_json():
+    with open(SCORE_JSON) as f:
+        score = json.load(f)
+
+    mvt3 = next(m for m in score['movements'] if m['name'] == 'Movement III')
+    all_keys = set(MOTIVE_KEY.values())
+    new_events = build_score_events()
+
+    for bar in mvt3['bars']:
+        bn = bar['bar']
+        # Remove old motive events
+        bar['events'] = [
+            e for e in bar.get('events', [])
+            if not (e.get('action') in ('activate', 'deactivate')
+                    and e.get('key') in all_keys)
+        ]
+        # Insert new events
+        bar['events'].extend(new_events.get(bn, []))
+        # Sort: beat asc, subdiv asc, deactivate before activate at same position
+        bar['events'].sort(key=lambda e: (
+            e.get('beat', 1),
+            e.get('subdiv', 0),
+            0 if e.get('action') == 'deactivate' else 1,
+        ))
+
+    with open(SCORE_JSON, 'w') as f:
+        json.dump(score, f, indent=2)
+
+    total = sum(len(v) for v in new_events.values())
+    print(f'Written {total} conductor events to {SCORE_JSON}')
+
+
 def make_note_xml(step, octave, duration, voice, staff,
                   tie_start=False, tie_stop=False):
     n = ET.Element('note')
@@ -111,7 +218,6 @@ def make_note_xml(step, octave, duration, voice, staff,
 
 
 def write_ep_part(ep_part, num_measures):
-    # Build per-measure active motive list
     measure_active = {i: [] for i in range(1, num_measures + 1)}
     for motive, blocks in BLOCKS.items():
         for start_m, end_m in blocks:
@@ -120,7 +226,6 @@ def write_ep_part(ep_part, num_measures):
                 is_last  = (mn == end_m)
                 measure_active[mn].append((motive, is_first, is_last))
 
-    # Get divisions per measure (may vary across parts — use EP part's own divisions)
     div_by_measure = {}
     current_div = 4
     for m in ep_part.findall('measure'):
@@ -130,7 +235,6 @@ def write_ep_part(ep_part, num_measures):
             current_div = int(d)
         div_by_measure[mn] = current_div
 
-    # Rewrite EP notes
     for m in ep_part.findall('measure'):
         mn = int(m.get('number'))
         for n in m.findall('note'):
@@ -176,6 +280,8 @@ def main():
     write_ep_part(ep_part, NUM_MEASURES)
     tree.write(OUTPUT, encoding='unicode', xml_declaration=True)
     print(f'Written annotated score to {OUTPUT}')
+
+    write_score_json()
 
 
 if __name__ == '__main__':

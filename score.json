@@ -21041,11 +21041,6 @@
             {
               "beat": 1,
               "subdiv": 0,
-              "action": "scene_next"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
               "action": "deactivate",
               "key": "a"
             },
@@ -21389,12 +21384,6 @@
               "beat": 1,
               "subdiv": 0,
               "action": "activate",
-              "key": "u"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "activate",
               "key": "s"
             },
             {
@@ -21402,6 +21391,12 @@
               "subdiv": 0,
               "action": "activate",
               "key": "d"
+            },
+            {
+              "beat": 1,
+              "subdiv": 0,
+              "action": "activate",
+              "key": "u"
             }
           ]
         },
@@ -21434,11 +21429,6 @@
             {
               "beat": 1,
               "subdiv": 0,
-              "action": "scene_next"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
               "action": "deactivate",
               "key": "s"
             },
@@ -21447,12 +21437,6 @@
               "subdiv": 0,
               "action": "activate",
               "key": "f"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "activate",
-              "key": "u"
             }
           ]
         },
@@ -21801,19 +21785,14 @@
             {
               "beat": 1,
               "subdiv": 0,
-              "action": "scene_next"
+              "action": "activate",
+              "key": "s"
             },
             {
               "beat": 1,
               "subdiv": 0,
               "action": "activate",
               "key": "i"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "activate",
-              "key": "s"
             }
           ]
         },
@@ -21873,6 +21852,12 @@
               "beat": 1,
               "subdiv": 0,
               "action": "activate",
+              "key": "s"
+            },
+            {
+              "beat": 1,
+              "subdiv": 0,
+              "action": "activate",
               "key": "y"
             },
             {
@@ -21880,12 +21865,6 @@
               "subdiv": 0,
               "action": "activate",
               "key": "u"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "activate",
-              "key": "s"
             }
           ]
         },
@@ -21969,24 +21948,6 @@
               "beat": 1,
               "subdiv": 0,
               "action": "deactivate",
-              "key": "y"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "deactivate",
-              "key": "u"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "deactivate",
-              "key": "i"
-            },
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "deactivate",
               "key": "w"
             },
             {
@@ -22000,6 +21961,24 @@
               "subdiv": 0,
               "action": "deactivate",
               "key": "s"
+            },
+            {
+              "beat": 1,
+              "subdiv": 0,
+              "action": "deactivate",
+              "key": "y"
+            },
+            {
+              "beat": 1,
+              "subdiv": 0,
+              "action": "deactivate",
+              "key": "u"
+            },
+            {
+              "beat": 1,
+              "subdiv": 0,
+              "action": "deactivate",
+              "key": "i"
             }
           ]
         },
