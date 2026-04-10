@@ -21820,7 +21820,13 @@
               "subdiv": 0,
               "action": "deactivate",
               "key": "s"
-            },
+            }
+          ]
+        },
+        {
+          "bar": 85,
+          "beats": 4,
+          "events": [
             {
               "beat": 1,
               "subdiv": 0,
@@ -21828,11 +21834,6 @@
               "key": "f"
             }
           ]
-        },
-        {
-          "bar": 85,
-          "beats": 4,
-          "events": []
         },
         {
           "bar": 86,
@@ -21925,14 +21926,7 @@
         {
           "bar": 96,
           "beats": 4,
-          "events": [
-            {
-              "beat": 1,
-              "subdiv": 0,
-              "action": "deactivate",
-              "key": "f"
-            }
-          ]
+          "events": []
         },
         {
           "bar": 97,
@@ -21961,6 +21955,12 @@
               "subdiv": 0,
               "action": "deactivate",
               "key": "s"
+            },
+            {
+              "beat": 1,
+              "subdiv": 0,
+              "action": "deactivate",
+              "key": "f"
             },
             {
               "beat": 1,
