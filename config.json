@@ -6580,6 +6580,187 @@
                 873
               ],
               "color": "#6633ff"
+            },
+            "g139": {
+              "name": "MMM7a",
+              "regions": [
+                861
+              ],
+              "color": "#ffcc33"
+            },
+            "g140": {
+              "name": "MMM7b",
+              "regions": [
+                806
+              ],
+              "color": "#33ccff"
+            },
+            "g141": {
+              "name": "MMM7c",
+              "regions": [
+                810,
+                809
+              ],
+              "color": "#ff6633"
+            },
+            "g142": {
+              "name": "MMM8",
+              "regions": [
+                29,
+                16,
+                35,
+                80,
+                46,
+                44,
+                34,
+                22,
+                25,
+                6,
+                4,
+                41
+              ],
+              "color": "#66ff33"
+            },
+            "g149": {
+              "name": "MMM9a",
+              "regions": [
+                551
+              ],
+              "color": "#3366ff"
+            },
+            "g150": {
+              "name": "MMM9b",
+              "regions": [
+                378
+              ],
+              "color": "#ff33cc"
+            },
+            "g151": {
+              "name": "MMM9c",
+              "regions": [
+                385
+              ],
+              "color": "#33ffcc"
+            },
+            "g152": {
+              "name": "MMM9d",
+              "regions": [
+                555
+              ],
+              "color": "#cc33ff"
+            },
+            "g153": {
+              "name": "MMM9e",
+              "regions": [
+                562
+              ],
+              "color": "#ccff33"
+            },
+            "g154": {
+              "name": "MMM9f",
+              "regions": [
+                391
+              ],
+              "color": "#ff9966"
+            },
+            "g155": {
+              "name": "MMM9g",
+              "regions": [
+                562
+              ],
+              "color": "#6699ff"
+            },
+            "g156": {
+              "name": "MMM9h",
+              "regions": [
+                555
+              ],
+              "color": "#99ff66"
+            },
+            "g157": {
+              "name": "MMM9i",
+              "regions": [
+                385
+              ],
+              "color": "#ff3366"
+            },
+            "g158": {
+              "name": "MMM9j",
+              "regions": [
+                378
+              ],
+              "color": "#33ff66"
+            },
+            "g159": {
+              "name": "MMM9k",
+              "regions": [
+                551
+              ],
+              "color": "#6633ff"
+            },
+            "g160": {
+              "name": "MMM9l",
+              "regions": [
+                378
+              ],
+              "color": "#ffcc33"
+            },
+            "g161": {
+              "name": "MMM9m",
+              "regions": [
+                385
+              ],
+              "color": "#33ccff"
+            },
+            "g162": {
+              "name": "MMM9n",
+              "regions": [
+                555
+              ],
+              "color": "#ff6633"
+            },
+            "g163": {
+              "name": "MMM9o",
+              "regions": [
+                562
+              ],
+              "color": "#66ff33"
+            },
+            "g164": {
+              "name": "MMM9p",
+              "regions": [
+                391
+              ],
+              "color": "#3366ff"
+            },
+            "g165": {
+              "name": "MMM10",
+              "regions": [
+                988,
+                986,
+                958,
+                974,
+                987,
+                985,
+                979,
+                977,
+                984,
+                976,
+                934,
+                904,
+                969,
+                960,
+                915,
+                983,
+                975,
+                914,
+                981,
+                980,
+                955,
+                973,
+                967
+              ],
+              "color": "#ff33cc"
             }
           },
           "sequences": {
@@ -6601,20 +6782,11 @@
                 }
               ]
             },
-            "s8": {
-              "key": "f",
-              "steps": [
-                {
-                  "groupId": "g7",
-                  "effect": "sparkle"
-                }
-              ]
-            },
             "s10": {
               "key": "y",
               "steps": [
                 {
-                  "groupId": "g9",
+                  "groupId": "g165",
                   "effect": "solid"
                 }
               ]
@@ -6623,7 +6795,7 @@
               "key": "u",
               "steps": [
                 {
-                  "groupId": "g10",
+                  "groupId": "g165",
                   "effect": "solid"
                 }
               ]
@@ -6632,113 +6804,7 @@
               "key": "i",
               "steps": [
                 {
-                  "groupId": "g11",
-                  "effect": "solid"
-                }
-              ]
-            },
-            "s17": {
-              "key": "d",
-              "steps": [
-                {
-                  "groupId": "g57",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g58",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g59",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g60",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g61",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g62",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g63",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g64",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g65",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g64",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g63",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g62",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g61",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g60",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g59",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g58",
-                  "effect": "solid"
-                }
-              ]
-            },
-            "s18": {
-              "key": "g",
-              "steps": [
-                {
-                  "groupId": "g66",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g67",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g68",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g69",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g70",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g69",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g68",
-                  "effect": "solid"
-                },
-                {
-                  "groupId": "g67",
+                  "groupId": "g165",
                   "effect": "solid"
                 }
               ]
@@ -6946,6 +7012,18 @@
                   "effect": "solid"
                 },
                 {
+                  "groupId": "g128",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g127",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g126",
+                  "effect": "solid"
+                },
+                {
                   "groupId": "g130",
                   "effect": "solid"
                 },
@@ -6959,6 +7037,125 @@
                 },
                 {
                   "groupId": "g133",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g134",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g135",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g136",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g137",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g138",
+                  "effect": "solid"
+                }
+              ]
+            },
+            "s23": {
+              "key": "d",
+              "steps": [
+                {
+                  "groupId": "g139",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g140",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g141",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g140",
+                  "effect": "solid"
+                }
+              ]
+            },
+            "s24": {
+              "key": "f",
+              "steps": [
+                {
+                  "groupId": "g142",
+                  "effect": "solid"
+                }
+              ]
+            },
+            "s25": {
+              "key": "g",
+              "steps": [
+                {
+                  "groupId": "g149",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g150",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g151",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g152",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g153",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g154",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g155",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g156",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g157",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g158",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g159",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g160",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g161",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g162",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g163",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g164",
                   "effect": "solid"
                 }
               ]

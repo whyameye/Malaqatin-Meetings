@@ -54,6 +54,18 @@ MOTIVE_KEY = {
 # M4, M5, M8 stay sustained.
 RETRIGGER_MOTIVES = {'M1', 'M2', 'M3', 'M6', 'M7', 'M9'}
 
+# Solo parts excluded from M1-M9 retrigger when M10/M11/M12 are active.
+SOLO_PARTS = {'P18', 'P19', 'P20'}  # Solo Soprano Sax, Solo Violin, Solo Cello
+SOLO_MUTE_MOTIVES = {'M10', 'M11', 'M12'}  # when these are active, exclude solo parts
+
+# Pre-compute set of measures where any SOLO_MUTE_MOTIVE is active
+SOLO_MUTE_MEASURES = set(
+    mnum
+    for motive in SOLO_MUTE_MOTIVES
+    for start_m, end_m in BLOCKS[motive]
+    for mnum in range(start_m, end_m + 1)
+)
+
 # Hybrid mode: set to a bar number to retrigger bars < N, sustain bars >= N.
 # None = retrigger throughout all blocks.
 RETRIGGER_END_BAR = None
@@ -147,10 +159,17 @@ def collect_onsets_all_parts(motive, all_part_notes, mnum):
 
     M6: if any part has accented 16th notes in this measure, only use
     accented-16th onsets from all parts; otherwise use all non-rest onsets.
+
+    Solo parts (P18/P19/P20) are excluded when the measure falls within any
+    M10/M11/M12 block.
     """
+    exclude_solos = mnum in SOLO_MUTE_MEASURES
+
     # Gather all candidate notes from every part for this measure
     all_notes = []
-    for part_notes in all_part_notes.values():
+    for pid, part_notes in all_part_notes.items():
+        if exclude_solos and pid in SOLO_PARTS:
+            continue
         for n in part_notes.get(mnum, []):
             if not n['rest'] and not n['tie_cont']:
                 all_notes.append(n)
