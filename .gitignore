@@ -28,8 +28,7 @@ region_overlay.png
 region_meta.json
 region_children.json
 
-# Audio/score files (not code)
-*.mp3
+# Score files (not code)
 *.pdf
 
 # Gemini generated images
