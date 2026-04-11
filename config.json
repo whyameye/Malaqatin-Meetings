@@ -5014,8 +5014,6 @@
     {
       "name": "Movement 3",
       "config": {
-        "fadeIn": 1000,
-        "fadeOut": 2000,
         "spotlightFadeOut": 2500
       },
       "scenes": [
@@ -5512,41 +5510,1084 @@
                 62
               ],
               "color": "#ccff33"
+            },
+            "g12": {
+              "name": "MM1a",
+              "regions": [
+                742
+              ],
+              "color": "#ff9966"
+            },
+            "g13": {
+              "name": "MM1b",
+              "regions": [
+                755,
+                756,
+                754
+              ],
+              "color": "#6699ff"
+            },
+            "g14": {
+              "name": "MM1c",
+              "regions": [
+                942
+              ],
+              "color": "#99ff66"
+            },
+            "g15": {
+              "name": "MM1d",
+              "regions": [
+                766,
+                947,
+                774
+              ],
+              "color": "#ff3366"
+            },
+            "g16": {
+              "name": "MM1e",
+              "regions": [
+                778
+              ],
+              "color": "#33ff66"
+            },
+            "g23": {
+              "name": "MM2a",
+              "regions": [
+                828
+              ],
+              "color": "#6633ff"
+            },
+            "g24": {
+              "name": "MM2b",
+              "regions": [
+                825
+              ],
+              "color": "#ffcc33"
+            },
+            "g25": {
+              "name": "MM2c",
+              "regions": [
+                856
+              ],
+              "color": "#33ccff"
+            },
+            "g26": {
+              "name": "MM2d",
+              "regions": [
+                854
+              ],
+              "color": "#ff6633"
+            },
+            "g27": {
+              "name": "MM2e",
+              "regions": [
+                839,
+                849,
+                864
+              ],
+              "color": "#66ff33"
+            },
+            "g28": {
+              "name": "MM2f",
+              "regions": [
+                903,
+                932
+              ],
+              "color": "#3366ff"
+            },
+            "g29": {
+              "name": "MM2g",
+              "regions": [
+                767
+              ],
+              "color": "#ff33cc"
+            },
+            "g30": {
+              "name": "MM2h",
+              "regions": [
+                811
+              ],
+              "color": "#33ffcc"
+            },
+            "g31": {
+              "name": "MM2i",
+              "regions": [
+                866
+              ],
+              "color": "#cc33ff"
+            },
+            "g32": {
+              "name": "MM2j",
+              "regions": [
+                926,
+                922
+              ],
+              "color": "#ccff33"
+            },
+            "g33": {
+              "name": "MM2k",
+              "regions": [
+                923
+              ],
+              "color": "#ff9966"
+            },
+            "g34": {
+              "name": "MM2l",
+              "regions": [
+                927,
+                944,
+                938,
+                933
+              ],
+              "color": "#6699ff"
+            },
+            "g35": {
+              "name": "MM2m",
+              "regions": [
+                912,
+                941
+              ],
+              "color": "#99ff66"
+            },
+            "g36": {
+              "name": "MM2n",
+              "regions": [
+                851,
+                873
+              ],
+              "color": "#ff3366"
+            },
+            "g37": {
+              "name": "MM2o",
+              "regions": [
+                800,
+                827
+              ],
+              "color": "#33ff66"
+            },
+            "g38": {
+              "name": "MM2p",
+              "regions": [
+                772
+              ],
+              "color": "#6633ff"
+            },
+            "g39": {
+              "name": "MM2q",
+              "regions": [
+                876
+              ],
+              "color": "#ffcc33"
+            },
+            "g40": {
+              "name": "MM2r",
+              "regions": [
+                881
+              ],
+              "color": "#33ccff"
+            },
+            "g41": {
+              "name": "MM3a",
+              "regions": [
+                863
+              ],
+              "color": "#ff6633"
+            },
+            "g42": {
+              "name": "MM3b",
+              "regions": [
+                857,
+                889
+              ],
+              "color": "#66ff33"
+            },
+            "g43": {
+              "name": "MM3c",
+              "regions": [
+                939
+              ],
+              "color": "#3366ff"
+            },
+            "g44": {
+              "name": "MM3d",
+              "regions": [
+                940
+              ],
+              "color": "#ff33cc"
+            },
+            "g45": {
+              "name": "MM3e",
+              "regions": [
+                802
+              ],
+              "color": "#33ffcc"
+            },
+            "g46": {
+              "name": "MM3f",
+              "regions": [
+                798
+              ],
+              "color": "#cc33ff"
+            },
+            "g47": {
+              "name": "MM3g",
+              "regions": [
+                805
+              ],
+              "color": "#ccff33"
+            },
+            "g48": {
+              "name": "MM3h",
+              "regions": [
+                807
+              ],
+              "color": "#ff9966"
+            },
+            "g49": {
+              "name": "MM3i",
+              "regions": [
+                808
+              ],
+              "color": "#6699ff"
+            },
+            "g50": {
+              "name": "MM3j",
+              "regions": [
+                913
+              ],
+              "color": "#99ff66"
+            },
+            "g51": {
+              "name": "MM3k",
+              "regions": [
+                930
+              ],
+              "color": "#ff3366"
+            },
+            "g52": {
+              "name": "MM6a",
+              "regions": [
+                694
+              ],
+              "color": "#33ff66"
+            },
+            "g53": {
+              "name": "MM6b",
+              "regions": [
+                730,
+                731
+              ],
+              "color": "#6633ff"
+            },
+            "g54": {
+              "name": "MM6c",
+              "regions": [
+                739
+              ],
+              "color": "#ffcc33"
+            },
+            "g55": {
+              "name": "MM6d",
+              "regions": [
+                718,
+                734,
+                725
+              ],
+              "color": "#33ccff"
+            },
+            "g56": {
+              "name": "MM6e",
+              "regions": [
+                726
+              ],
+              "color": "#ff6633"
+            },
+            "g57": {
+              "name": "MM7a",
+              "regions": [
+                659,
+                623,
+                529,
+                416,
+                271
+              ],
+              "color": "#66ff33"
+            },
+            "g58": {
+              "name": "MM7b",
+              "regions": [
+                659,
+                432,
+                292,
+                262,
+                415
+              ],
+              "color": "#3366ff"
+            },
+            "g59": {
+              "name": "MM7c",
+              "regions": [
+                699,
+                700,
+                621,
+                300,
+                489,
+                322,
+                356,
+                232
+              ],
+              "color": "#ff33cc"
+            },
+            "g60": {
+              "name": "MM7d",
+              "regions": [
+                232,
+                700,
+                699,
+                636,
+                624,
+                492,
+                509,
+                329,
+                387,
+                364,
+                308
+              ],
+              "color": "#33ffcc"
+            },
+            "g61": {
+              "name": "MM7e",
+              "regions": [
+                706,
+                721,
+                660,
+                599,
+                596,
+                515,
+                513,
+                406,
+                339,
+                417,
+                332,
+                708,
+                418
+              ],
+              "color": "#cc33ff"
+            },
+            "g62": {
+              "name": "MM7f",
+              "regions": [
+                708,
+                724,
+                711,
+                651,
+                505,
+                510,
+                418,
+                417,
+                332,
+                339,
+                406
+              ],
+              "color": "#ccff33"
+            },
+            "g63": {
+              "name": "MM7g",
+              "regions": [
+                719,
+                720,
+                646,
+                678,
+                511,
+                514,
+                408,
+                320,
+                430
+              ],
+              "color": "#ff9966"
+            },
+            "g64": {
+              "name": "MM7h",
+              "regions": [
+                297,
+                425,
+                526,
+                486,
+                588,
+                648,
+                722
+              ],
+              "color": "#6699ff"
+            },
+            "g65": {
+              "name": "MM7i",
+              "regions": [
+                728
+              ],
+              "color": "#99ff66"
+            },
+            "g66": {
+              "name": "MM9a",
+              "regions": [
+                449,
+                479,
+                303,
+                396,
+                386,
+                366,
+                331,
+                365,
+                488,
+                454,
+                512,
+                473
+              ],
+              "color": "#ff3366"
+            },
+            "g67": {
+              "name": "MM9b",
+              "regions": [
+                249,
+                281,
+                394,
+                508,
+                560,
+                602,
+                455,
+                306,
+                305,
+                250,
+                284,
+                307,
+                397,
+                453,
+                564,
+                603
+              ],
+              "color": "#33ff66"
+            },
+            "g68": {
+              "name": "MM9c",
+              "regions": [
+                707,
+                676,
+                697,
+                619,
+                548,
+                446,
+                355,
+                360,
+                352,
+                399,
+                411,
+                345,
+                371,
+                346,
+                403,
+                367,
+                444,
+                547,
+                620,
+                645,
+                656,
+                675,
+                710,
+                717,
+                709
+              ],
+              "color": "#6633ff"
+            },
+            "g69": {
+              "name": "MM9d",
+              "regions": [
+                679,
+                625,
+                654,
+                550,
+                350,
+                357,
+                340,
+                377,
+                358,
+                409,
+                401,
+                342,
+                343,
+                335,
+                359,
+                440,
+                545,
+                615,
+                672,
+                447
+              ],
+              "color": "#ffcc33"
+            },
+            "g70": {
+              "name": "MM9e",
+              "regions": [
+                551,
+                378,
+                391,
+                562
+              ],
+              "color": "#33ccff"
+            },
+            "g79": {
+              "name": "MMM1a",
+              "regions": [
+                863
+              ],
+              "color": "#ff6633"
+            },
+            "g80": {
+              "name": "MMM1b",
+              "regions": [
+                828
+              ],
+              "color": "#66ff33"
+            },
+            "g81": {
+              "name": "MMM1c",
+              "regions": [
+                791
+              ],
+              "color": "#3366ff"
+            },
+            "g82": {
+              "name": "MMM1d",
+              "regions": [
+                744,
+                748
+              ],
+              "color": "#ff33cc"
+            },
+            "g83": {
+              "name": "MMM1e",
+              "regions": [
+                744,
+                745
+              ],
+              "color": "#33ffcc"
+            },
+            "g84": {
+              "name": "MMM1f",
+              "regions": [
+                784
+              ],
+              "color": "#cc33ff"
+            },
+            "g85": {
+              "name": "MMM1g",
+              "regions": [
+                825
+              ],
+              "color": "#ccff33"
+            },
+            "g86": {
+              "name": "MMM1h",
+              "regions": [
+                857,
+                889
+              ],
+              "color": "#ff9966"
+            },
+            "g87": {
+              "name": "MMM1z",
+              "regions": [
+                742
+              ],
+              "color": "#6699ff"
+            },
+            "g90": {
+              "name": "MMM2a",
+              "regions": [
+                529,
+                623
+              ],
+              "color": "#99ff66"
+            },
+            "g91": {
+              "name": "MMM2b",
+              "regions": [
+                454,
+                512,
+                488,
+                473
+              ],
+              "color": "#ff3366"
+            },
+            "g92": {
+              "name": "MMM2c",
+              "regions": [
+                331,
+                365
+              ],
+              "color": "#33ff66"
+            },
+            "g93": {
+              "name": "MMM2d",
+              "regions": [
+                271
+              ],
+              "color": "#6633ff"
+            },
+            "g94": {
+              "name": "MMM2e",
+              "regions": [
+                262
+              ],
+              "color": "#ffcc33"
+            },
+            "g95": {
+              "name": "MMM2f",
+              "regions": [
+                303,
+                396,
+                386,
+                366
+              ],
+              "color": "#33ccff"
+            },
+            "g96": {
+              "name": "MMM2g",
+              "regions": [
+                449,
+                479
+              ],
+              "color": "#ff6633"
+            },
+            "g97": {
+              "name": "MMM2h",
+              "regions": [
+                432
+              ],
+              "color": "#66ff33"
+            },
+            "g98": {
+              "name": "MMM3a",
+              "regions": [
+                939
+              ],
+              "color": "#3366ff"
+            },
+            "g99": {
+              "name": "MMM3b",
+              "regions": [
+                856
+              ],
+              "color": "#ff33cc"
+            },
+            "g100": {
+              "name": "MMM3c",
+              "regions": [
+                813
+              ],
+              "color": "#33ffcc"
+            },
+            "g101": {
+              "name": "MMM3d",
+              "regions": [
+                560,
+                602
+              ],
+              "color": "#cc33ff"
+            },
+            "g102": {
+              "name": "MMM3e",
+              "regions": [
+                394,
+                508,
+                455
+              ],
+              "color": "#ccff33"
+            },
+            "g103": {
+              "name": "MMM3f",
+              "regions": [
+                249,
+                281
+              ],
+              "color": "#ff9966"
+            },
+            "g104": {
+              "name": "MMM3g",
+              "regions": [
+                306,
+                250,
+                284,
+                305,
+                307
+              ],
+              "color": "#6699ff"
+            },
+            "g105": {
+              "name": "MMM3h",
+              "regions": [
+                397,
+                453
+              ],
+              "color": "#99ff66"
+            },
+            "g106": {
+              "name": "MMM3i",
+              "regions": [
+                564,
+                603
+              ],
+              "color": "#ff3366"
+            },
+            "g107": {
+              "name": "MMM3j",
+              "regions": [
+                821
+              ],
+              "color": "#33ff66"
+            },
+            "g108": {
+              "name": "MMM3k",
+              "regions": [
+                854
+              ],
+              "color": "#6633ff"
+            },
+            "g109": {
+              "name": "MMM3l",
+              "regions": [
+                910
+              ],
+              "color": "#ffcc33"
+            },
+            "g110": {
+              "name": "MMM3m",
+              "regions": [
+                940
+              ],
+              "color": "#33ccff"
+            },
+            "g111": {
+              "name": "MMM4",
+              "regions": [
+                942,
+                792,
+                799,
+                798,
+                903,
+                932,
+                829,
+                911,
+                839,
+                849,
+                864,
+                793,
+                794,
+                812,
+                795,
+                816,
+                802,
+                801,
+                739,
+                740,
+                711,
+                316,
+                484,
+                506,
+                522,
+                538,
+                554,
+                570,
+                583,
+                594,
+                606,
+                612,
+                629,
+                635,
+                644,
+                653,
+                665,
+                670,
+                683,
+                651,
+                675,
+                710,
+                717,
+                709,
+                724,
+                620,
+                656,
+                645,
+                505,
+                547,
+                444,
+                510,
+                418,
+                417,
+                346,
+                403,
+                367,
+                345,
+                399,
+                411,
+                352,
+                371,
+                339,
+                333,
+                332,
+                315,
+                324,
+                355,
+                360,
+                446,
+                406,
+                515,
+                513,
+                548,
+                599,
+                596,
+                619,
+                660,
+                676,
+                707,
+                697,
+                721,
+                708,
+                490,
+                450,
+                685,
+                674,
+                667,
+                642,
+                634,
+                611,
+                593,
+                557,
+                516,
+                493,
+                530,
+                543,
+                575,
+                585,
+                605,
+                628,
+                649,
+                663,
+                706
+              ],
+              "color": "#ff6633"
+            },
+            "g112": {
+              "name": "MMM5",
+              "regions": [
+                226,
+                236,
+                223,
+                275,
+                172,
+                101,
+                56,
+                24
+              ],
+              "color": "#66ff33"
+            },
+            "g113": {
+              "name": "MMM6a",
+              "regions": [
+                912,
+                941
+              ],
+              "color": "#3366ff"
+            },
+            "g114": {
+              "name": "MMM6b",
+              "regions": [
+                927,
+                933,
+                938,
+                944
+              ],
+              "color": "#ff33cc"
+            },
+            "g115": {
+              "name": "MMM6c",
+              "regions": [
+                923
+              ],
+              "color": "#33ffcc"
+            },
+            "g116": {
+              "name": "MMM6d",
+              "regions": [
+                926,
+                922
+              ],
+              "color": "#cc33ff"
+            },
+            "g117": {
+              "name": "MMM6e",
+              "regions": [
+                866
+              ],
+              "color": "#ccff33"
+            },
+            "g118": {
+              "name": "MMM6f",
+              "regions": [
+                811
+              ],
+              "color": "#ff9966"
+            },
+            "g119": {
+              "name": "MMM6g",
+              "regions": [
+                767
+              ],
+              "color": "#6699ff"
+            },
+            "g120": {
+              "name": "MMM6h",
+              "regions": [
+                679
+              ],
+              "color": "#99ff66"
+            },
+            "g121": {
+              "name": "MMM6i",
+              "regions": [
+                625,
+                654
+              ],
+              "color": "#ff3366"
+            },
+            "g122": {
+              "name": "MMM6j",
+              "regions": [
+                550
+              ],
+              "color": "#33ff66"
+            },
+            "g123": {
+              "name": "MMM6k",
+              "regions": [
+                447
+              ],
+              "color": "#6633ff"
+            },
+            "g124": {
+              "name": "MMM6l",
+              "regions": [
+                350
+              ],
+              "color": "#ffcc33"
+            },
+            "g125": {
+              "name": "MMM6m",
+              "regions": [
+                221,
+                203
+              ],
+              "color": "#33ccff"
+            },
+            "g126": {
+              "name": "MMM6n",
+              "regions": [
+                152
+              ],
+              "color": "#ff6633"
+            },
+            "g127": {
+              "name": "MMM6o",
+              "regions": [
+                99
+              ],
+              "color": "#66ff33"
+            },
+            "g128": {
+              "name": "MMM6p",
+              "regions": [
+                67
+              ],
+              "color": "#3366ff"
+            },
+            "g129": {
+              "name": "MMM6q",
+              "regions": [
+                7
+              ],
+              "color": "#ff33cc"
+            },
+            "g130": {
+              "name": "MMM6r",
+              "regions": [
+                220,
+                204
+              ],
+              "color": "#33ffcc"
+            },
+            "g131": {
+              "name": "MMM6s",
+              "regions": [
+                335,
+                359
+              ],
+              "color": "#cc33ff"
+            },
+            "g132": {
+              "name": "MMM6t",
+              "regions": [
+                440
+              ],
+              "color": "#ccff33"
+            },
+            "g133": {
+              "name": "MMM6u",
+              "regions": [
+                545
+              ],
+              "color": "#ff9966"
+            },
+            "g134": {
+              "name": "MMM6v",
+              "regions": [
+                615
+              ],
+              "color": "#6699ff"
+            },
+            "g135": {
+              "name": "MMM6w",
+              "regions": [
+                672
+              ],
+              "color": "#99ff66"
+            },
+            "g136": {
+              "name": "MMM6x",
+              "regions": [
+                772
+              ],
+              "color": "#ff3366"
+            },
+            "g137": {
+              "name": "MMM6y",
+              "regions": [
+                800
+              ],
+              "color": "#33ff66"
+            },
+            "g138": {
+              "name": "MMM6z",
+              "regions": [
+                851,
+                873
+              ],
+              "color": "#6633ff"
             }
           },
           "sequences": {
-            "s1": {
-              "key": "q",
-              "steps": [
-                {
-                  "groupId": "g0",
-                  "effect": "solid"
-                }
-              ]
-            },
-            "s2": {
-              "key": "w",
-              "steps": [
-                {
-                  "groupId": "g1",
-                  "effect": "solid"
-                }
-              ]
-            },
-            "s3": {
-              "key": "e",
-              "steps": [
-                {
-                  "groupId": "g2",
-                  "effect": "solid"
-                }
-              ]
-            },
             "s4": {
               "key": "r",
               "steps": [
                 {
-                  "groupId": "g3",
+                  "groupId": "g111",
                   "effect": "solid"
                 }
               ]
@@ -5555,25 +6596,7 @@
               "key": "a",
               "steps": [
                 {
-                  "groupId": "g5",
-                  "effect": "solid"
-                }
-              ]
-            },
-            "s6": {
-              "key": "s",
-              "steps": [
-                {
-                  "groupId": "g4",
-                  "effect": "solid"
-                }
-              ]
-            },
-            "s7": {
-              "key": "d",
-              "steps": [
-                {
-                  "groupId": "g6",
+                  "groupId": "g112",
                   "effect": "solid"
                 }
               ]
@@ -5583,16 +6606,7 @@
               "steps": [
                 {
                   "groupId": "g7",
-                  "effect": "solid"
-                }
-              ]
-            },
-            "s9": {
-              "key": "g",
-              "steps": [
-                {
-                  "groupId": "g8",
-                  "effect": "solid"
+                  "effect": "sparkle"
                 }
               ]
             },
@@ -5619,6 +6633,332 @@
               "steps": [
                 {
                   "groupId": "g11",
+                  "effect": "solid"
+                }
+              ]
+            },
+            "s17": {
+              "key": "d",
+              "steps": [
+                {
+                  "groupId": "g57",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g58",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g59",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g60",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g61",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g62",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g63",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g64",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g65",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g64",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g63",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g62",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g61",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g60",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g59",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g58",
+                  "effect": "solid"
+                }
+              ]
+            },
+            "s18": {
+              "key": "g",
+              "steps": [
+                {
+                  "groupId": "g66",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g67",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g68",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g69",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g70",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g69",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g68",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g67",
+                  "effect": "solid"
+                }
+              ]
+            },
+            "s19": {
+              "key": "q",
+              "steps": [
+                {
+                  "groupId": "g79",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g80",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g81",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g82",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g83",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g84",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g85",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g86",
+                  "effect": "solid"
+                }
+              ]
+            },
+            "s20": {
+              "key": "w",
+              "steps": [
+                {
+                  "groupId": "g90",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g91",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g92",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g93",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g94",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g95",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g96",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g97",
+                  "effect": "solid"
+                }
+              ]
+            },
+            "s21": {
+              "key": "e",
+              "steps": [
+                {
+                  "groupId": "g98",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g99",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g100",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g101",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g102",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g103",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g104",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g105",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g106",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g107",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g108",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g109",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g110",
+                  "effect": "solid"
+                }
+              ]
+            },
+            "s22": {
+              "key": "s",
+              "steps": [
+                {
+                  "groupId": "g113",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g114",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g115",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g116",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g117",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g118",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g119",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g120",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g121",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g122",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g123",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g124",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g125",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g126",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g127",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g128",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g129",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g130",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g131",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g132",
+                  "effect": "solid"
+                },
+                {
+                  "groupId": "g133",
                   "effect": "solid"
                 }
               ]
@@ -5681,7 +7021,9 @@
                   "groupId": "g7",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeOut": 250,
+              "fadeIn": 0
             },
             "s7": {
               "key": "w",
@@ -5690,7 +7032,9 @@
                   "groupId": "g8",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeOut": 250,
+              "fadeIn": 0
             },
             "s8": {
               "key": "e",
@@ -5699,7 +7043,9 @@
                   "groupId": "g9",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeOut": 250,
+              "fadeIn": 0
             },
             "s9": {
               "key": "r",
@@ -5708,7 +7054,9 @@
                   "groupId": "g10",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeIn": 500,
+              "fadeOut": 1000
             },
             "s10": {
               "key": "a",
@@ -5717,7 +7065,9 @@
                   "groupId": "g11",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeIn": 500,
+              "fadeOut": 1000
             }
           }
         },
@@ -5845,7 +7195,9 @@
                   "groupId": "g9",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeOut": 250,
+              "fadeIn": 0
             },
             "s2": {
               "key": "w",
@@ -5854,7 +7206,9 @@
                   "groupId": "g1",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeOut": 250,
+              "fadeIn": 0
             },
             "s3": {
               "key": "e",
@@ -5863,7 +7217,9 @@
                   "groupId": "g2",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeOut": 250,
+              "fadeIn": 0
             },
             "s4": {
               "key": "r",
@@ -5872,7 +7228,9 @@
                   "groupId": "g3",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeIn": 500,
+              "fadeOut": 1000
             },
             "s5": {
               "key": "a",
@@ -5881,7 +7239,9 @@
                   "groupId": "g4",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeIn": 500,
+              "fadeOut": 1000
             },
             "s6": {
               "key": "s",
@@ -5890,7 +7250,9 @@
                   "groupId": "g5",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeOut": 250,
+              "fadeIn": 0
             },
             "s8": {
               "key": "d",
@@ -5899,7 +7261,9 @@
                   "groupId": "g7",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeOut": 250,
+              "fadeIn": 0
             }
           }
         },
@@ -6166,7 +7530,9 @@
                   "groupId": "g0",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeOut": 250,
+              "fadeIn": 0
             },
             "s1": {
               "key": "w",
@@ -6175,7 +7541,9 @@
                   "groupId": "g1",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeOut": 250,
+              "fadeIn": 0
             },
             "s2": {
               "key": "e",
@@ -6184,7 +7552,9 @@
                   "groupId": "g2",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeOut": 250,
+              "fadeIn": 0
             },
             "s3": {
               "key": "r",
@@ -6193,7 +7563,9 @@
                   "groupId": "g6",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeIn": 500,
+              "fadeOut": 1000
             },
             "s7": {
               "key": "a",
@@ -6202,7 +7574,9 @@
                   "groupId": "g4",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeIn": 500,
+              "fadeOut": 1000
             },
             "s8": {
               "key": "s",
@@ -6211,7 +7585,9 @@
                   "groupId": "g7",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeOut": 250,
+              "fadeIn": 0
             },
             "s9": {
               "key": "d",
@@ -6220,7 +7596,9 @@
                   "groupId": "g8",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeOut": 250,
+              "fadeIn": 0
             },
             "s10": {
               "key": "f",
@@ -6229,7 +7607,9 @@
                   "groupId": "g9",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeIn": 500,
+              "fadeOut": 1000
             },
             "s11": {
               "key": "g",
@@ -6238,7 +7618,9 @@
                   "groupId": "g14",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeOut": 250,
+              "fadeIn": 0
             },
             "s12": {
               "key": "y",
@@ -6247,7 +7629,9 @@
                   "groupId": "g11",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeIn": 500,
+              "fadeOut": 1000
             },
             "s13": {
               "key": "u",
@@ -6256,7 +7640,9 @@
                   "groupId": "g12",
                   "effect": "solid"
                 }
-              ]
+              ],
+              "fadeIn": 500,
+              "fadeOut": 1000
             }
           }
         }
