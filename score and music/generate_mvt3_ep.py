@@ -151,11 +151,12 @@ def offset_to_beat_subdiv(offset_qn):
     return beat, subdiv
 
 
-def collect_onsets_all_parts(motive, all_part_notes, mnum):
+def collect_onsets_all_parts(motive, all_part_notes, mnum, part_names=None):
     """
     Collect unique note onset offsets (quarter-note) for one measure,
-    scanning ALL parts.  Returns a sorted list of (act_off, deact_off) pairs.
+    scanning ALL parts.  Returns a sorted list of (act_off, deact_off, instruments) tuples.
     deact_off = act_off + 0.25 (one 16th note pulse per onset).
+    instruments is a comma-separated string of part names (empty string if part_names not given).
 
     M6: if any part has accented 16th notes in this measure, only use
     accented-16th onsets from all parts; otherwise use all non-rest onsets.
@@ -165,29 +166,43 @@ def collect_onsets_all_parts(motive, all_part_notes, mnum):
     """
     exclude_solos = mnum in SOLO_MUTE_MEASURES
 
-    # Gather all candidate notes from every part for this measure
-    all_notes = []
+    # Gather all candidate notes from every part for this measure, keyed by pid
+    notes_by_pid = {}
     for pid, part_notes in all_part_notes.items():
         if exclude_solos and pid in SOLO_PARTS:
             continue
-        for n in part_notes.get(mnum, []):
-            if not n['rest'] and not n['tie_cont']:
-                all_notes.append(n)
+        notes = [n for n in part_notes.get(mnum, []) if not n['rest'] and not n['tie_cont']]
+        if notes:
+            notes_by_pid[pid] = notes
 
-    if not all_notes:
+    all_notes_flat = [n for notes in notes_by_pid.values() for n in notes]
+    if not all_notes_flat:
         return []
 
     if motive == 'M6':
         has_accented_16ths = any(
             n['accent'] and abs(n['dur'] - 0.25) < 0.01
-            for n in all_notes
+            for n in all_notes_flat
         )
         if has_accented_16ths:
-            all_notes = [n for n in all_notes if n['accent'] and abs(n['dur'] - 0.25) < 0.01]
+            notes_by_pid = {
+                pid: [n for n in notes if n['accent'] and abs(n['dur'] - 0.25) < 0.01]
+                for pid, notes in notes_by_pid.items()
+            }
+            notes_by_pid = {pid: notes for pid, notes in notes_by_pid.items() if notes}
 
-    # Deduplicate by onset offset, then build pairs
-    unique_offsets = sorted(set(n['offset'] for n in all_notes))
-    return [(off, off + 0.25) for off in unique_offsets]
+    # Build {offset: [part_name, ...]} map
+    onset_parts = {}
+    for pid, notes in notes_by_pid.items():
+        name = part_names.get(pid, pid) if part_names else ''
+        for n in notes:
+            onset_parts.setdefault(n['offset'], []).append(name)
+
+    result = []
+    for off in sorted(onset_parts):
+        instruments = ', '.join(sorted(set(onset_parts[off]))) if part_names else ''
+        result.append((off, off + 0.25, instruments))
+    return result
 
 
 # ── Score event building ──────────────────────────────────────────────────────
@@ -236,7 +251,7 @@ def build_score_events(root, bar_beats):
                 onsets = collect_onsets_all_parts(motive, all_part_notes, mnum)
                 beats_in_bar = bar_beats.get(mnum, 4)
 
-                for act_off, deact_off in onsets:
+                for act_off, deact_off, _ in onsets:
                     a_beat, a_subdiv = offset_to_beat_subdiv(act_off)
                     add(mnum, a_beat, a_subdiv, 'activate', key)
 
@@ -303,21 +318,45 @@ def write_score_json():
 
 # ── CSV and MusicXML output (unchanged logic) ─────────────────────────────────
 
-def build_csv_rows():
+def build_csv_rows(all_part_notes, bar_beats, part_names):
+    """
+    One row per trigger/release event (matches movement2_motives.csv format).
+    beat_start/beat_end are 1-indexed (beat 1 = 1.0, beat 1+16th = 1.25, etc.).
+    Retrigger motives: one row per note onset.
+    Sustained motives: one row per block.
+    """
     rows = []
     for motive, blocks in BLOCKS.items():
+        retrigger = motive in RETRIGGER_MOTIVES
         for start_m, end_m in blocks:
-            end_m_csv = end_m + 1
-            beat_end  = 0.0
-            if end_m >= NUM_MEASURES:
-                end_m_csv = NUM_MEASURES
-                beat_end  = 4.0
-            rows.append({
-                'measure_start': start_m, 'beat_start': 0.0,
-                'measure_end':   end_m_csv, 'beat_end':  beat_end,
-                'motive': motive, 'instruments': '',
-            })
-    rows.sort(key=lambda r: (r['motive'], r['measure_start']))
+            at_last    = (end_m >= NUM_MEASURES)
+            deact_bar  = end_m     if at_last else end_m + 1
+            deact_beat = 4.0       if at_last else 1.0  # beat 4 or beat 1 of next bar
+
+            if not retrigger:
+                rows.append({
+                    'measure_start': start_m,  'beat_start': 1.0,
+                    'measure_end':   deact_bar, 'beat_end':   deact_beat,
+                    'motive': motive, 'instruments': '',
+                })
+                continue
+
+            retrig_last = end_m if RETRIGGER_END_BAR is None else min(end_m, RETRIGGER_END_BAR - 1)
+            for mnum in range(start_m, retrig_last + 1):
+                onsets = collect_onsets_all_parts(motive, all_part_notes, mnum, part_names)
+                beats_in_bar = bar_beats.get(mnum, 4)
+                for act_off, deact_off, instruments in onsets:
+                    if deact_off >= beats_in_bar:
+                        r_bar, r_beat = mnum + 1, 1.0
+                    else:
+                        r_bar, r_beat = mnum, deact_off + 1.0  # 1-indexed
+                    rows.append({
+                        'measure_start': mnum,  'beat_start': act_off + 1.0,
+                        'measure_end':   r_bar, 'beat_end':   r_beat,
+                        'motive': motive, 'instruments': instruments,
+                    })
+
+    rows.sort(key=lambda r: (r['measure_start'], r['beat_start'], r['motive']))
     return rows
 
 
@@ -375,16 +414,35 @@ def write_ep_part(ep_part, num_measures):
 
 
 def main():
-    rows = build_csv_rows()
+    tree = ET.parse(INPUT)
+    root = tree.getroot()
+
+    # Parse all parts once (shared by CSV and score.json)
+    all_part_notes = {
+        part.get('id'): parse_part_notes(root, part.get('id'))
+        for part in root.findall('part')
+        if part.get('id') != 'P26'
+    }
+
+    # Build part name lookup
+    part_names = {
+        sp.get('id'): sp.findtext('part-name') or sp.get('id')
+        for sp in root.findall('.//score-part')
+    }
+
+    # Load bar_beats from score.json
+    with open(SCORE_JSON) as f:
+        score = json.load(f)
+    mvt3 = next(m for m in score['movements'] if m['name'] == 'Movement III')
+    bar_beats = {bar['bar']: bar['beats'] for bar in mvt3['bars']}
+
+    rows = build_csv_rows(all_part_notes, bar_beats, part_names)
     with open(CSV_OUT, 'w', newline='') as f:
         w = csv.DictWriter(f, fieldnames=['measure_start','beat_start',
                                           'measure_end','beat_end','motive','instruments'])
         w.writeheader()
         w.writerows(rows)
     print(f'Written {len(rows)} rows to {CSV_OUT}')
-
-    tree = ET.parse(INPUT)
-    root = tree.getroot()
 
     ep_part = root.find('.//part[@id="P26"]')
     if ep_part is None:
