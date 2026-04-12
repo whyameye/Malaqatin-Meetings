@@ -319,8 +319,9 @@ Instead of a pianist triggering regions manually, a tapper taps quarter-note bea
 
 Movement I is configured to use **Scene 4** (index 0 in `config.json`) for the entire movement. Scenes 1 and 3 are preserved in the config at indexes 1 and 2 but are not reachable during performance (no `scene_next` events in the score). Scene 4 is the `ceiling_9by16.png` wide-angle photo.
 
-- **M5** (key `a`) — slides — uses the **sweep** effect on region g114 (orange line)
-- **M6** (key `s`) — rhythmic pattern — uses the step-based solid/sparkle sequence previously assigned to M5
+- **M3** (key `e`) — repeating 8th notes — active in bars 4–8, 10–15, 33–40, 43–82
+- **M5** (key `a`) — slides — uses the **sweep** effect on region g114 (orange line). The sweep renders glowing circles along a skeleton path; it does not brighten regions.
+- **M6** (key `s`) — rhythmic pattern — triggered by two patterns: (1) 16th-16th-8th-8th sequence; (2) 3 eighth notes starting on the and of a beat followed by a quarter or longer
 
 ### Pitch-to-key mapping (Movement I, EP part P26)
 
@@ -386,7 +387,7 @@ See `score and music/NOTES_FOR_CLAUDE.md` for full rule details, manual events, 
 
 ## Movement III — EP Motive Generator
 
-`generate_mvt3_ep.py` uses hand-curated block ranges (derived from score label positions) to write motive indicator notes into the Electric Piano part, producing an annotated score and CSV.
+`generate_mvt3_ep.py` uses hand-curated block ranges (derived from score label positions) to write motive indicator notes into the Electric Piano part, producing an annotated score, CSV, and updated `score.json` conductor events. Safe to re-run when the source score changes.
 
 ### Running
 
@@ -687,8 +688,9 @@ Used by the editor's **C** key to select all children of a selected region.
 | `generate_regions.py` | Region data generator |
 | `config.json` | Master config: global settings, movements, scenes, groups, sequences |
 | `parse_score.py` | Converts MusicXML EP part to `score.json` for conductor mode. Run after any score change. |
-| `score.json` | Score data consumed by conductor mode. **Movement I is hand-edited** (sustained blocks, scene changes, 2/4 bars) — do not re-run `parse_score.py` for Mvt I or it will overwrite manual fixes. Mvt II and III were generated then hand-edited. |
+| `score.json` | Score data consumed by conductor mode. **Movement I is hand-edited** — do not regenerate from any script; edit directly. Movement II was generated then hand-edited. Movement III is written by `generate_mvt3_ep.py` and can be safely regenerated. |
 | `score and music/generate_mvt2_ep.py` | Movement II motive detector — writes annotated score and CSV |
+| `score and music/generate_mvt3_ep.py` | Movement III motive detector — writes annotated score, CSV, and updates score.json conductor events |
 | `score and music/movement1_motives.csv` | Generated motive event table for Movement I (from score.json conductor events) |
 | `score and music/movement2_motives.csv` | Generated motive event table for Movement II |
 | `generate_sweep_path.py` | Generates skeleton graph JSON for a region (used by sweep effect). Run with `--min-seg 0`. |
