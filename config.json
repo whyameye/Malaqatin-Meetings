@@ -1587,21 +1587,36 @@
                 1
               ],
               "color": "#3366ff"
+            },
+            "g130": {
+              "name": "M1alt",
+              "regions": [
+                430,
+                366,
+                298
+              ],
+              "color": "#ff33cc"
             }
           },
           "sequences": {
             "s0": {
               "key": "q",
+              "fadeOut": 2000,
               "steps": [
                 {
                   "groupId": "g1",
                   "effect": "solid"
+                },
+                {
+                  "groupId": "g130",
+                  "effect": "solid"
                 }
-              ],
-              "fadeOut": 2000
+              ]
             },
             "s1": {
               "key": "w",
+              "litBrightness": 1.5,
+              "litContrast": 0.5,
               "steps": [
                 {
                   "groupId": "g2",
@@ -1667,12 +1682,11 @@
                   "groupId": "g17",
                   "effect": "solid"
                 }
-              ],
-              "litBrightness": 1.5,
-              "litContrast": 0.5
+              ]
             },
             "s2": {
               "key": "e",
+              "fadeIn": 0,
               "steps": [
                 {
                   "groupId": "g18",
@@ -1738,11 +1752,12 @@
                   "groupId": "g33",
                   "effect": "solid"
                 }
-              ],
-              "fadeIn": 0
+              ]
             },
             "s3": {
               "key": "r",
+              "fadeIn": 0,
+              "fadeOut": 50,
               "steps": [
                 {
                   "groupId": "g34",
@@ -2000,25 +2015,22 @@
                   "groupId": "g96",
                   "effect": "solid"
                 }
-              ],
-              "fadeIn": 0,
-              "fadeOut": 50
+              ]
             },
             "s4": {
               "key": "a",
-              "steps": [
-                {
-                  "groupId": "g114",
-                  "effect": "sweep"
-                }
-              ],
-              "stepCrossfade": false,
               "fadeIn": 500,
               "fadeOut": 1000,
               "sweepPath": "m1s4_g114_sweep_path.json",
               "sweepSpeed": 900,
               "sweepEaseIn": 750,
-              "sweepEaseOut": 600
+              "sweepEaseOut": 600,
+              "steps": [
+                {
+                  "groupId": "g114",
+                  "effect": "sweep"
+                }
+              ]
             },
             "s5": {
               "key": "s",
