@@ -1414,7 +1414,7 @@ function renderLoop(now) {
           if (state.prevStepIndex >= 0 && state.prevOpacity > 0.01) {
             const prevStep = seq.steps[state.prevStepIndex];
             const prevGroup = groups[prevStep.groupId];
-            if (prevGroup) {
+            if (prevGroup && prevStep.effect !== 'sweep') {
               const prevLitAlpha = Math.min(1, (seq.litLevel ?? config.litLevel) * state.prevOpacity * sceneFade);
               if (prevLitAlpha > 0.01) brightenRegions(new Set(prevGroup.regions), prevLitAlpha, bri, sat, con);
             }

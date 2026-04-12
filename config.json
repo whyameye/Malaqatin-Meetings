@@ -1604,10 +1604,6 @@
               "fadeOut": 2000,
               "steps": [
                 {
-                  "groupId": "g1",
-                  "effect": "solid"
-                },
-                {
                   "groupId": "g130",
                   "effect": "solid"
                 }
