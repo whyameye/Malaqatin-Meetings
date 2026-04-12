@@ -350,6 +350,30 @@ On every tap (Space or `[`), a large bar and beat number flashes on screen for t
 
 ---
 
+## Movement I — EP Motive Generator
+
+`generate_mvt1_ep.py` reads conductor events directly from `score.json` (Movement I) and
+writes motive indicator notes into the Electric Piano part (P26), producing an annotated
+score and a CSV of all motive events.
+
+Unlike the Movement II/III generators, it does **not** pattern-detect from MusicXML — it
+converts the hand-edited `score.json` activate/deactivate pairs directly into notes.
+Base score: `Keyboard 1 - Full score - 01 Movement I Final.musicxml`.
+
+**To regenerate** (safe — does not modify `score.json`):
+```
+cd "score and music"
+/usr/bin/python3 generate_mvt1_ep.py
+```
+
+| File | Purpose |
+|---|---|
+| `Keyboard 1 - Full score - 01 Movement I Final.musicxml` | Source score (base for EP replacement) |
+| `Edited 1 Malaqatin Meetings - Full score - 01 Movement I Final - John.musicxml` | Annotated output score with EP motive notes |
+| `movement1_motives.csv` | Motive event table (one row per activate→deactivate interval) |
+
+---
+
 ## Movement II — EP Motive Generator
 
 `generate_mvt2_ep.py` scans all non-EP parts of the Movement II MusicXML and writes
@@ -689,6 +713,7 @@ Used by the editor's **C** key to select all children of a selected region.
 | `config.json` | Master config: global settings, movements, scenes, groups, sequences |
 | `parse_score.py` | Converts MusicXML EP part to `score.json` for conductor mode. Run after any score change. |
 | `score.json` | Score data consumed by conductor mode. **Movement I is hand-edited** — do not regenerate from any script; edit directly. Movement II was generated then hand-edited. Movement III is written by `generate_mvt3_ep.py` and can be safely regenerated. |
+| `score and music/generate_mvt1_ep.py` | Movement I EP generator — reads score.json events, writes annotated score and CSV |
 | `score and music/generate_mvt2_ep.py` | Movement II motive detector — writes annotated score and CSV |
 | `score and music/generate_mvt3_ep.py` | Movement III motive detector — writes annotated score, CSV, and updates score.json conductor events |
 | `score and music/movement1_motives.csv` | Generated motive event table for Movement I (from score.json conductor events) |
