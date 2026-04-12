@@ -65,20 +65,20 @@
 
 ### Scene 4
 
-| Motive | Pattern                    | Visual                    | Computer Key | Music Keyboard Key         | Comments |
-|--------|----------------------------|---------------------------|--------------|----------------------------|----------|
-| M1     | drum 8th notes             |                           | Q            | C3 (note 48)               |          |
-| M2     | conga/cello 16,16th,8th    |                           | W            | D3 (note 50)               |          |
-| M3     | castanets/vln1 16th        |                           | E            | E4 (note 64)               |          |
-| M4     | sop sax/vln slurred runs   |                           | R            | F4 (note 65)               |          |
-| M5     | slurred pickup gesture     |                           | A            | G3 (note 55)               |          |
-| M6     | unslurred 8ths/quarters    |                           | S            | A3 (note 57)               |          |
-| M7     | pizz 8th notes             |                           | D            | G4 (note 67)               |          |
-| M8     | trem                       |                           | F            | A4 (note 69)               |          |
-| M9     | pizz repeated 4ers         |                           | G            | B4 (note 71)               |          |
-| M10    | solo sax                   |                           | Y            | C4 (note 71)               |          |
-| M11    | solo cello                 |                           | U            | D4 (note 71)               |          |
-| M12    | solo vln                   |                           | I            | E5 (note 71)               |          |
+| Motive | Pattern                                                          | Visual                    | Computer Key | Music Keyboard Key         | Comments |
+|--------|------------------------------------------------------------------|---------------------------|--------------|----------------------------|----------|
+| M1     | 8 of exactly the same 8th note through an entire measure         |                           | Q            | C3 (note 48)               |          |
+| M2     | 2 16ths and an 8th, then 2 16ths and an 8th, then 4 sixteenths then whatever happens in the rest of that bar and the next bar all the same note. |                           | W            | D3 (note 50)               |          |
+| M3     | 16 16th notes all the same note UNLESS there are accents         |                           | E            | E4 (note 64)               |          |
+| M4     | sop sax/vln slurred runs                                         |                           | R            | F4 (note 65)               |          |
+| M5     | slurred pickup gesture                                           |                           | A            | G3 (note 55)               |          |
+| M6     | 8th, quarter 8th then 8th then whatever else happens until the next rest. It is also 16ths with accents. Only trigger on the accents. M6 is also 8th rest, 8th note 8th note 8th rest. |                           | S            | A3 (note 57)               |          |
+| M7     | continual 8ths through an entire bar where there are not changes |                           | D            | G4 (note 67)               |          |
+| M8     | trem                                                             |                           | F            | A4 (note 69)               |          |
+| M9     | 4 quarter notes in a row                                         |                           | G            | B4 (note 71)               |          |
+| M10    | solo sax                                                         |                           | Y            | C4 (note 71)               |          |
+| M11    | solo cello                                                       |                           | U            | D4 (note 71)               |          |
+| M12    | solo vln                                                         |                           | I            | E5 (note 71)               |          |
 
 
 ## Navigation Controls
