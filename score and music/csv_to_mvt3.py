@@ -72,6 +72,90 @@ def read_csv(path):
     return rows
 
 
+# ── Validation ────────────────────────────────────────────────────────────────
+
+def validate_rows(rows, bar_beats):
+    """
+    Print warnings for suspicious CSV rows. Never aborts.
+    Checks:
+      - Unknown motive name
+      - measure_end before measure_start
+      - beat_end before beat_start (when same measure)
+      - beat_start / beat_end out of range for the bar's time signature
+      - Overlapping intervals for the same motive
+    """
+    warnings = []
+
+    def warn(row_idx, motive, msg):
+        warnings.append(f'  Row {row_idx+2} ({motive}): {msg}')  # +2: skip header row to match spreadsheet
+
+    # Track open intervals per motive for overlap detection
+    # motive → (row_idx, measure_start, beat_start, measure_end, beat_end)
+    open_intervals = {}
+
+    for i, row in enumerate(rows):
+        motive        = row['motive']
+        measure_start = row['measure_start']
+        beat_start    = row['beat_start']
+        measure_end   = row['measure_end']
+        beat_end      = row['beat_end']
+
+        if motive not in MOTIVE_KEY:
+            warn(i, motive, f'unknown motive "{motive}" — skipped')
+            continue
+
+        # measure order
+        if measure_end < measure_start:
+            warn(i, motive, f'measure_end ({measure_end}) < measure_start ({measure_start})')
+
+        # beat order within same measure
+        if measure_end == measure_start and beat_end <= beat_start:
+            warn(i, motive, f'beat_end ({beat_end}) <= beat_start ({beat_start}) in same measure')
+
+        # beat_start in range
+        beats_start_bar = bar_beats.get(measure_start)
+        if beats_start_bar is not None:
+            if beat_start < 1.0 - 1e-9:
+                warn(i, motive, f'beat_start ({beat_start}) < 1 in bar {measure_start}')
+            elif beat_start > beats_start_bar + 1.0 - 1e-9:
+                warn(i, motive, f'beat_start ({beat_start}) exceeds bar {measure_start} length ({beats_start_bar} beats)')
+
+        # beat_end in range
+        beats_end_bar = bar_beats.get(measure_end)
+        if beats_end_bar is not None:
+            if beat_end < 1.0 - 1e-9:
+                warn(i, motive, f'beat_end ({beat_end}) < 1 in bar {measure_end}')
+            elif beat_end > beats_end_bar + 1.0 - 1e-9:
+                warn(i, motive, f'beat_end ({beat_end}) exceeds bar {measure_end} length ({beats_end_bar} beats)')
+
+        # duplicate / overlap detection
+        def interval_lt(ma, ba, mb, bb):
+            """True if (ma, ba) < (mb, bb)."""
+            return ma < mb or (ma == mb and ba < bb)
+
+        if motive in open_intervals:
+            prev_i, prev_ms, prev_bs, prev_me, prev_be = open_intervals[motive]
+            is_duplicate = (measure_start == prev_ms and beat_start == prev_bs and
+                            measure_end   == prev_me and beat_end   == prev_be)
+            if is_duplicate:
+                warn(i, motive,
+                     f'duplicate of row {prev_i+2} '
+                     f'(bar {prev_ms} beat {prev_bs} – bar {prev_me} beat {prev_be})')
+            elif interval_lt(measure_start, beat_start, prev_me, prev_be):
+                warn(i, motive,
+                     f'overlaps with row {prev_i+2} '
+                     f'(bar {prev_ms} beat {prev_bs} – bar {prev_me} beat {prev_be})')
+
+        open_intervals[motive] = (i, measure_start, beat_start, measure_end, beat_end)
+
+    if warnings:
+        print(f'\nWARNINGS ({len(warnings)}):')
+        for w in warnings:
+            print(w)
+    else:
+        print('\nValidation: OK')
+
+
 # ── Beat conversion ───────────────────────────────────────────────────────────
 
 def beat_float_to_beat_subdiv(beat_float):
@@ -385,6 +469,9 @@ def main():
     bar_beats = {bar['bar']: bar['beats'] for bar in mvt3['bars']}
     all_keys  = set(MOTIVE_KEY.values())
 
+    # Validate CSV
+    validate_rows(rows, bar_beats)
+
     # Build events and EP data
     events_by_bar                 = csv_to_score_events(rows)
     retrigger_by_bar, sustained_by_bar = build_ep_data(rows, bar_beats)
@@ -403,6 +490,8 @@ def main():
         for bn, evts in events_by_bar.items()
     }
 
+    key_motive = {v: k for k, v in MOTIVE_KEY.items()}  # e.g. 's' → 'M6'
+
     all_bars = sorted(set(old_events) | set(new_events_set))
     diff_bars = 0
     for bn in all_bars:
@@ -415,8 +504,12 @@ def main():
                 print('\nScore.json changes (Movement III):')
             diff_bars += 1
             print(f'  Bar {bn}:')
-            for e in sorted(missing): print(f'    REMOVE: beat={e[0]} subdiv={e[1]} {e[2]} {e[3]}')
-            for e in sorted(extra):   print(f'    ADD:    beat={e[0]} subdiv={e[1]} {e[2]} {e[3]}')
+            for e in sorted(missing):
+                m = key_motive.get(e[3], e[3])
+                print(f'    REMOVE: beat={e[0]} subdiv={e[1]} {e[2]:12s} {m} ({e[3]})')
+            for e in sorted(extra):
+                m = key_motive.get(e[3], e[3])
+                print(f'    ADD:    beat={e[0]} subdiv={e[1]} {e[2]:12s} {m} ({e[3]})')
     if diff_bars == 0:
         print('\nScore.json: no changes to Movement III events.')
     else:
