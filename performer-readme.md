@@ -1,5 +1,35 @@
 # Malaqatin-Meetings — Notes for the performer
 
+## One-time setup (display computer)
+
+Edit `/etc/systemd/logind.conf` and ensure these lines are set (add or uncomment them):
+```
+HandleLidSwitch=ignore
+HandleLidSwitchExternalPower=ignore
+IdleAction=ignore
+```
+Then restart logind:
+```
+sudo systemctl restart systemd-logind
+```
+This prevents systemd from suspending or blanking the display when the lid is closed or the machine is idle, regardless of what KDE or the browser does. Only needs to be done once.
+
+---
+
+## Pre-show setup (display computer)
+
+Before opening the browser, run the sleep-prevention script from the Desktop:
+```
+bash ~/Desktop/prevent-sleep.sh
+```
+This disables X11 blanking, DPMS, the KDE screen locker, and systemd idle sleep. You should see:
+```
+Display sleep disabled. Open the browser now.
+```
+Then open Chrome and navigate to the display URL.
+
+---
+
 ## Performer (`perform.html`)
 
 ### Keyboard
