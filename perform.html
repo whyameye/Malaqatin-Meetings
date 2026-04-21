@@ -366,6 +366,7 @@ async function loadSceneAssets(sceneData, label) {
   const tmpMask = document.createElement('canvas');
   const tmpMaskCtx = tmpMask.getContext('2d');
   const regImages = {};
+  let preRenderCount = 0;
   for (const regionId of usedRegions) {
     const m = scaledMeta[regionId];
     const runList = runs[regionId];
@@ -399,6 +400,7 @@ async function loadSceneAssets(sceneData, label) {
     regionCanvas.height = hbh;
     regionCanvas.getContext('2d').drawImage(tmpMask, 0, 0);
     regImages[regionId] = { canvas: regionCanvas, x: bx, y: by, w: bw, h: bh };
+    if (++preRenderCount % 50 === 0) await new Promise(r => setTimeout(r, 0));
   }
 
   // Load sweep path JSONs for any sequences that declare one
@@ -455,6 +457,18 @@ async function loadMovement(idx) {
   // Stop all sparkle timers and clear sequence state
   for (const state of Object.values(seqStates)) stopSparkle(state);
   seqStates = {};
+
+  // Explicitly release old scene canvases before allocating new ones
+  for (const sd of loadedScenes) {
+    if (sd.regionImages) {
+      for (const ri of Object.values(sd.regionImages)) {
+        ri.canvas.width = 0;
+        ri.canvas.height = 0;
+      }
+    }
+  }
+  loadedScenes = [];
+  await new Promise(r => setTimeout(r, 0));
 
   // Save current scene for crossfade after loading
   const prevBgImage = bgImage;
