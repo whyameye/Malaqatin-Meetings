@@ -61,6 +61,8 @@ def read_csv(path):
     rows = []
     with open(path) as f:
         for row in csv.DictReader(f):
+            if not row['measure_start'].strip():
+                continue
             rows.append({
                 'measure_start': int(row['measure_start']),
                 'beat_start':    float(row['beat_start']),
