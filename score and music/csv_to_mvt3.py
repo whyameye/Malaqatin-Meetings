@@ -60,7 +60,7 @@ VOICE_ORDER = ['M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M8', 'M9', 'M10', 'M11
 def read_csv(path):
     rows = []
     with open(path) as f:
-        for row in csv.DictReader(f):
+        for sheet_row, row in enumerate(csv.DictReader(f), start=2):  # start=2: row 1 is header
             if not row['measure_start'].strip():
                 continue
             rows.append({
@@ -70,6 +70,7 @@ def read_csv(path):
                 'beat_end':      float(row['beat_end']),
                 'motive':        row['motive'].strip(),
                 'instruments':   row.get('instruments', '').strip(),
+                '_row':          sheet_row,
             })
     return rows
 
@@ -89,7 +90,7 @@ def validate_rows(rows, bar_beats):
     warnings = []
 
     def warn(row_idx, motive, msg):
-        warnings.append(f'  Row {row_idx+2} ({motive}): {msg}')  # +2: skip header row to match spreadsheet
+        warnings.append(f'  Row {rows[row_idx]["_row"]} ({motive}): {msg}')
 
     # Track open intervals per motive for overlap detection
     # motive → (row_idx, measure_start, beat_start, measure_end, beat_end)
@@ -141,11 +142,11 @@ def validate_rows(rows, bar_beats):
                             measure_end   == prev_me and beat_end   == prev_be)
             if is_duplicate:
                 warn(i, motive,
-                     f'duplicate of row {prev_i+2} '
+                     f'duplicate of row {rows[prev_i]["_row"]} '
                      f'(bar {prev_ms} beat {prev_bs} – bar {prev_me} beat {prev_be})')
             elif interval_lt(measure_start, beat_start, prev_me, prev_be):
                 warn(i, motive,
-                     f'overlaps with row {prev_i+2} '
+                     f'overlaps with row {rows[prev_i]["_row"]} '
                      f'(bar {prev_ms} beat {prev_bs} – bar {prev_me} beat {prev_be})')
 
         open_intervals[motive] = (i, measure_start, beat_start, measure_end, beat_end)
