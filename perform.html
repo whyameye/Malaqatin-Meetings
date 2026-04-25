@@ -442,6 +442,13 @@ async function loadMovement(idx) {
   // fade events arriving during loading don't corrupt the crossfade decision.
   const prevSceneFadeTarget = sceneFadeTarget;
 
+  // Reset raw fade — end-of-movement sets rawFade=1 to show the full image;
+  // if the performer skips X and jumps straight to the next movement, rawFade
+  // would stay 1 and suppress all region brightening for the new movement.
+  rawFade = 0;
+  rawFadeTarget = 0;
+  rawFadeStart = null;
+
   // Reset conductor state for new movement
   conductorActive = false;
   conductorBarIdx = 0;
